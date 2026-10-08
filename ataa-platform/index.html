@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>منصة عطاء</title>
+  <meta name="description" content="حصص مجانية مباشرة يقدّمها معلمون متطوعون. اختر صفك وادخل الحصة بدون تسجيل.">
+  <meta name="theme-color" content="#1D5C4A">
+  <meta property="og:title" content="منصة عطاء">
+  <meta property="og:description" content="حصص مجانية مباشرة يقدّمها معلمون متطوعون. اختر صفك وادخل الحصة بدون تسجيل.">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Reem+Kufi:wght@500;700&display=swap">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <a class="skip" href="#view">انتقل إلى المحتوى</a>
+  <header class="topbar">
+    <div class="topbar-in">
+      <a class="brand" href="#/" id="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="6" width="26" height="20" rx="3" fill="currentColor"/><path d="M9 13h14M9 18h9" stroke="var(--board-ink)" stroke-width="2.4" stroke-linecap="round"/></svg>
+        <span id="brand-name">منصة عطاء</span>
+      </a>
+      <nav class="nav" aria-label="القائمة الرئيسية">
+        <a href="#/" data-nav="home">الجدول</a>
+        <a href="#/teachers" data-nav="teachers">المعلمون</a>
+        <a href="#/about" data-nav="about">عن المنصة</a>
+      </nav>
+      <div class="auth" id="auth-area"></div>
+    </div>
+  </header>
+  <div id="banners"></div>
+  <main id="view" class="wrap" tabindex="-1">
+    <p class="loading">جارٍ التحميل…</p>
+  </main>
+  <footer class="foot wrap">
+    <p><b id="foot-name">منصة عطاء</b> — تعليم مجاني يقدّمه معلمون متطوعون. لا رسوم ولا إعلانات.</p>
+    <p class="foot-links"><a href="#/guide">دليل المعلم</a> · <a href="#/about">الميثاق والخصوصية</a> · <a href="#/dashboard">دخول المعلمين</a></p>
+  </footer>
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+  <noscript><p class="wrap">تحتاج هذه المنصة إلى تفعيل JavaScript في المتصفح.</p></noscript>
+  <script src="assets/config.js"></script>
+  <script src="assets/data.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
