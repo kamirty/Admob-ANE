@@ -262,7 +262,7 @@
 
   async function loadProfile() {
     if (!app.user) { app.profile = null; return null; }
-    try { app.profile = await API.myProfile(); } catch (e) { app.profile = null; }
+    try { app.profile = await API.myProfile(); } catch (e) { app.profile = undefined; throw e; }
     return app.profile;
   }
   function renderAuth() {
@@ -304,7 +304,7 @@
         <div class="live-strip" id="live-list"></div>
       </section>
       <section class="section">
-        <div class="section-head"><h2>اختر صفّك</h2><span class="muted">الصفوف المنتهية عليها علامة «وزاري»</span></div>
+        <div class="section-head"><h2>اختر صفّك</h2><span class="muted">صفوف الامتحانات الوزارية عليها علامة «وزاري»</span></div>
         <div class="stages">${C.STAGES.map((st) => `
           <div class="stage"><h2>${esc(st.name)}</h2>
             <div class="grade-grid">${st.grades.map((g) => `<a class="grade-chip${g.id === mine ? ' cur' : ''}" href="#/g/${esc(g.id)}"><span>${esc(g.short)}</span>${g.exam ? '<span class="tag-exam">وزاري</span>' : ''}</a>`).join('')}</div>
@@ -331,7 +331,12 @@
       if (live.length) {
         sec.hidden = false;
         document.getElementById('live-count').textContent = plural(live.length, 'حصة واحدة', 'حصتان', 'حصص', 'حصة');
-        document.getElementById('live-list').innerHTML = live.map((s) => cardHtml(s, { showGrade: true })).join('');
+        live.sort((a, b) => (b.grade === mine) - (a.grade === mine));
+        const list = document.getElementById('live-list');
+        list.innerHTML = live.slice(0, 3).map((s) => cardHtml(s, { showGrade: true })).join('')
+          + (live.length > 3 ? `<button type="button" class="btn" id="live-more">عرض كل الحصص المباشرة (${fNum(live.length)})</button>` : '');
+        const mb = document.getElementById('live-more');
+        if (mb) mb.addEventListener('click', () => { list.innerHTML = live.map((s) => cardHtml(s, { showGrade: true })).join(''); });
       }
     } catch (e) { /* الشريط اختياري */ }
   }
@@ -377,8 +382,9 @@
     if (!days.some((d) => dayKey(d) === ui.day)) ui.day = dayKey(from);
 
     function draw() {
-      const todays = (byDay[ui.day] || []).filter((s) => !ui.subject || s.subject === ui.subject);
       const daySubjects = Array.from(new Set(sessions.map((s) => s.subject)));
+      if (ui.subject && !daySubjects.includes(ui.subject)) ui.subject = '';
+      const todays = (byDay[ui.day] || []).filter((s) => !ui.subject || s.subject === ui.subject);
       const slots = {};
       todays.forEach((s) => { const k = +new Date(s.starts_at); (slots[k] = slots[k] || []).push(s); });
       const slotKeys = Object.keys(slots).map(Number).sort((a, b) => a - b);
@@ -402,7 +408,7 @@
           const tp = timeParts(k);
           const live = list.filter((s) => s.status !== 'cancelled').length;
           return `<section class="slot" aria-label="الساعة ${esc(time(k))}">
-            <div class="slot-time"><b>${esc(tp.main)}</b><span>${esc(tp.period)}</span>${live > 1 ? `<small>${fNum(live)} معلمين</small>` : ''}</div>
+            <div class="slot-time"><b>${esc(tp.main)}</b><span>${esc(tp.period)}</span>${live > 1 ? `<small>${plural(live, 'معلم واحد', 'معلمان', 'معلمين', 'معلماً')}</small>` : ''}</div>
             <div class="slot-cards">${list.map((s) => cardHtml(s)).join('')}</div>
           </section>`;
         }).join('')}</div>` : `<div class="empty"><b>لا توجد حصص ${ui.subject ? 'لهذه المادة ' : ''}في هذا اليوم بعد</b>
@@ -423,17 +429,20 @@
     const PAGE = 24;
     let offset = 0;
     let items = [];
+    let seq = 0;
     async function load(more) {
+      const req = ++seq;
       try {
         const rows = remember(await API.listRecordings(gradeId, ui.subject, offset, PAGE));
-        if (tok !== app.token) return;
+        if (tok !== app.token || req !== seq) return;
         items = more ? items.concat(rows) : rows;
         offset = items.length;
         draw(rows.length === PAGE);
       } catch (e) {
-        if (tok !== app.token) return;
+        if (tok !== app.token || req !== seq) return;
+        if (more) { toast(errMsg(e), true); const m = document.getElementById('more'); if (m) m.disabled = false; return; }
         body.innerHTML = errorBox(e, true);
-        $('[data-retry]', body).addEventListener('click', () => load(false));
+        $('[data-retry]', body).addEventListener('click', () => { offset = 0; load(false); });
       }
     }
     function draw(hasMore) {
@@ -549,6 +558,7 @@
           </details>
         </aside>
       </div>`;
+    $('#player').dataset.h = playerHtml(s);
     $('#copy').addEventListener('click', () => copyText(pageUrl('#/s/' + s.id)));
     $('#report').addEventListener('submit', async (ev) => {
       ev.preventDefault();
@@ -582,7 +592,11 @@
           }
         } catch (e) { /* محاولة لاحقة */ }
       }
-      if (k !== lastKey) { lastKey = k; const p = $('#player'); if (p) p.innerHTML = playerHtml(s); }
+      if (k !== lastKey) {
+        lastKey = k;
+        const p = $('#player');
+        if (p) { const h = playerHtml(s); if (p.dataset.h !== h) { p.innerHTML = h; p.dataset.h = h; } }
+      }
     };
 
     // معلمون آخرون لنفس الصف في نفس الوقت
@@ -657,14 +671,20 @@
         <p class="small muted">بدخولك توافق على <a href="#/about">ميثاق المعلم المتطوع</a>. لا يظهر بريدك الإلكتروني للعامة.</p>
       </div>`;
     $('#gsign').addEventListener('click', async (ev) => {
-      ev.currentTarget.disabled = true;
+      const btn = ev.currentTarget;
+      btn.disabled = true;
       try { await API.signIn(after || location.hash || '#/dashboard'); if (API.mode === 'demo') route(); }
-      catch (e) { toast(errMsg(e), true); ev.currentTarget.disabled = false; }
+      catch (e) { toast(errMsg(e), true); btn.disabled = false; }
     });
   }
   async function requireTeacher(tok, after) {
     if (!app.user) { signInBox(after); return null; }
-    if (app.profile === undefined) await loadProfile();
+    if (app.profile === undefined) {
+      try { await loadProfile(); } catch (e) {
+        if (tok === app.token) { view.innerHTML = errorBox(e, true); $('[data-retry]', view).addEventListener('click', route); }
+        return null;
+      }
+    }
     if (tok !== app.token) return null;
     if (!app.profile) { pageProfile(tok, true); return null; }
     return app.profile;
@@ -678,7 +698,12 @@
   async function pageProfile(tok, firstTime) {
     setNav(''); setTitle(firstTime ? 'إكمال التسجيل' : 'ملفي');
     if (!app.user) return signInBox('#/profile');
-    if (app.profile === undefined) await loadProfile();
+    if (app.profile === undefined) {
+      try { await loadProfile(); } catch (e) {
+        if (tok === app.token) { view.innerHTML = errorBox(e, true); $('[data-retry]', view).addEventListener('click', route); }
+        return;
+      }
+    }
     if (tok !== app.token) return;
     const p = app.profile || {};
     const first = !app.profile;
@@ -754,7 +779,7 @@
         <div class="tools">
           <a class="btn btn-sm" href="#/dashboard/edit/${esc(s.id)}">${st.key === 'ended' || (!hasLink && s.status === 'scheduled') ? 'أضف الرابط' : 'تعديل'}</a>
           <a class="btn btn-sm btn-ghost" href="#/dashboard/copy/${esc(s.id)}">نسخ</a>
-          ${+new Date(s.ends_at) > now ? `<button type="button" class="btn btn-sm btn-ghost" data-toggle="${esc(s.id)}">${s.status === 'cancelled' ? 'إعادة الحصة' : 'إلغاء'}</button>` : ''}
+          ${+new Date(s.ends_at) > now ? `<button type="button" class="btn btn-sm btn-ghost" data-toggle="${esc(s.id)}">${s.status === 'cancelled' ? 'إعادة الحصة إلى الجدول' : 'إلغاء الحصة'}</button>` : ''}
           <button type="button" class="btn btn-sm btn-ghost btn-danger" data-del="${esc(s.id)}">حذف</button>
         </div></div>`;
     };
@@ -781,12 +806,15 @@
       </section>
       <div class="row" style="padding-bottom:12px"><span class="spacer"></span><button type="button" class="btn btn-ghost" id="out">تسجيل الخروج</button></div>`;
     $('#out').addEventListener('click', signOut);
-    $$('[data-toggle]').forEach((b) => b.addEventListener('click', async () => {
+    $$('[data-toggle]').forEach((b) => {
       const s = list.find((x) => x.id === b.getAttribute('data-toggle'));
-      b.disabled = true;
-      try { await API.updateSession(s.id, { status: s.status === 'cancelled' ? 'scheduled' : 'cancelled' }); toast(s.status === 'cancelled' ? 'أُعيدت الحصة إلى الجدول' : 'أُلغيت الحصة وسيراها الطلاب ملغاة'); route(); }
-      catch (e) { toast(errMsg(e), true); b.disabled = false; }
-    }));
+      const act = async () => {
+        b.disabled = true;
+        try { await API.updateSession(s.id, { status: s.status === 'cancelled' ? 'scheduled' : 'cancelled' }); toast(s.status === 'cancelled' ? 'أُعيدت الحصة إلى الجدول' : 'أُلغيت الحصة وسيراها الطلاب ملغاة'); route(); }
+        catch (e) { toast(errMsg(e), true); b.disabled = false; }
+      };
+      if (s.status !== 'cancelled') armed(b, act); else b.addEventListener('click', act);
+    });
     $$('[data-del]').forEach((b) => armed(b, async () => {
       try { await API.deleteSession(b.getAttribute('data-del')); toast('حُذفت الحصة'); route(); }
       catch (e) { toast(errMsg(e), true); }
@@ -847,11 +875,11 @@
           <div class="field"><label for="sf-dur" id="lbl-dur">المدة</label><select class="input" id="sf-dur">${durs.map((m) => `<option value="${m}"${m === dur ? ' selected' : ''}>${fNum(m)} دقيقة</option>`).join('')}</select></div>
         </div>
         ${editing ? '' : `<div class="field" id="rep-field"><label for="sf-rep">التكرار</label>
-          <select class="input" id="sf-rep"><option value="1">مرة واحدة</option>${[2, 3, 4, 6, 8, 10, 12, 16].map((n) => `<option value="${n}">كل أسبوع لمدة ${fNum(n)} أسابيع</option>`).join('')}</select>
+          <select class="input" id="sf-rep"><option value="1">مرة واحدة</option>${[2, 3, 4, 6, 8, 10, 12, 16].map((n) => `<option value="${n}">${n === 2 ? 'كل أسبوع لمدة أسبوعين' : `كل أسبوع لمدة ${fNum(n)} ${n <= 10 ? 'أسابيع' : 'أسبوعاً'}`}</option>`).join('')}</select>
           <span class="hint">ينشئ حصة في نفس اليوم والوقت من كل أسبوع.</span></div>`}
         <div id="peers"></div>
         <div class="field"><label for="sf-url" id="lbl-url">رابط البث على يوتيوب</label>
-          <input class="input" id="sf-url" type="url" inputmode="url" maxlength="300" value="${esc(src.video_url || '')}" placeholder="https://www.youtube.com/live/...">
+          <input class="input" id="sf-url" type="url" inputmode="url" maxlength="300" value="${esc(mode === 'copy' && kind === 'live' ? '' : (src.video_url || ''))}" placeholder="https://www.youtube.com/live/...">
           <span class="hint" id="hint-url">يمكنك إضافته لاحقاً. أنشئ بثاً مجدولاً في YouTube Studio وضع رابطه هنا، وسيصبح نفس الرابط هو التسجيل بعد الحصة. <a href="#/guide" target="_blank">كيف؟</a></span></div>
         <div class="field" id="rec-field"${editing || isPast ? '' : ' hidden'}><label for="sf-rec">رابط التسجيل (إذا كان مختلفاً عن رابط البث)</label>
           <input class="input" id="sf-rec" type="url" inputmode="url" maxlength="300" value="${esc(src.recording_url || '')}" placeholder="https://youtu.be/...">
@@ -903,7 +931,7 @@
         try {
           const others = (await API.listOverlapping(gSel.value, tm.start, tm.end, editing ? id : null)).filter((x) => x.teacher_id !== app.user.id);
           if (!$('#peers')) return;
-          box.innerHTML = others.length ? `<div class="note"><b>في نفس الوقت ${others.length === 1 ? 'يشرح معلم آخر' : `يشرح ${fNum(others.length)} معلمين آخرين`} لهذا الصف:</b>
+          box.innerHTML = others.length ? `<div class="note"><b>في نفس الوقت ${others.length === 1 ? 'يشرح معلم آخر' : others.length === 2 ? 'يشرح معلمان آخران' : `يشرح ${plural(others.length, '', '', 'معلمين آخرين', 'معلماً آخر')}`} لهذا الصف:</b>
             <span>${others.map((o) => `${esc((o.teacher && o.teacher.display_name) || '')} (${esc(subjectName(o.subject))})`).join('، ')}</span>
             <span class="muted small">لا مشكلة في ذلك، فالطالب يختار المعلم الذي يناسبه.</span></div>` : '';
         } catch (e) { box.innerHTML = ''; }
@@ -935,7 +963,7 @@
         grade: gSel.value, subject: sSel.value, title, description: $('#sf-desc').value.trim() || null, kind: k,
         starts_at: tm.start.toISOString(), ends_at: tm.end.toISOString(), video_url: url || null,
       };
-      if ($('#sf-rec')) base.recording_url = recUrl || null;
+      if (editing) base.recording_url = recUrl || null;
       const btn = $('#sf button[type=submit]'); btn.disabled = true;
       store.set('t-grade', gSel.value); store.set('t-subject', sSel.value);
       try {
@@ -950,7 +978,7 @@
             video_url: i === 0 ? base.video_url : null,
           }));
           const made = await API.createSessions(rows);
-          toast(n > 1 ? `نُشرت ${fNum(n)} حصص أسبوعية` : 'نُشرت الحصة');
+          toast(n > 1 ? 'نُشرت ' + plural(n, 'حصة واحدة', 'حصتان أسبوعيتان', 'حصص أسبوعية', 'حصة أسبوعية') : 'نُشرت الحصة');
           location.hash = made && made[0] && n === 1 ? '#/s/' + made[0].id : '#/dashboard';
         }
       } catch (e) { toast(errMsg(e), true); btn.disabled = false; }
@@ -976,7 +1004,7 @@
         const list = await API.adminTeachers();
         if (tok !== app.token) return;
         const pending = list.filter((t) => t.status === 'pending').length;
-        box.innerHTML = `<p class="muted">${fNum(list.length)} معلم · ${pending ? `<b>${fNum(pending)} بانتظار المراجعة</b>` : 'لا أحد بانتظار المراجعة'}</p>
+        box.innerHTML = `<p class="muted">${plural(list.length, 'معلم واحد', 'معلمان', 'معلمين', 'معلماً')} · ${pending ? `<b>${fNum(pending)} بانتظار المراجعة</b>` : 'لا أحد بانتظار المراجعة'}</p>
           <div class="atable-wrap"><table class="atable"><thead><tr><th>المعلم</th><th>البريد</th><th>التخصص والقناة</th><th>الحصص</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
           ${list.map((t) => `<tr>
             <td><a class="who" href="#/t/${esc(t.id)}">${avatar(t.display_name, t.avatar_url)}<span>${esc(t.display_name)}</span></a><span class="muted small">انضم ${esc(fDateShort.format(new Date(t.created_at)))}</span></td>
@@ -1142,7 +1170,9 @@
     [/^#\/admin(?:\/(teachers|reports|settings))?$/, (t, m) => pageAdmin(t, m[1])],
   ];
   let lastHash = null;
+  let booted = false;
   async function route() {
+    if (location.hash === '#view') { history.replaceState(null, '', lastHash || '#/'); view.focus(); if (lastHash) return; }
     const tok = ++app.token;
     pageTick = null;
     const h = location.hash || '#/';
@@ -1152,7 +1182,14 @@
       const m = h.match(re);
       if (m) {
         try { await fn(tok, m); } catch (e) { if (tok === app.token) view.innerHTML = errorBox(e); console.error(e); }
-        if (changed && tok === app.token) { window.scrollTo(0, 0); }
+        if (changed && tok === app.token) {
+          window.scrollTo(0, 0);
+          if (booted && (document.activeElement === document.body || !view.contains(document.activeElement))) {
+            const h1 = view.querySelector('h1');
+            if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); }
+          }
+          booted = true;
+        }
         return;
       }
     }
@@ -1172,15 +1209,16 @@
     API.onAuth(async (u) => {
       app.user = u;
       app.profile = undefined;
-      if (u) await loadProfile();
+      if (u) await loadProfile().catch(() => {});
       renderAuth();
     });
     try { app.user = await API.init(); }
     catch (e) { toast(errMsg(e), true); }
-    if (app.user) await loadProfile();
+    if (app.user) await loadProfile().catch(() => {});
     renderAuth();
     try { app.settings = await API.settings(); } catch (e) { app.settings = {}; }
     renderBanners();
+    document.querySelector('.skip').addEventListener('click', (e) => { e.preventDefault(); view.focus(); });
     window.addEventListener('hashchange', route);
     route();
   }

@@ -124,8 +124,12 @@
         }
         if (!returning && !hasStored) return null;
         const c = await client();
-        const { data } = await c.auth.getSession();
+        const { data, error } = await c.auth.getSession();
         user = toUser(data && data.session);
+        if (returning && (error || !user)) {
+          history.replaceState(null, '', location.pathname);
+          throw new ApiError({ message: 'تعذّر إكمال الدخول. افتح الموقع من عنوانه الرئيسي وحاول مرة أخرى.' });
+        }
         if (returning) {
           let after = '#/dashboard';
           try { const a = sessionStorage.getItem('ataa-after-login'); if (a && /^#\/[\w\/-]*$/.test(a)) after = a; sessionStorage.removeItem('ataa-after-login'); } catch (e) { /* ignore */ }
@@ -146,7 +150,9 @@
       },
       async signOut() {
         const c = await client();
-        await c.auth.signOut();
+        const r = await c.auth.signOut();
+        if (r && r.error) await c.auth.signOut({ scope: 'local' });
+        try { localStorage.removeItem(AUTH_KEY); } catch (e) { /* ignore */ }
         user = null;
         listeners.forEach((fn) => fn(null));
       },
@@ -169,7 +175,7 @@
       listRecordings(grade, subject, offset, limit) {
         const p = [['select', LIST_COLS], ['grade', 'eq.' + grade], ['status', 'eq.scheduled'],
           ['ends_at', 'lt.' + iso(Date.now())], ['or', '(video_url.not.is.null,recording_url.not.is.null)'],
-          ['order', 'starts_at.desc'], ['limit', String(limit)], ['offset', String(offset)]];
+          ['order', 'starts_at.desc,id.desc'], ['limit', String(limit)], ['offset', String(offset)]];
         if (subject) p.push(['subject', 'eq.' + subject]);
         return rest('sessions', p);
       },
@@ -403,7 +409,7 @@
         const now = iso(Date.now());
         const rows = db.sessions.filter((s) => s.grade === grade && s.status === 'scheduled' && visible(s) && s.ends_at < now
           && (s.video_url || s.recording_url) && (!subject || s.subject === subject))
-          .sort((a, b) => b.starts_at.localeCompare(a.starts_at));
+          .sort((a, b) => b.starts_at.localeCompare(a.starts_at) || String(b.id).localeCompare(String(a.id)));
         return delay(rows.slice(offset, offset + limit).map(withTeacher));
       },
       async getSession(id) {
