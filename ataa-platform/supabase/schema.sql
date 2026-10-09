@@ -27,8 +27,7 @@ create table if not exists public.teachers (
   bio             text check (char_length(bio) <= 400),
   youtube_channel text check (youtube_channel is null or (char_length(youtube_channel) <= 200
                         and youtube_channel ~* '^https://(www\.|m\.)?youtube\.com/')),
-  avatar_url      text check (avatar_url is null or (char_length(avatar_url) <= 500
-                        and avatar_url ~* '^https://')),
+  avatar_url      text,
   status          text not null default 'pending' check (status in ('pending', 'approved', 'suspended')),
   is_admin        boolean not null default false,
   created_at      timestamptz not null default now(),
@@ -71,20 +70,35 @@ create index if not exists sessions_ends_idx          on public.sessions (ends_a
 -- ---------------------------------------------------------------------
 -- 4) البلاغات (يرسلها الزوار، ويقرؤها المشرفون فقط)
 -- ---------------------------------------------------------------------
+-- البلاغ يبقى محفوظاً حتى لو حذف المعلم الحصة
 create table if not exists public.reports (
   id         bigint generated always as identity primary key,
-  session_id uuid not null references public.sessions (id) on delete cascade,
+  session_id uuid references public.sessions (id) on delete set null,
   reason     text not null check (char_length(btrim(reason)) between 3 and 500),
   created_at timestamptz not null default now()
 );
+alter table public.reports add column if not exists teacher_id    uuid;
+alter table public.reports add column if not exists session_title text;
+alter table public.reports add column if not exists client_hash   text;
+alter table public.reports alter column session_id drop not null;
+alter table public.reports drop constraint if exists reports_session_id_fkey;
+alter table public.reports add constraint reports_session_id_fkey
+  foreign key (session_id) references public.sessions (id) on delete set null;
 create index if not exists reports_session_idx on public.reports (session_id, created_at);
+create index if not exists reports_client_idx  on public.reports (client_hash, created_at);
+
+-- صورة المعلم من حساب Google فقط (لا روابط خارجية تتتبع الطلاب)
+alter table public.teachers drop constraint if exists teachers_avatar_url_check;
+alter table public.teachers add constraint teachers_avatar_url_check check (avatar_url is null or
+  (char_length(avatar_url) <= 500 and avatar_url ~ '^https://lh[0-9]+\.googleusercontent\.com/'));
 
 -- ---------------------------------------------------------------------
 -- 5) دوال مساعدة
 -- ---------------------------------------------------------------------
 create or replace function public.is_admin() returns boolean
 language sql stable security definer set search_path = public as $$
-  select coalesce((select t.is_admin from public.teachers t where t.id = auth.uid()), false);
+  select coalesce((select t.is_admin from public.teachers t
+                    where t.id = auth.uid() and t.status = 'approved'), false);
 $$;
 
 create or replace function public.my_status() returns text
@@ -107,11 +121,15 @@ begin
     else
       new.id         := old.id;
       new.created_at := old.created_at;
+      -- صلاحية المشرف تُمنح من SQL Editor فقط، لا من الموقع
+      new.is_admin   := old.is_admin;
       if not public.is_admin() then
         new.status   := old.status;
-        new.is_admin := old.is_admin;
       end if;
     end if;
+  end if;
+  if new.status = 'suspended' then
+    new.is_admin := false;
   end if;
   return new;
 end $$;
@@ -216,7 +234,8 @@ create policy sessions_update on public.sessions for update to authenticated
   using      ((teacher_id = auth.uid() and public.my_status() in ('pending', 'approved')) or public.is_admin())
   with check ((teacher_id = auth.uid() and public.my_status() in ('pending', 'approved')) or public.is_admin());
 create policy sessions_delete on public.sessions for delete to authenticated
-  using (teacher_id = auth.uid() or public.is_admin());
+  using ((teacher_id = auth.uid() and not hidden and public.my_status() in ('pending', 'approved'))
+         or public.is_admin());
 
 drop policy if exists reports_admin_read   on public.reports;
 drop policy if exists reports_admin_delete on public.reports;
@@ -241,21 +260,41 @@ grant select, delete on public.reports to authenticated;
 -- إرسال بلاغ عن حصة (متاح للجميع، مع حدود ضد الإغراق)
 create or replace function public.report_session(p_session uuid, p_reason text) returns void
 language plpgsql security definer set search_path = public as $$
+declare
+  hdr    json;
+  ip     text;
+  client text;
+  s      record;
 begin
   if p_reason is null or char_length(btrim(p_reason)) < 3 then
     raise exception 'اكتب سبب البلاغ' using errcode = '22023';
   end if;
-  if not exists (select 1 from public.sessions s where s.id = p_session) then
+  select x.id, x.teacher_id, x.title into s from public.sessions x where x.id = p_session;
+  if not found then
     raise exception 'الحصة غير موجودة' using errcode = '22023';
   end if;
-  if (select count(*) from public.reports r where r.created_at > now() - interval '1 hour') >= 300 then
+  begin
+    hdr := current_setting('request.headers', true)::json;
+  exception when others then
+    hdr := null;
+  end;
+  ip := coalesce(hdr ->> 'cf-connecting-ip', split_part(hdr ->> 'x-forwarded-for', ',', 1),
+                 hdr ->> 'x-real-ip', 'unknown');
+  client := md5(btrim(ip) || ':ataa-reports');
+  -- حدود لكل زائر: بلاغ واحد لكل حصة يومياً، و6 بلاغات في الساعة
+  if exists (select 1 from public.reports r where r.client_hash = client and r.session_id = p_session
+              and r.created_at > now() - interval '1 day') then
+    return;
+  end if;
+  if (select count(*) from public.reports r where r.client_hash = client
+       and r.created_at > now() - interval '1 hour') >= 6 then
+    raise exception 'أرسلت بلاغات كثيرة، حاول بعد ساعة' using errcode = '54000';
+  end if;
+  if (select count(*) from public.reports r where r.created_at > now() - interval '1 hour') >= 3000 then
     raise exception 'البلاغات كثيرة الآن، حاول لاحقاً' using errcode = '54000';
   end if;
-  if (select count(*) from public.reports r
-       where r.session_id = p_session and r.created_at > now() - interval '1 day') >= 40 then
-    return; -- يكفي ما وصل عن هذه الحصة اليوم
-  end if;
-  insert into public.reports (session_id, reason) values (p_session, left(btrim(p_reason), 500));
+  insert into public.reports (session_id, reason, teacher_id, session_title, client_hash)
+  values (p_session, left(btrim(p_reason), 500), s.teacher_id, s.title, client);
 end $$;
 
 -- قائمة المعلمين للمشرف (مع البريد الإلكتروني)
@@ -294,12 +333,14 @@ begin
     raise exception 'هذه الصفحة للمشرفين فقط' using errcode = '42501';
   end if;
   return query
-    select r.id, r.session_id, r.reason, r.created_at, s.title, s.hidden, t.id, t.display_name
+    select r.id, r.session_id, r.reason, r.created_at,
+           coalesce(s.title, r.session_title || ' (حذفها المعلم)'), coalesce(s.hidden, false),
+           t.id, t.display_name
       from public.reports r
-      join public.sessions s on s.id = r.session_id
-      join public.teachers t on t.id = s.teacher_id
+      left join public.sessions s on s.id = r.session_id
+      left join public.teachers t on t.id = coalesce(s.teacher_id, r.teacher_id)
      order by r.created_at desc
-     limit 300;
+     limit 1000;
 end $$;
 
 revoke execute on function public.admin_list_teachers() from public, anon;

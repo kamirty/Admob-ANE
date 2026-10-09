@@ -157,7 +157,7 @@
   function initial(name) { return String(name || '؟').replace(/^(أ\.|د\.|م\.|ا\.)\s*/, '').trim().charAt(0) || '؟'; }
   function avatar(name, url, cls) {
     const letter = esc(initial(name));
-    if (url && /^https:\/\//.test(url)) {
+    if (url && /^https:\/\/lh\d+\.googleusercontent\.com\//.test(url)) {
       return `<img class="av ${cls || ''}" src="${esc(url)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-letter="${letter}">`;
     }
     return `<span class="av ${cls || ''}" aria-hidden="true">${letter}</span>`;
@@ -682,7 +682,7 @@
     if (tok !== app.token) return;
     const p = app.profile || {};
     const first = !app.profile;
-    const avatarUrl = p.avatar_url || app.user.avatar || '';
+    const avatarUrl = [p.avatar_url, app.user.avatar].find((u) => /^https:\/\/lh\d+\.googleusercontent\.com\//.test(u || '')) || '';
     view.innerHTML = `
       <header class="page-head"><h1>${first ? 'أهلاً بك معلماً متطوعاً' : 'ملفي'}</h1>
         <p class="muted">${first ? 'خطوة واحدة: أكمل ملفك ليعرفك الطلاب. يظهر اسمك وتخصصك ونبذتك للعامة، ولا يظهر بريدك.' : 'هذه المعلومات تظهر في صفحتك العامة.'}</p></header>
@@ -986,7 +986,7 @@
             <td>${statusPill(t.status)}${t.is_admin ? ' <span class="pill">مشرف</span>' : ''}</td>
             <td><div class="row">
               ${t.status !== 'approved' ? `<button type="button" class="btn btn-sm btn-primary" data-st="approved" data-id="${esc(t.id)}">${t.status === 'suspended' ? 'إعادة التفعيل' : 'اعتماد'}</button>` : ''}
-              ${t.status !== 'suspended' && t.id !== p.id ? `<button type="button" class="btn btn-sm btn-danger" data-st="suspended" data-id="${esc(t.id)}">إيقاف</button>` : ''}
+              ${t.status !== 'suspended' && t.id !== p.id && !t.is_admin ? `<button type="button" class="btn btn-sm btn-danger" data-st="suspended" data-id="${esc(t.id)}">إيقاف</button>` : ''}
             </div></td></tr>`).join('')}
           </tbody></table></div>`;
         $$('[data-st]', box).forEach((b) => {

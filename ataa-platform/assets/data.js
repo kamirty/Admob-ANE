@@ -119,9 +119,8 @@
         const returning = q.has('code') || q.has('error_description');
         const hasStored = !!storeGet(AUTH_KEY);
         if (q.has('error_description')) {
-          const e = q.get('error_description');
           history.replaceState(null, '', location.pathname + location.hash);
-          throw new ApiError({ message: 'تعذّر تسجيل الدخول: ' + e });
+          throw new ApiError({ message: 'تعذّر تسجيل الدخول بحساب Google. حاول مرة أخرى.' });
         }
         if (!returning && !hasStored) return null;
         const c = await client();
@@ -129,7 +128,7 @@
         user = toUser(data && data.session);
         if (returning) {
           let after = '#/dashboard';
-          try { after = sessionStorage.getItem('ataa-after-login') || after; sessionStorage.removeItem('ataa-after-login'); } catch (e) { /* ignore */ }
+          try { const a = sessionStorage.getItem('ataa-after-login'); if (a && /^#\/[\w\/-]*$/.test(a)) after = a; sessionStorage.removeItem('ataa-after-login'); } catch (e) { /* ignore */ }
           history.replaceState(null, '', location.pathname + after);
         }
         return user;
