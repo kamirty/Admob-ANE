@@ -268,7 +268,7 @@
   //  الوضع التجريبي: بيانات أمثلة محفوظة في هذا المتصفح فقط
   // ===================================================================
   function demoApi() {
-    const KEY = 'ataa-demo-v2';
+    const KEY = 'ataa-demo-v3';
     const DEMO_UID = 'demo-teacher-you';
     let db = null;
     let user = null;
@@ -279,12 +279,12 @@
 
     function seed() {
       const teachers = [
-        ['t-ali', 'أ. علي حسين', 'رياضيات — 12 سنة خبرة'],
-        ['t-zainab', 'أ. زينب كاظم', 'فيزياء وكيمياء'],
-        ['t-mustafa', 'أ. مصطفى عبد الله', 'لغة عربية'],
-        ['t-noor', 'أ. نور الهدى سامي', 'لغة إنكليزية'],
-        ['t-haider', 'أ. حيدر جاسم', 'أحياء'],
-        ['t-maryam', 'أ. مريم عادل', 'رياضيات وعلوم للمرحلة الابتدائية'],
+        ['t-ali', 'أ. سالم البلوشي', 'رياضيات — 12 سنة خبرة'],
+        ['t-zainab', 'أ. مريم الحارثية', 'فيزياء وكيمياء'],
+        ['t-mustafa', 'أ. خالد الراشدي', 'لغة عربية'],
+        ['t-noor', 'أ. عائشة الهنائية', 'لغة إنجليزية'],
+        ['t-haider', 'أ. يوسف العبري', 'أحياء وعلوم'],
+        ['t-maryam', 'أ. شيماء الكندية', 'رياضيات وعلوم للحلقة الأولى'],
       ].map(([id, name, sp]) => ({
         id, display_name: name, specialty: sp, bio: 'معلم متطوع (مثال في الوضع التجريبي).',
         youtube_channel: 'https://www.youtube.com/@example', avatar_url: null, status: 'approved', is_admin: false,
@@ -296,32 +296,32 @@
       const add = (t, grade, subject, title, start, mins, extra) => {
         sessions.push(Object.assign({
           id: uid(), teacher_id: t, grade, subject, title, kind: 'live',
-          description: 'شرح مبسّط مع أمثلة وحل أسئلة وزارية سابقة. جهّز دفترك وقلمك.',
+          description: 'شرح مبسّط مع أمثلة وحل أسئلة امتحانات سابقة. جهّز دفترك وقلمك.',
           starts_at: iso(start), ends_at: iso(+start + mins * 60000), video_url: 'https://youtu.be/demo-video',
           recording_url: null, status: 'scheduled', hidden: false, created_at: iso(Date.now() - 864e5),
         }, extra || {}));
       };
       const now = new Date();
       const liveStart = new Date(now.getTime() - 20 * 60000);
-      // الآن: معلمان يشرحان للثالث المتوسط في نفس الوقت
-      add('t-ali', 'm3', 'math', 'المعادلات من الدرجة الثانية — الحل بالدستور', liveStart, 60);
-      add('t-zainab', 'm3', 'physics', 'قوانين نيوتن مع مسائل محلولة', liveStart, 75);
-      add('t-haider', 'i6b', 'biology', 'الوراثة: مسائل الهجين الثنائي', new Date(now.getTime() - 10 * 60000), 90);
-      add('t-mustafa', 'm3', 'arabic', 'إعراب الأفعال الخمسة', new Date(now.getTime() + 10 * 60000), 45);
+      // الآن: معلمان يشرحان للصف العاشر في نفس الوقت
+      add('t-ali', 'g10', 'math', 'المعادلات التربيعية — الحل بالقانون العام', liveStart, 60);
+      add('t-zainab', 'g10', 'science', 'قوانين نيوتن مع مسائل محلولة', liveStart, 75);
+      add('t-haider', 'g12', 'biology', 'الوراثة: مسائل التهجين الثنائي', new Date(now.getTime() - 10 * 60000), 90);
+      add('t-mustafa', 'g10', 'arabic', 'إعراب الأفعال الخمسة', new Date(now.getTime() + 10 * 60000), 45);
       const plan = [
-        ['t-ali', 'm3', 'math', ['تحليل المقادير الجبرية', 'المتباينات', 'الهندسة الإحداثية', 'حل أسئلة وزارية']],
-        ['t-maryam', 'm3', 'math', ['تحليل المقادير الجبرية (شرح ثانٍ)', 'المتباينات بطريقة مبسطة', 'الدوال', 'مراجعة الفصل الأول']],
-        ['t-zainab', 'm3', 'chemistry', ['الجدول الدوري', 'الأحماض والقواعد', 'المحاليل', 'مراجعة شاملة']],
-        ['t-noor', 'm3', 'english', ['Unit 1: Reading skills', 'Grammar: Present perfect', 'Writing a paragraph', 'Vocabulary review']],
-        ['t-mustafa', 'm3', 'arabic', ['المفعول المطلق', 'النعت', 'البلاغة: التشبيه', 'قصيدة الحفظ']],
-        ['t-haider', 'i6b', 'biology', ['التكاثر في النبات', 'الجهاز العصبي', 'الهرمونات', 'حل أسئلة الوزاري']],
-        ['t-zainab', 'i6b', 'physics', ['المتسعات', 'الحث الكهرومغناطيسي', 'التيار المتناوب', 'الفيزياء الذرية']],
-        ['t-ali', 'i6a', 'math', ['الأعداد المركبة', 'القطوع المخروطية', 'التفاضل', 'التكامل']],
-        ['t-noor', 'i6l', 'english', ['Unit 2: The environment', 'Grammar: Passive voice', 'Literature: short story', 'Exam practice']],
-        ['t-mustafa', 'i6l', 'arabic', ['الممنوع من الصرف', 'العروض', 'الأدب العباسي', 'التعبير']],
-        ['t-maryam', 'p6', 'math', ['الكسور العشرية', 'النسبة والتناسب', 'المساحات', 'مراجعة']],
-        ['t-maryam', 'p6', 'science', ['جسم الإنسان', 'المادة وخواصها', 'الطاقة', 'مراجعة']],
-        ['t-haider', 'm1', 'biology', ['الخلية', 'تصنيف الكائنات', 'النبات', 'مراجعة']],
+        ['t-ali', 'g10', 'math', ['تحليل المقادير الجبرية', 'المتباينات', 'الهندسة الإحداثية', 'حل أسئلة سابقة']],
+        ['t-maryam', 'g10', 'math', ['تحليل المقادير الجبرية (شرح ثانٍ)', 'المتباينات بطريقة مبسطة', 'الدوال', 'مراجعة الفصل الأول']],
+        ['t-zainab', 'g10', 'science', ['الجدول الدوري', 'الأحماض والقواعد', 'المحاليل', 'مراجعة شاملة']],
+        ['t-noor', 'g10', 'english', ['Unit 1: Reading skills', 'Grammar: Present perfect', 'Writing a paragraph', 'Vocabulary review']],
+        ['t-mustafa', 'g10', 'arabic', ['المفعول المطلق', 'النعت', 'البلاغة: التشبيه', 'النصوص الأدبية']],
+        ['t-haider', 'g12', 'biology', ['التكاثر في النبات', 'الجهاز العصبي', 'الهرمونات', 'حل أسئلة الدبلوم']],
+        ['t-zainab', 'g12', 'physics', ['المجال الكهربائي', 'الحث الكهرومغناطيسي', 'التيار المتردد', 'الفيزياء الحديثة']],
+        ['t-ali', 'g12', 'math_adv', ['الأعداد المركبة', 'القطوع المخروطية', 'التفاضل', 'التكامل']],
+        ['t-noor', 'g12', 'english', ['Unit 2: The environment', 'Grammar: Passive voice', 'Reading comprehension', 'Exam practice']],
+        ['t-mustafa', 'g11', 'arabic', ['الممنوع من الصرف', 'العروض', 'الأدب العباسي', 'التعبير']],
+        ['t-maryam', 'g4', 'math', ['الكسور العشرية', 'الضرب والقسمة', 'المساحات', 'مراجعة']],
+        ['t-maryam', 'g4', 'science', ['جسم الإنسان', 'المادة وخواصها', 'الطاقة', 'مراجعة']],
+        ['t-haider', 'g7', 'science', ['الخلية', 'تصنيف الكائنات', 'النبات', 'مراجعة']],
       ];
       const hours = [16, 17, 18, 19, 20];
       plan.forEach(([t, g, s, titles], pi) => {
@@ -335,9 +335,9 @@
         }
       });
       // درس مسجّل
-      add('t-maryam', 'p6', 'math', 'جدول الضرب بطريقة سهلة (درس مسجّل)', at(-1, 9), 20, { kind: 'recorded' });
+      add('t-maryam', 'g4', 'math', 'جدول الضرب بطريقة سهلة (درس مسجّل)', at(-1, 9), 20, { kind: 'recorded' });
       // حصة ملغاة
-      add('t-noor', 'm3', 'english', 'Listening practice', at(1, 21), 45, { status: 'cancelled' });
+      add('t-noor', 'g10', 'english', 'Listening practice', at(1, 21), 45, { status: 'cancelled' });
       // إزالة الحجوزات المزدوجة لنفس المعلم
       const kept = [];
       sessions.sort((a, b) => a.starts_at.localeCompare(b.starts_at)).forEach((s) => {
@@ -345,12 +345,12 @@
           && k.status === 'scheduled' && k.starts_at < s.ends_at && s.starts_at < k.ends_at)) return;
         kept.push(s);
       });
-      return { v: 2, teachers, sessions: kept, reports: [], settings: { auto_approve: true, site_notice: '' }, me: null };
+      return { v: 3, teachers, sessions: kept, reports: [], settings: { auto_approve: true, site_notice: '' }, me: null };
     }
     function load() {
       if (db) return db;
       try { db = JSON.parse(storeGet(KEY) || 'null'); } catch (e) { db = null; }
-      if (!db || db.v !== 2) { db = seed(); save(); }
+      if (!db || db.v !== 3) { db = seed(); save(); }
       return db;
     }
     function save() { storeSet(KEY, JSON.stringify(db)); }

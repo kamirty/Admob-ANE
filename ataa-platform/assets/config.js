@@ -14,7 +14,7 @@ window.APP_CONFIG = {
   CONTACT: '',
 
   // طريقة عرض الأرقام والتواريخ (latn = أرقام 1 2 3، احذفها لأرقام ١ ٢ ٣)
-  LOCALE: 'ar-IQ-u-nu-latn',
+  LOCALE: 'ar-OM-u-nu-latn',
 
   // كم يوماً قادماً يظهر في جدول الطالب
   DAYS_AHEAD: 14,
@@ -22,38 +22,31 @@ window.APP_CONFIG = {
   JOIN_EARLY_MIN: 15,
 
   // ------------------------------------------------------------------
-  // المراحل والصفوف (النظام العراقي). يمكنك التعديل أو الإضافة بحرية.
-  // id: رمز ثابت بالإنكليزية (لا تغيّره بعد بدء النشر) — subjects: مجموعة المواد
-  // exam: صف منتهٍ (امتحان وزاري)
+  // المراحل والصفوف (نظام التعليم في سلطنة عُمان). يمكنك التعديل أو الإضافة بحرية.
+  // id: رمز ثابت بالإنجليزية (لا تغيّره بعد بدء النشر) — subjects: مجموعة المواد
+  // exam: صف امتحانات دبلوم التعليم العام
   // ------------------------------------------------------------------
+  EXAM_TAG: 'دبلوم',
+  EXAM_PILL: 'دبلوم التعليم العام',
   STAGES: [
     {
-      id: 'primary', name: 'الابتدائية', grades: [
-        { id: 'p1', name: 'الأول الابتدائي', short: 'الأول', subjects: 'primary' },
-        { id: 'p2', name: 'الثاني الابتدائي', short: 'الثاني', subjects: 'primary' },
-        { id: 'p3', name: 'الثالث الابتدائي', short: 'الثالث', subjects: 'primary' },
-        { id: 'p4', name: 'الرابع الابتدائي', short: 'الرابع', subjects: 'primary' },
-        { id: 'p5', name: 'الخامس الابتدائي', short: 'الخامس', subjects: 'primary' },
-        { id: 'p6', name: 'السادس الابتدائي', short: 'السادس', subjects: 'primary', exam: true },
+      id: 'cycle1', name: 'الحلقة الأولى (1–4)', grades: [
+        { id: 'g1', name: 'الصف الأول', short: 'الأول', subjects: 'cycle1' },
+        { id: 'g2', name: 'الصف الثاني', short: 'الثاني', subjects: 'cycle1' },
+        { id: 'g3', name: 'الصف الثالث', short: 'الثالث', subjects: 'cycle1' },
+        { id: 'g4', name: 'الصف الرابع', short: 'الرابع', subjects: 'cycle1' },
       ],
     },
     {
-      id: 'middle', name: 'المتوسطة', grades: [
-        { id: 'm1', name: 'الأول المتوسط', short: 'الأول', subjects: 'middle' },
-        { id: 'm2', name: 'الثاني المتوسط', short: 'الثاني', subjects: 'middle' },
-        { id: 'm3', name: 'الثالث المتوسط', short: 'الثالث', subjects: 'middle', exam: true },
-      ],
-    },
-    {
-      id: 'prep', name: 'الإعدادية', grades: [
-        { id: 'i4s', name: 'الرابع العلمي', short: 'الرابع العلمي', subjects: 'science' },
-        { id: 'i4l', name: 'الرابع الأدبي', short: 'الرابع الأدبي', subjects: 'literary' },
-        { id: 'i5b', name: 'الخامس الأحيائي', short: 'الخامس الأحيائي', subjects: 'science' },
-        { id: 'i5a', name: 'الخامس التطبيقي', short: 'الخامس التطبيقي', subjects: 'applied' },
-        { id: 'i5l', name: 'الخامس الأدبي', short: 'الخامس الأدبي', subjects: 'literary' },
-        { id: 'i6b', name: 'السادس الأحيائي', short: 'السادس الأحيائي', subjects: 'science', exam: true },
-        { id: 'i6a', name: 'السادس التطبيقي', short: 'السادس التطبيقي', subjects: 'applied', exam: true },
-        { id: 'i6l', name: 'السادس الأدبي', short: 'السادس الأدبي', subjects: 'literary', exam: true },
+      id: 'cycle2', name: 'الحلقة الثانية (5–12)', grades: [
+        { id: 'g5', name: 'الصف الخامس', short: 'الخامس', subjects: 'cycle2' },
+        { id: 'g6', name: 'الصف السادس', short: 'السادس', subjects: 'cycle2' },
+        { id: 'g7', name: 'الصف السابع', short: 'السابع', subjects: 'cycle2' },
+        { id: 'g8', name: 'الصف الثامن', short: 'الثامن', subjects: 'cycle2' },
+        { id: 'g9', name: 'الصف التاسع', short: 'التاسع', subjects: 'cycle2' },
+        { id: 'g10', name: 'الصف العاشر', short: 'العاشر', subjects: 'cycle2' },
+        { id: 'g11', name: 'الصف الحادي عشر', short: 'الحادي عشر', subjects: 'post' },
+        { id: 'g12', name: 'الصف الثاني عشر', short: 'الثاني عشر', subjects: 'post', exam: true },
       ],
     },
   ],
@@ -61,28 +54,28 @@ window.APP_CONFIG = {
   SUBJECTS: {
     islamic: 'التربية الإسلامية',
     arabic: 'اللغة العربية',
-    english: 'اللغة الإنكليزية',
-    kurdish: 'اللغة الكردية',
-    french: 'اللغة الفرنسية',
+    english: 'اللغة الإنجليزية',
     math: 'الرياضيات',
+    math_core: 'الرياضيات الأساسية',
+    math_adv: 'الرياضيات المتقدمة',
     science: 'العلوم',
-    social: 'الاجتماعيات',
+    social: 'الدراسات الاجتماعية',
     physics: 'الفيزياء',
     chemistry: 'الكيمياء',
     biology: 'الأحياء',
-    computer: 'الحاسوب',
+    earth: 'علوم الأرض والبيئة',
+    it: 'تقنية المعلومات',
+    life_skills: 'المهارات الحياتية',
     history: 'التاريخ',
-    geography: 'الجغرافية',
-    economics: 'الاقتصاد',
-    philosophy: 'الفلسفة وعلم النفس',
+    geography: 'الجغرافيا والتقنيات الحديثة',
+    homeland: 'هذا وطني',
     other: 'مراجعة عامة / أخرى',
   },
 
   SUBJECT_SETS: {
-    primary: ['arabic', 'math', 'science', 'english', 'islamic', 'social', 'kurdish', 'other'],
-    middle: ['math', 'physics', 'chemistry', 'biology', 'arabic', 'english', 'islamic', 'social', 'computer', 'kurdish', 'french', 'other'],
-    science: ['math', 'physics', 'chemistry', 'biology', 'arabic', 'english', 'islamic', 'computer', 'kurdish', 'french', 'other'],
-    applied: ['math', 'physics', 'chemistry', 'arabic', 'english', 'islamic', 'computer', 'kurdish', 'french', 'other'],
-    literary: ['arabic', 'english', 'math', 'history', 'geography', 'economics', 'philosophy', 'islamic', 'kurdish', 'french', 'other'],
+    cycle1: ['arabic', 'math', 'science', 'english', 'islamic', 'social', 'life_skills', 'other'],
+    cycle2: ['math', 'science', 'arabic', 'english', 'islamic', 'social', 'it', 'life_skills', 'other'],
+    post: ['math_core', 'math_adv', 'physics', 'chemistry', 'biology', 'arabic', 'english', 'islamic',
+      'earth', 'geography', 'history', 'homeland', 'it', 'other'],
   },
 };

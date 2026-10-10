@@ -304,10 +304,10 @@
         <div class="live-strip" id="live-list"></div>
       </section>
       <section class="section">
-        <div class="section-head"><h2>اختر صفّك</h2><span class="muted">صفوف الامتحانات الوزارية عليها علامة «وزاري»</span></div>
+        <div class="section-head"><h2>اختر صفّك</h2><span class="muted">صف دبلوم التعليم العام عليه علامة «${esc(C.EXAM_TAG)}»</span></div>
         <div class="stages">${C.STAGES.map((st) => `
           <div class="stage"><h2>${esc(st.name)}</h2>
-            <div class="grade-grid">${st.grades.map((g) => `<a class="grade-chip${g.id === mine ? ' cur' : ''}" href="#/g/${esc(g.id)}"><span>${esc(g.short)}</span>${g.exam ? '<span class="tag-exam">وزاري</span>' : ''}</a>`).join('')}</div>
+            <div class="grade-grid">${st.grades.map((g) => `<a class="grade-chip${g.id === mine ? ' cur' : ''}" href="#/g/${esc(g.id)}"><span>${esc(g.short)}</span>${g.exam ? `<span class="tag-exam">${esc(C.EXAM_TAG)}</span>` : ''}</a>`).join('')}</div>
           </div>`).join('')}
         </div>
       </section>
@@ -354,7 +354,7 @@
     view.innerHTML = `
       <header class="page-head">
         <nav class="crumbs" aria-label="مسار التنقل"><a href="#/">الصفوف</a><span>›</span><span>${esc(g.stage.name)}</span></nav>
-        <div class="title-row"><h1>${esc(g.name)}</h1>${g.exam ? '<span class="pill pill-exam">صف وزاري</span>' : ''}<span class="spacer"></span><a class="btn btn-ghost btn-sm" href="#/">تغيير الصف</a></div>
+        <div class="title-row"><h1>${esc(g.name)}</h1>${g.exam ? `<span class="pill pill-exam">${esc(C.EXAM_PILL)}</span>` : ''}<span class="spacer"></span><a class="btn btn-ghost btn-sm" href="#/">تغيير الصف</a></div>
         <nav class="tabs" aria-label="أقسام الصف">
           <a href="#/g/${esc(gradeId)}"${tab ? '' : ' aria-current="page"'}>جدول الحصص</a>
           <a href="#/g/${esc(gradeId)}/rec"${tab ? ' aria-current="page"' : ''}>التسجيلات</a>
@@ -717,7 +717,7 @@
           <input class="input" id="pf-name" required minlength="2" maxlength="60" value="${esc(p.display_name || (app.user.name ? 'أ. ' + app.user.name : ''))}" placeholder="مثال: أ. علي حسين">
           <span class="hint">يُفضّل أن يبدأ بـ «أ.» أو «د.»</span></div>
         <div class="field"><label for="pf-spec">التخصص</label>
-          <input class="input" id="pf-spec" maxlength="120" value="${esc(p.specialty || '')}" placeholder="مثال: رياضيات للمرحلة الإعدادية — 10 سنوات خبرة"></div>
+          <input class="input" id="pf-spec" maxlength="120" value="${esc(p.specialty || '')}" placeholder="مثال: رياضيات لما بعد الأساسي — 10 سنوات خبرة"></div>
         <div class="field"><label for="pf-bio">نبذة قصيرة (اختياري)</label>
           <textarea class="input" id="pf-bio" maxlength="400" rows="3" placeholder="عرّف الطلاب بنفسك وبطريقة شرحك">${esc(p.bio || '')}</textarea></div>
         <div class="field"><label for="pf-yt">رابط قناتك على يوتيوب</label>
@@ -1051,7 +1051,7 @@
         if (tok !== app.token) return;
         box.innerHTML = `<form class="form" id="setf">
           <label class="check"><input type="checkbox" id="set-auto"${st.auto_approve ? ' checked' : ''}><span><b>اعتماد المعلمين الجدد تلقائياً</b><br><span class="muted small">إذا أُطفئ هذا الخيار، لا تظهر حصص المعلم الجديد للطلاب حتى تعتمده من تبويب «المعلمون». يُنصح بإطفائه.</span></span></label>
-          <div class="field"><label for="set-notice">إعلان أعلى المنصة (اختياري)</label><textarea class="input" id="set-notice" maxlength="300" rows="2" placeholder="مثال: تبدأ مراجعات الامتحانات الوزارية يوم الأحد">${esc(st.site_notice || '')}</textarea></div>
+          <div class="field"><label for="set-notice">إعلان أعلى المنصة (اختياري)</label><textarea class="input" id="set-notice" maxlength="300" rows="2" placeholder="مثال: تبدأ مراجعات امتحانات الدبلوم يوم الأحد">${esc(st.site_notice || '')}</textarea></div>
           <div class="form-actions"><button class="btn btn-primary" type="submit">حفظ الإعدادات</button></div></form>`;
         $('#setf').addEventListener('submit', async (ev) => {
           ev.preventDefault();
