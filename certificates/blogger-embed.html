@@ -10,6 +10,7 @@
 @media(max-width:900px){.shp .wrap{grid-template-columns:1fr}}.shp .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}.shp .step{display:flex;align-items:center;gap:8px;font-weight:700;margin:4px 0 10px}.shp .step i{font-style:normal;width:26px;height:26px;border-radius:50%;background:#000;color:var(--accent);display:grid;place-items:center;font-size:14px}.shp label{display:block;font-size:14px;color:var(--muted);margin:10px 0 4px}.shp input,.shp select,.shp textarea{width:100%;font:inherit;color:var(--text);background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:9px 11px}.shp textarea{min-height:170px;resize:vertical}.shp input:focus,.shp select:focus,.shp textarea:focus{outline:2px solid var(--accent);border-color:transparent}.shp .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.shp .hint{font-size:12px;color:var(--muted);margin-top:4px}.shp .tpls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.shp .tpl{border:2px solid var(--line);border-radius:10px;padding:6px;cursor:pointer;text-align:center;font-size:12px;background:var(--soft)}.shp .tpl.on{border-color:var(--accent);box-shadow:0 0 0 2px #000}.shp .tpl .th{display:block;aspect-ratio:297/210;border-radius:6px;overflow:hidden;margin-bottom:4px;box-shadow:0 1px 3px rgba(0,0,0,.15)}.shp .tpl .th svg{width:100%;height:100%;display:block}.shp .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:12px 18px;font:inherit;font-weight:700;cursor:pointer}.shp .btn.main{background:#000;color:var(--accent);width:100%;font-size:17px;margin-top:14px}.shp .btn.ghost{background:var(--soft);border:1px solid var(--line);color:var(--text)}.shp .bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}.shp .count{color:var(--muted)}.shp #preview{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.shp .wrap>*{min-width:0}.shp .scale{width:100%;overflow:hidden;border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,.12)}.shp .empty{text-align:center;color:var(--muted);padding:60px 10px}.shp footer{text-align:center;color:#ccc;background:#000;padding:24px 16px;font-size:14px}
 
 /* ===== الشهادة (A4 أفقي = 297×210mm) ===== */.shp .cert{width:297mm;height:210mm;position:relative;background:#fff;color:#222;overflow:hidden;transform-origin:top right;font-family:Tajawal,sans-serif}.shp .cert .frame{position:absolute;inset:10mm;display:flex;flex-direction:column;align-items:center;text-align:center;padding:12mm 18mm}.shp .cert .head{width:100%;display:flex;justify-content:space-between;align-items:flex-start;font-size:13pt;line-height:1.5}.shp .cert .head img{max-height:24mm;max-width:40mm}.shp .cert .title{font-family:'Aref Ruqaa',serif;font-size:46pt;margin:2mm 0 0;line-height:1.3}.shp .cert .lead{font-size:17pt;margin-top:4mm}.shp .cert .name{font-family:'Reem Kufi',sans-serif;font-weight:700;white-space:nowrap;margin:3mm 0;line-height:1.4;max-width:100%}.shp .cert .body{font-family:Amiri,serif;font-size:18pt;max-width:220mm;line-height:1.8}.shp .cert .foot{margin-top:auto;width:100%;display:flex;justify-content:space-between;font-size:13pt}.shp .cert .foot div{min-width:60mm}.shp .cert .foot b{display:block;margin-top:2mm}.shp .cert .date{font-size:12pt;color:#666;margin-top:3mm}.shp .cert>svg.bg{position:absolute;inset:0;width:100%;height:100%}.shp .cert .frame{z-index:1}.shp .cert .title{margin-top:auto!important}.shp .cert .name{position:relative}
+/* شخصيات الطلاب */.shp .t-cycle1 .frame,.shp .t-cycle2 .frame,.shp .t-secondary .frame{inset:14mm 16mm 14mm 120mm}.shp .t-cycle1 .title,.shp .t-cycle2 .title,.shp .t-secondary .title{font-family:Lalezar,sans-serif;font-size:44pt;color:var(--c)}.shp .t-cycle1 .name,.shp .t-cycle2 .name,.shp .t-secondary .name{font-family:Cairo,sans-serif;font-weight:800;color:#1d1d2c}.shp .t-cycle1 .name::after,.shp .t-cycle2 .name::after,.shp .t-secondary .name::after{content:"";display:block;height:1.4mm;width:40%;margin:1mm auto 0;border-radius:2mm;background:linear-gradient(90deg,transparent,var(--c),transparent)}.shp .t-cycle1 .body,.shp .t-cycle2 .body,.shp .t-secondary .body{font-family:Tajawal,sans-serif}
 /* ملكي */.shp .t-royal .frame{inset:20mm 24mm 16mm}.shp .t-royal .title{font-family:'Aref Ruqaa',serif;color:#b8892b;font-size:50pt}.shp .t-royal .name{font-family:'El Messiri',serif;color:var(--c)}.shp .t-royal .lead,.shp .t-royal .body{color:#333}.shp .t-royal .foot{padding:0 6mm}
 /* نجوم */.shp .t-stars .frame{inset:14mm 30mm}.shp .t-stars .title{font-family:Lalezar,sans-serif;font-size:50pt;color:var(--c);text-shadow:2px 2px 0 #fff,4px 4px 0 #ffd16699}.shp .t-stars .name{font-family:Lalezar,sans-serif;font-weight:400;color:#e63973}.shp .t-stars .body{font-family:Tajawal,sans-serif;font-weight:500}
 /* عصري */.shp .t-modern .frame{inset:12mm 14mm 12mm 92mm;align-items:center}.shp .t-modern .title{font-family:Cairo,sans-serif;font-weight:800;font-size:40pt;color:#1d1d2c;letter-spacing:-.5px}.shp .t-modern .title::after{content:"";display:block;width:30mm;height:1.6mm;background:var(--c);margin:2mm auto 0;border-radius:2mm}.shp .t-modern .name{font-family:Cairo,sans-serif;font-weight:800;color:var(--c)}.shp .t-modern .body{font-family:Tajawal,sans-serif}
@@ -94,7 +95,59 @@ const defs=c=>`<defs><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop
 const medal=(x,y,r,c)=>`<g><polygon points="${x-r*.55},${y} ${x-r*.95},${y+r*2.1} ${x-r*.5},${y+r*1.75} ${x-r*.15},${y+r*2.15} ${x+.05*r},${y}" fill="${c}"/><polygon points="${x+r*.55},${y} ${x+r*.95},${y+r*2.1} ${x+r*.5},${y+r*1.75} ${x+r*.15},${y+r*2.15} ${x-.05*r},${y}" fill="${c}" opacity=".85"/>${burst(x,y,r,24,GOLD)}<circle cx="${x}" cy="${y}" r="${r*.74}" fill="${c}"/><circle cx="${x}" cy="${y}" r="${r*.66}" fill="none" stroke="#f3d27a" stroke-width=".6" stroke-dasharray="1 1"/>${star(x,y,r*.45,GOLD)}</g>`;
 let UID=0;
 const svg=(inner,c)=>{const u='g'+(++UID);return `<svg class="bg" viewBox="0 0 297 210" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">${defs(c)}${inner}</svg>`.replace(/#(gold|sky)\)/g,`#$1${u})`).replace(/id="(gold|sky)"/g,`id="$1${u}"`)};
+
+// ===== شخصيات الطلاب (رسم مسطح بلا ملامح) — الأصل عند القدمين =====
+const SKIN='#f3cfb3';
+const girlYoung=(x,y,k,dress)=>`<g transform="translate(${x},${y}) scale(${k})">
+ <ellipse cx="0" cy="0" rx="24" ry="3.2" fill="#000" opacity=".12"/>
+ <rect x="-9" y="-24" width="6" height="21" rx="2" fill="#f4f4f4"/><rect x="3" y="-24" width="6" height="21" rx="2" fill="#f4f4f4"/>
+ <ellipse cx="-6.5" cy="-2.2" rx="6" ry="3" fill="#2b2b2b"/><ellipse cx="6.5" cy="-2.2" rx="6" ry="3" fill="#2b2b2b"/>
+ <path d="M-12 -82Q0 -86 12 -82L22 -24Q0 -19 -22 -24Z" fill="${dress}"/>
+ <path d="M-12 -80Q-19 -60 -4 -47" stroke="${dress}" stroke-width="7" fill="none" stroke-linecap="round" filter="brightness(.9)"/>
+ <path d="M12 -80Q19 -60 4 -47" stroke="${dress}" stroke-width="7" fill="none" stroke-linecap="round"/>
+ <circle cx="-2.5" cy="-46.5" r="3.6" fill="${SKIN}"/><circle cx="2.5" cy="-46" r="3.6" fill="${SKIN}"/>
+ <path d="M-12 -97Q-13 -113 0 -113Q13 -113 12 -97L17 -79Q0 -71 -17 -79Z" fill="#fff" stroke="#e3e3e3" stroke-width=".6"/>
+ <ellipse cx="0" cy="-97" rx="7.5" ry="9" fill="${SKIN}"/></g>`;
+const girlOlder=(x,y,k,dress)=>`<g transform="translate(${x},${y}) scale(${k})">
+ <ellipse cx="0" cy="0" rx="26" ry="3.4" fill="#000" opacity=".12"/>
+ <rect x="-9.5" y="-34" width="6.5" height="31" rx="2" fill="#f4f4f4"/><rect x="3" y="-34" width="6.5" height="31" rx="2" fill="#f4f4f4"/>
+ <path d="M-12 -5h10v-3h-10z" fill="#fff"/><ellipse cx="-7" cy="-2.4" rx="6.5" ry="3" fill="#1d1d1d"/><ellipse cx="7" cy="-2.4" rx="6.5" ry="3" fill="#1d1d1d"/>
+ <path d="M-14 -104Q0 -108 14 -104L16 -60L-16 -60Z" fill="#fff" stroke="#e6e6e6" stroke-width=".5"/>
+ <path d="M-11 -100L11 -100L14 -72L24 -32Q0 -27 -24 -32L-14 -72Z" fill="${dress}"/>
+ <path d="M-14 -102Q-22 -78 -5 -60" stroke="#fff" stroke-width="7.5" fill="none" stroke-linecap="round"/>
+ <path d="M14 -102Q22 -78 5 -60" stroke="#fff" stroke-width="7.5" fill="none" stroke-linecap="round"/>
+ <circle cx="-2.6" cy="-59" r="3.8" fill="${SKIN}"/><circle cx="2.6" cy="-58.4" r="3.8" fill="${SKIN}"/>
+ <path d="M-12.5 -120Q-14 -137 0 -137Q14 -137 12.5 -120L19 -99Q0 -90 -19 -99Z" fill="#fff" stroke="#e3e3e3" stroke-width=".6"/>
+ <ellipse cx="0" cy="-120" rx="7.8" ry="9.5" fill="${SKIN}"/></g>`;
+const boyTeen=(x,y,k,kumma)=>`<g transform="translate(${x},${y}) scale(${k})">
+ <ellipse cx="0" cy="0" rx="26" ry="3.4" fill="#000" opacity=".12"/>
+ <path d="M-12 -1h9l-1 -4h-8zM3 -1h9l0 -4h-8z" fill="#3a2a22"/><circle cx="-7" cy="-4" r="2.2" fill="${SKIN}"/><circle cx="7" cy="-4" r="2.2" fill="${SKIN}"/>
+ <path d="M-16 -126Q0 -131 16 -126L23 -78L20 -8Q0 -4 -20 -8L-23 -78Z" fill="#fff" stroke="#d5dbe4" stroke-width=".7"/>
+ <path d="M-16 -125L-24 -74L-19 -72L-14 -100" fill="#fbfbfb" stroke="#d5dbe4" stroke-width=".6"/>
+ <path d="M16 -125L24 -74L19 -72L14 -100" fill="#fbfbfb" stroke="#d5dbe4" stroke-width=".6"/>
+ <ellipse cx="-21.5" cy="-69" rx="3" ry="4" fill="${SKIN}"/><ellipse cx="21.5" cy="-69" rx="3" ry="4" fill="${SKIN}"/>
+ <path d="M0 -127V-92" stroke="#d5dbe4" stroke-width=".6"/><path d="M0 -125l-1.5 12h3z" fill="#e6e9ef"/><circle cx="0" cy="-112" r="1.4" fill="#e6e9ef"/>
+ <rect x="-3" y="-133" width="6" height="7" fill="${SKIN}"/>
+ <ellipse cx="-8.6" cy="-142" rx="1.6" ry="2.6" fill="#2b2b2b"/><ellipse cx="8.6" cy="-142" rx="1.6" ry="2.6" fill="#2b2b2b"/>
+ <ellipse cx="0" cy="-142" rx="8.5" ry="10.5" fill="${SKIN}"/>
+ <path d="M-9.5 -147Q-10 -160 0 -160Q10 -160 9.5 -147Z" fill="#fff" stroke="#ddd" stroke-width=".5"/>
+ ${[...Array(7)].map((_,i)=>`<circle cx="${-7.5+i*2.5}" cy="-150.5" r=".9" fill="${i%2?kumma:'#2a9d8f'}"/><circle cx="${-6.25+i*2.5}" cy="-154" r=".7" fill="${i%2?'#2a9d8f':kumma}"/>`).join('')}
+ <path d="M-9.6 -147.5H9.6" stroke="${kumma}" stroke-width=".8"/></g>`;
+const scene=(c)=>`<rect width="297" height="210" fill="#f5f6f8"/>
+ <g opacity=".5" fill="#e3e6eb"><rect x="0" y="70" width="105" height="3"/><rect x="0" y="112" width="105" height="3"/>
+ ${[4,10,15,22,27,33].map((x,i)=>`<rect x="${x}" y="${50+i%3*3}" width="${4+i%2}" height="${20-i%3*3}"/>`).join('')}
+ ${[55,61,66].map(x=>`<rect x="${x}" y="95" width="4.5" height="17"/>`).join('')}
+ <circle cx="88" cy="58" r="10" fill="none" stroke="#e3e6eb" stroke-width="1.4"/><path d="M78 58h20M88 48v20M81 51q7 7 14 0M81 65q7-7 14 0" stroke="#e3e6eb" stroke-width="1" fill="none"/></g>
+ <rect x="0" y="182" width="105" height="28" fill="#e9ebef"/><path d="M0 188H105M0 196H105" stroke="#dfe2e7" stroke-width=".8"/>
+ <path d="M105 0H297V210H105Z" fill="#fff"/><path d="M105 0Q122 105 105 210" fill="#fff" stroke="none"/>
+ <path d="M102 0Q124 105 102 210" stroke="${c}" stroke-width="2.4" fill="none"/><path d="M107 0Q129 105 107 210" stroke="${GOLD}" stroke-width="1" fill="none"/>
+ <rect x="117" y="9" width="171" height="192" rx="4" fill="none" stroke="${c}" stroke-width=".5" opacity=".5"/>
+ ${star(276,22,4,GOLD)}${star(286,34,2.4,c)}${star(270,190,3,c)}`;
 const TPLS={
+ cycle1:{n:'طالبات الحلقة الأولى',c:'#8a1c3c',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="128" r="44" fill="${c}" opacity=".08"/>`+girlYoung(52,190,1.25,c)},
+ cycle2:{n:'طالبات الحلقة الثانية',c:'#1b2f5e',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="118" r="48" fill="${c}" opacity=".08"/>`+girlOlder(52,192,1.13,c)},
+ secondary:{n:'طلاب الثانوية',c:'#0f6b5c',g:'m',svg:c=>scene(c)+`<circle cx="52" cy="110" r="50" fill="${c}" opacity=".1"/>`+boyTeen(52,193,1.08,'#8a1c3c')},
+
  royal:{n:'ملكي',c:'#14365f',svg:c=>{
   const corner=(tx,sx,sy)=>`<g transform="translate(${tx}) scale(${sx},${sy})"><path d="M0 0H70L0 70Z" fill="${c}"/><path d="M0 0H52L0 52Z" fill="${GOLD}" opacity=".9"/><path d="M0 0H40L0 40Z" fill="${c}"/></g>`;
   return `<rect width="297" height="210" fill="#fffdf7"/>${corner('0,0',1,1)}${corner('297,0',-1,1)}<g transform="translate(0,210) scale(1,-1)">${corner('0,0',1,1)}${corner('297,0',-1,1)}</g>
@@ -151,7 +204,7 @@ const fields=['names','gender','title','color','reason','custom','school','grade
 REASONS.forEach((r,i)=>$('reason').add(new Option(r[0],i)));
 $('reason').add(new Option('سبب آخر…','custom'));
 Object.entries(TPLS).forEach(([k,t])=>{const d=document.createElement('div');d.className='tpl';d.dataset.k=k;
- d.innerHTML=`<span class="th">${svg(t.svg(t.c)).replace('class="bg"','')}</span>${t.n}`;d.onclick=()=>{S.tpl=k;$('color').value=t.c;render()};$('tpls').append(d)});
+ d.innerHTML=`<span class="th">${svg(t.svg(t.c)).replace('class="bg"','')}</span>${t.n}`;d.onclick=()=>{S.tpl=k;$('color').value=t.c;if(t.g)$('gender').value=t.g;render()};$('tpls').append(d)});
 $('date').value=new Date().toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
 
 try{const s=JSON.parse(localStorage.getItem('certs')||'{}');fields.forEach(f=>{if(f!=='names'&&s[f]!=null)$(f).value=s[f]});if(s.tpl&&TPLS[s.tpl])S.tpl=s.tpl;else $('color').value=TPLS[S.tpl].c;if(s.logo)S.logo=s.logo}catch(e){}
@@ -177,7 +230,7 @@ function cert({name,f}){
   <div class="foot"><div>المعلم/ة<b>${esc($('teacher').value)||'&nbsp;'}</b></div><div>مدير/ة المدرسة<b>${esc($('principal').value)||'&nbsp;'}</b></div></div>
  </div></div>`}
 
-function fit(root){root.querySelectorAll('.name').forEach(el=>{let s=44;el.style.fontSize=s+'pt';const max=el.parentElement.clientWidth*0.92;
+function fit(root){root.querySelectorAll('.name').forEach(el=>{let s=44;el.style.fontSize=s+'pt';const cs=getComputedStyle(el.parentElement),max=(el.parentElement.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight))*0.98;
  while(el.scrollWidth>max&&s>18){s-=1;el.style.fontSize=s+'pt'}})}
 
 function render(){
