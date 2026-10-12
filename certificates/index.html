@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>شهادتي | مولّد شهادات التقدير - Kamirty.AI</title>
+<title>وسام | مولّد شهادات التقدير - Kamirty.AI</title>
 <meta name="description" content="اكتب أسماء الطلاب واحصل على شهادات تقدير مصممة للجميع دفعة واحدة، جاهزة للطباعة. مجاني ويعمل في متصفحك.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -95,10 +95,13 @@ footer{text-align:center;color:#ccc;background:#000;padding:24px 16px;font-size:
 #print{display:none}
 @media print{
   @page{size:A4 landscape;margin:0}
+  html,body{margin:0!important;padding:0!important;height:auto!important;min-height:0!important}
   body{background:#fff}
   body>*:not(#print){display:none!important}
   #print{display:block}
-  #print .cert{page-break-after:always;break-after:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #print .cert{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #print .cert+.cert{page-break-before:always;break-before:page}
+  .cert{height:209mm!important}
 }
 </style>
 </head>
@@ -106,7 +109,7 @@ footer{text-align:center;color:#ccc;background:#000;padding:24px 16px;font-size:
 
 <a class="home" href="https://www.kamirtyai.com/">→ العودة إلى Kamirty.AI</a>
 <section class="hero">
-  <h1>شهادتي 🏅 مولّد شهادات التقدير</h1>
+  <h1>وسام 🏅 مولّد شهادات التقدير</h1>
   <p>اكتب أسماء الطلاب، واحصل على شهادة مصممة لكل طالب دفعة واحدة، جاهزة للطباعة.</p>
   <div class="badges"><span class="badge">مجاني بالكامل</span><span class="badge">بدون تسجيل</span><span class="badge">الأسماء لا تغادر جهازك</span><span class="badge">A4 جاهز للطباعة</span></div>
 </section>
@@ -153,7 +156,7 @@ footer{text-align:center;color:#ccc;background:#000;padding:24px 16px;font-size:
   </section>
 </main>
 
-<footer>«شهادتي» أداة مجانية من <a href="https://www.kamirtyai.com/">Kamirty.AI</a> · تعمل بالكامل في متصفحك ولا ترفع أي بيانات.</footer>
+<footer>«وسام» أداة مجانية من <a href="https://www.kamirtyai.com/">Kamirty.AI</a> · تعمل بالكامل في متصفحك ولا ترفع أي بيانات.</footer>
 <div id="print"></div>
 
 <script>
