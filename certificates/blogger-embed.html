@@ -58,7 +58,7 @@
     </div>
     <label>سبب التكريم</label>
     <select id="reason"></select>
-    <input id="custom" placeholder="اكتب السبب" style="margin-top:6px;display:none">
+    <div id="customBox" style="display:none"><input id="custom" placeholder="مثال: لمشاركته في مسابقة الروبوت" style="margin-top:6px"><div class="hint">اكتب السبب كما سيظهر في الشهادة. يمكنك كتابة صيغتي المذكر والمؤنث مفصولتين بـ | مثل: لإبداعه | لإبداعها</div></div>
     <div class="row">
       <div><label>اسم المدرسة</label><input id="school" placeholder="مدرسة ..."></div>
       <div><label>الصف / الفصل</label><input id="grade" placeholder="الخامس / أ"></div>
@@ -205,13 +205,25 @@ const REASONS=[
  ['لتميّزه في القراءة','لتميّزها في القراءة'],
  ['لمواظبته وحضوره المثالي','لمواظبتها وحضورها المثالي'],
  ['لفوزه في المسابقة','لفوزها في المسابقة'],
- ['لتعاونه ومبادرته','لتعاونها ومبادرتها']];
+ ['لتعاونه ومبادرته','لتعاونها ومبادرتها'],
+ ['لتحسّن مستواه الدراسي','لتحسّن مستواها الدراسي'],
+ ['لتميّزه في مادة الرياضيات','لتميّزها في مادة الرياضيات'],
+ ['لتميّزه في مادة العلوم','لتميّزها في مادة العلوم'],
+ ['لتميّزه في اللغة العربية','لتميّزها في اللغة العربية'],
+ ['لتميّزه في اللغة الإنجليزية','لتميّزها في اللغة الإنجليزية'],
+ ['لحسن خطه وترتيب دفاتره','لحسن خطها وترتيب دفاترها'],
+ ['لمشاركته الفاعلة في الأنشطة المدرسية','لمشاركتها الفاعلة في الأنشطة المدرسية'],
+ ['لتميّزه في الأنشطة الرياضية','لتميّزها في الأنشطة الرياضية'],
+ ['لتميّزه في الإلقاء والخطابة','لتميّزها في الإلقاء والخطابة'],
+ ['لتمثيله المدرسة خير تمثيل','لتمثيلها المدرسة خير تمثيل'],
+ ['لحسن أخلاقه وتعامله مع زملائه','لحسن أخلاقها وتعاملها مع زميلاتها'],
+ ['لحفاظه على نظافة الصف والمدرسة','لحفاظها على نظافة الصف والمدرسة']];
 const $=id=>document.getElementById(id);
 const S={tpl:'royal',logo:''};
 const fields=['names','gender','title','color','reason','custom','school','grade','teacher','principal','date'];
 
 REASONS.forEach((r,i)=>$('reason').add(new Option(r[0],i)));
-$('reason').add(new Option('سبب آخر…','custom'));
+$('reason').add(new Option('✏️ سبب آخر (اكتبه بنفسك)','custom'));
 Object.entries(TPLS).forEach(([k,t])=>{const d=document.createElement('div');d.className='tpl';d.dataset.k=k;
  d.innerHTML=`<span class="th">${svg(t.svg(t.c)).replace('class="bg"','')}</span>${t.n}`;d.onclick=()=>{S.tpl=k;$('color').value=t.c;if(t.g)$('gender').value=t.g;render()};$('tpls').append(d)});
 $('date').value=new Date().toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
@@ -225,7 +237,8 @@ function parse(){return $('names').value.split(/\r?\n/).map(l=>l.split(/[,\t;]/)
 
 function cert({name,f}){
  const g=f?1:0,r=$('reason').value;
- const reason=r==='custom'?esc($('custom').value):REASONS[r][g];
+ const cp=$('custom').value.split('|').map(x=>x.trim());
+ const reason=r==='custom'?esc(cp[f&&cp[1]?1:0]||''):REASONS[r][g];
  const grade=$('grade').value?` في الصف ${esc($('grade').value)}`:'';
  const school=esc($('school').value);
  const c=$('color').value;
@@ -244,7 +257,7 @@ function fit(root){root.querySelectorAll('.name').forEach(el=>{let s=44;el.style
 
 function render(){
  document.querySelectorAll('.tpl').forEach(t=>t.classList.toggle('on',t.dataset.k===S.tpl));
- $('custom').style.display=$('reason').value==='custom'?'block':'none';
+ $('customBox').style.display=$('reason').value==='custom'?'block':'none';if($('reason').value==='custom'&&document.activeElement===$('reason'))$('custom').focus();
  const list=parse();$('count').textContent=list.length?`${list.length} شهادة جاهزة`:'';
  const pv=$('preview');
  if(!list.length){pv.innerHTML='<div class="card empty">اكتب الأسماء لتظهر المعاينة هنا ✨<br><br>'+'</div>';
@@ -258,7 +271,7 @@ $('printBtn').onclick=()=>{const list=parse();if(!list.length){alert('أضف أ�
  document.fonts.ready.then(()=>window.print())};
 $('file').onchange=e=>{const fl=e.target.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>{$('names').value=rd.result.replace(/^﻿/,'');render()};rd.readAsText(fl,'utf-8')};
 $('logo').onchange=e=>{const fl=e.target.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>{S.logo=rd.result;render()};rd.readAsDataURL(fl)};
-fields.forEach(f=>$(f).addEventListener('input',render));
+fields.forEach(f=>$(f).addEventListener('input',render));$('reason').addEventListener('change',render);
 $('theme').onclick=()=>{const r=$('shahada');r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'};
 addEventListener('resize',scale);document.fonts.ready.then(render);render();
 })();
