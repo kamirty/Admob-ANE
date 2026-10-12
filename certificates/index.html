@@ -72,11 +72,11 @@ footer{text-align:center;color:#ccc;background:#000;padding:24px 16px;font-size:
 .cert .title{margin-top:auto!important}
 .cert .name{position:relative}
 /* شخصيات الطلاب */
-.t-cycle1 .frame,.t-cycle2 .frame,.t-secondary .frame{inset:14mm 16mm 14mm 120mm}
-.t-cycle1 .title,.t-cycle2 .title,.t-secondary .title{font-family:Lalezar,sans-serif;font-size:44pt;color:var(--c)}
-.t-cycle1 .name,.t-cycle2 .name,.t-secondary .name{font-family:Cairo,sans-serif;font-weight:800;color:#1d1d2c}
-.t-cycle1 .name::after,.t-cycle2 .name::after,.t-secondary .name::after{content:"";display:block;height:1.4mm;width:40%;margin:1mm auto 0;border-radius:2mm;background:linear-gradient(90deg,transparent,var(--c),transparent)}
-.t-cycle1 .body,.t-cycle2 .body,.t-secondary .body{font-family:Tajawal,sans-serif}
+.t-cycle1 .frame,.t-cycle2 .frame,.t-secGirl .frame,.t-secBoy .frame{inset:14mm 16mm 14mm 120mm}
+.t-cycle1 .title,.t-cycle2 .title,.t-secGirl .title,.t-secBoy .title{font-family:Lalezar,sans-serif;font-size:44pt;color:var(--c)}
+.t-cycle1 .name,.t-cycle2 .name,.t-secGirl .name,.t-secBoy .name{font-family:Cairo,sans-serif;font-weight:800;color:#1d1d2c}
+.t-cycle1 .name::after,.t-cycle2 .name::after,.t-secGirl .name::after,.t-secBoy .name::after{content:"";display:block;height:1.4mm;width:40%;margin:1mm auto 0;border-radius:2mm;background:linear-gradient(90deg,transparent,var(--c),transparent)}
+.t-cycle1 .body,.t-cycle2 .body,.t-secGirl .body,.t-secBoy .body{font-family:Tajawal,sans-serif}
 /* ملكي */
 .t-royal .frame{inset:20mm 24mm 16mm}
 .t-royal .title{font-family:'Aref Ruqaa',serif;color:#b8892b;font-size:50pt}
@@ -195,9 +195,10 @@ const svg=(inner,c)=>{const u='g'+(++UID);return `<svg class="bg" viewBox="0 0 2
 
 // ===== صور الشخصيات: ضع رابط صورة PNG بخلفية شفافة، أو اتركه فارغًا لاستخدام الرسم المدمج =====
 const CHAR_IMG={
- cycle1:'',     // طالبة الحلقة الأولى
- cycle2:'',     // طالبة الحلقة الثانية
- secondary:''   // طالب الثانوية
+ cycle1:'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEimc8toIxQ66drd2wj5n1y7dr7gFsBPzVBV-Hw2Pkuq9pD3RLfLWIXn4jP0FjlnIyDbRkdZq-XMAQSPHIhjfIJakGiSuD9w8cAy6A3rbPIFKrmQJUktlMfWTK2nTN-MfRjLYsLh0qfGDNyP64vZ0JEKJfsoS5kOE8n_97agg42JfqEAz8u32zN5yLxYpXpy/s1600/cycle1-girl.png',   // الحلقة الأولى - بنت
+ cycle2:'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgQ4I7da_vC0WX9uQw2pEo3ETbKyvKpF1O-dXm6UkQprnYIQ-J3bzQdeVrJY6xCEMVNSmTBshllmL1Q8zn7hCstL_5qRT7-jZzYARfJ3Ig849crQspmb6tEvmcCsyiGo2gkXmtGeVEjqmSeZ-Vo0_rUsEyYtT12e22SuB36aZSYcJQ9wwOYUKun1W9G61y-/s1600/cycle2-boy.png',   // الحلقة الثانية - ولد
+ secGirl:'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhUEyyavWGs1Xs9JJ85-852ZcS6elhuMeeT1iEeMyLGm5hKgFPi4eIwBT2NC0GYsSmMaPjWrKLDUCInboPHgI6HTMPtJ0drPd6Bwx0d-RFWYW2UiyZoOLjK0czdtTXSsyxmdrE2BhsDlfVJGzaA-sTTcUx08AHw-huWCIborvl8hchTmABU6ozFdHJAFRaz/s1600/secondary-girl.png',  // الثانوية - بنت
+ secBoy:'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiRf41KpKqOM_DSCeMT2TiXekMbvOnGkMYXldQ3hFE194OPAlyz4eE9aclhVW_zCdYSUKptqmb-N2yiNPiAIq9zqCRoKhE85T9cOb6ipNwtiwl7vRHMfG93Gb8YZFMFxWCZNOajBs5hG8AkLO1A09evT-abUDWI20qEVoVGmMYdizcZ2J-vQJKW_RFaK9ZF/s1600/secondary-boy.png',   // الثانوية - ولد
 };
 const charImg=url=>`<ellipse cx="52" cy="193" rx="30" ry="3.6" fill="#000" opacity=".12"/><image href="${url}" x="4" y="18" width="96" height="176" preserveAspectRatio="xMidYMax meet"/>`;
 // ===== شخصيات الطلاب (رسم مسطح بلا ملامح) — الأصل عند القدمين =====
@@ -248,9 +249,10 @@ const scene=(c)=>`<rect width="297" height="210" fill="#f5f6f8"/>
  <rect x="117" y="9" width="171" height="192" rx="4" fill="none" stroke="${c}" stroke-width=".5" opacity=".5"/>
  ${star(276,22,4,GOLD)}${star(286,34,2.4,c)}${star(270,190,3,c)}`;
 const TPLS={
- cycle1:{n:'طالبات الحلقة الأولى',c:'#8a1c3c',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="128" r="44" fill="${c}" opacity=".08"/>`+(CHAR_IMG.cycle1?charImg(CHAR_IMG.cycle1):girlYoung(52,190,1.25,c))},
- cycle2:{n:'طالبات الحلقة الثانية',c:'#1b2f5e',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="118" r="48" fill="${c}" opacity=".08"/>`+(CHAR_IMG.cycle2?charImg(CHAR_IMG.cycle2):girlOlder(52,192,1.13,c))},
- secondary:{n:'طلاب الثانوية',c:'#0f6b5c',g:'m',svg:c=>scene(c)+`<circle cx="52" cy="110" r="50" fill="${c}" opacity=".1"/>`+(CHAR_IMG.secondary?charImg(CHAR_IMG.secondary):boyTeen(52,193,1.08,'#8a1c3c'))},
+ cycle1:{n:'الحلقة الأولى - بنت',c:'#8a1c3c',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="122" r="46" fill="${c}" opacity=".08"/>`+(CHAR_IMG.cycle1?charImg(CHAR_IMG.cycle1):girlYoung(52,190,1.25,c))},
+ cycle2:{n:'الحلقة الثانية - ولد',c:'#1d6fa5',g:'m',svg:c=>scene(c)+`<circle cx="52" cy="122" r="46" fill="${c}" opacity=".08"/>`+(CHAR_IMG.cycle2?charImg(CHAR_IMG.cycle2):boyTeen(52,192,.95,'#8a1c3c'))},
+ secGirl:{n:'الثانوية - بنت',c:'#1b2f5e',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="116" r="48" fill="${c}" opacity=".08"/>`+(CHAR_IMG.secGirl?charImg(CHAR_IMG.secGirl):girlOlder(52,192,1.13,c))},
+ secBoy:{n:'الثانوية - ولد',c:'#0f6b5c',g:'m',svg:c=>scene(c)+`<circle cx="52" cy="110" r="50" fill="${c}" opacity=".1"/>`+(CHAR_IMG.secBoy?charImg(CHAR_IMG.secBoy):boyTeen(52,193,1.08,'#8a1c3c'))},
 
  royal:{n:'ملكي',c:'#14365f',svg:c=>{
   const corner=(tx,sx,sy)=>`<g transform="translate(${tx}) scale(${sx},${sy})"><path d="M0 0H70L0 70Z" fill="${c}"/><path d="M0 0H52L0 52Z" fill="${GOLD}" opacity=".9"/><path d="M0 0H40L0 40Z" fill="${c}"/></g>`;
