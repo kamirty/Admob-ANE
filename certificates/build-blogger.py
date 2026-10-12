@@ -34,8 +34,12 @@ def walk(c):
     return res
 css=walk(css)
 css+='''
-.shp{direction:rtl;text-align:right;font-size:16px}
-.shp input,.shp select,.shp textarea{max-width:none;box-shadow:none;margin:0}
+.shp{direction:rtl;text-align:right;font-size:16px;letter-spacing:normal;word-spacing:normal;text-transform:none;text-indent:0;font-style:normal;container-type:inline-size}
+@container (max-width:900px){.shp .wrap{grid-template-columns:1fr}}
+.shp input,.shp select,.shp textarea{max-width:none;box-shadow:none;margin:0;height:auto;min-height:0;line-height:1.4;box-sizing:border-box}
+.shp textarea{min-height:170px}
+.shp #header{min-height:70px}
+.shp .tgl input{width:auto}
 .shp svg{max-width:none!important;max-height:none!important}
 .shp .cert>svg.bg,.shp .tpl .th svg{width:100%!important;height:100%!important}
 .shp .cert img{border:0!important;box-shadow:none!important;padding:0!important;background:none!important;max-width:none!important}
