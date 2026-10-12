@@ -96,6 +96,13 @@ const medal=(x,y,r,c)=>`<g><polygon points="${x-r*.55},${y} ${x-r*.95},${y+r*2.1
 let UID=0;
 const svg=(inner,c)=>{const u='g'+(++UID);return `<svg class="bg" viewBox="0 0 297 210" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">${defs(c)}${inner}</svg>`.replace(/#(gold|sky)\)/g,`#$1${u})`).replace(/id="(gold|sky)"/g,`id="$1${u}"`)};
 
+// ===== صور الشخصيات: ضع رابط صورة PNG بخلفية شفافة، أو اتركه فارغًا لاستخدام الرسم المدمج =====
+const CHAR_IMG={
+ cycle1:'',     // طالبة الحلقة الأولى
+ cycle2:'',     // طالبة الحلقة الثانية
+ secondary:''   // طالب الثانوية
+};
+const charImg=url=>`<ellipse cx="52" cy="193" rx="30" ry="3.6" fill="#000" opacity=".12"/><image href="${url}" x="4" y="18" width="96" height="176" preserveAspectRatio="xMidYMax meet"/>`;
 // ===== شخصيات الطلاب (رسم مسطح بلا ملامح) — الأصل عند القدمين =====
 const SKIN='#f3cfb3';
 const girlYoung=(x,y,k,dress)=>`<g transform="translate(${x},${y}) scale(${k})">
@@ -144,9 +151,9 @@ const scene=(c)=>`<rect width="297" height="210" fill="#f5f6f8"/>
  <rect x="117" y="9" width="171" height="192" rx="4" fill="none" stroke="${c}" stroke-width=".5" opacity=".5"/>
  ${star(276,22,4,GOLD)}${star(286,34,2.4,c)}${star(270,190,3,c)}`;
 const TPLS={
- cycle1:{n:'طالبات الحلقة الأولى',c:'#8a1c3c',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="128" r="44" fill="${c}" opacity=".08"/>`+girlYoung(52,190,1.25,c)},
- cycle2:{n:'طالبات الحلقة الثانية',c:'#1b2f5e',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="118" r="48" fill="${c}" opacity=".08"/>`+girlOlder(52,192,1.13,c)},
- secondary:{n:'طلاب الثانوية',c:'#0f6b5c',g:'m',svg:c=>scene(c)+`<circle cx="52" cy="110" r="50" fill="${c}" opacity=".1"/>`+boyTeen(52,193,1.08,'#8a1c3c')},
+ cycle1:{n:'طالبات الحلقة الأولى',c:'#8a1c3c',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="128" r="44" fill="${c}" opacity=".08"/>`+(CHAR_IMG.cycle1?charImg(CHAR_IMG.cycle1):girlYoung(52,190,1.25,c))},
+ cycle2:{n:'طالبات الحلقة الثانية',c:'#1b2f5e',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="118" r="48" fill="${c}" opacity=".08"/>`+(CHAR_IMG.cycle2?charImg(CHAR_IMG.cycle2):girlOlder(52,192,1.13,c))},
+ secondary:{n:'طلاب الثانوية',c:'#0f6b5c',g:'m',svg:c=>scene(c)+`<circle cx="52" cy="110" r="50" fill="${c}" opacity=".1"/>`+(CHAR_IMG.secondary?charImg(CHAR_IMG.secondary):boyTeen(52,193,1.08,'#8a1c3c'))},
 
  royal:{n:'ملكي',c:'#14365f',svg:c=>{
   const corner=(tx,sx,sy)=>`<g transform="translate(${tx}) scale(${sx},${sy})"><path d="M0 0H70L0 70Z" fill="${c}"/><path d="M0 0H52L0 52Z" fill="${GOLD}" opacity=".9"/><path d="M0 0H40L0 40Z" fill="${c}"/></g>`;
