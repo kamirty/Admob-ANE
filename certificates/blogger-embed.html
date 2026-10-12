@@ -56,9 +56,10 @@
     <div class="hint">اسم في كل سطر، ويمكنك اللصق من Excel أو نور. ضع <b>*</b> بعد الاسم لعكس الجنس عن الإعداد العام.<br>
 <b>✨ جديد:</b> أضف لكل طالب أعمدة اختيارية مفصولة بـ <b>|</b> أو منسوخة من Excel: <b>الاسم | السبب | المركز | رسالة المعلم</b><br>
 مثال: <code>سارة خالد * | لفوزها بمسابقة الروبوت | 1 | فخورون بك يا سارة</code> <a href="#" id="sample">جرّب مثالًا</a></div>
+    <div class="hint" id="importMsg" style="color:#0a7d4f;font-weight:700"></div>
     <div class="row">
       <div><label>الجنس الافتراضي</label><select id="gender"><option value="m">طلاب (مذكر)</option><option value="f">طالبات (مؤنث)</option></select></div>
-      <div><label>استيراد ملف</label><input type="file" id="file" accept=".csv,.txt"></div>
+      <div><label>استيراد ملف (Excel أو CSV)</label><input type="file" id="file" accept=".xlsx,.xls,.csv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"></div>
     </div>
 
     <div class="step" style="margin-top:18px"><i>2</i>التصميم والنص</div>
@@ -476,7 +477,44 @@ $('printBtn').onclick=()=>{const list=parse();if(!list.length){alert('\u0623\u06
  loadNameFont().then(()=>{
  let p=document.querySelector('body>.shp-print');if(!p){p=document.createElement('div');p.className='shp shp-print';document.body.appendChild(p)}p.innerHTML=list.map(cert).join('');p.style.cssText='display:block;position:absolute;left:-99999px';fit(p);p.style.cssText='';
  window.print()})};
-$('file').onchange=e=>{const fl=e.target.files[0];e.target.value='';if(!fl)return;const rd=new FileReader();rd.onload=()=>{$('names').value=rd.result.replace(/^\ufeff/,'');render()};rd.readAsText(fl,'utf-8')};
+// ===== \u0627\u0633\u062a\u064a\u0631\u0627\u062f Excel / CSV =====
+async function unzip(buf){const dv=new DataView(buf),u8=new Uint8Array(buf);let e=buf.byteLength-22;while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;if(e<0)throw new Error('zip');
+ const n=dv.getUint16(e+10,true);let o=dv.getUint32(e+16,true);const files={};
+ for(let i=0;i<n;i++){const method=dv.getUint16(o+10,true),csize=dv.getUint32(o+20,true),nl=dv.getUint16(o+28,true),xl=dv.getUint16(o+30,true),cl=dv.getUint16(o+32,true),lo=dv.getUint32(o+42,true);files[new TextDecoder().decode(u8.subarray(o+46,o+46+nl))]={method,csize,lo};o+=46+nl+xl+cl}
+ const get=async name=>{const f=files[name];if(!f)return null;const st=f.lo+30+dv.getUint16(f.lo+26,true)+dv.getUint16(f.lo+28,true),data=u8.subarray(st,st+f.csize);
+  if(f.method===0)return new TextDecoder().decode(data);return await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text()};
+ return{files,get}}
+async function xlsxRows(buf){const z=await unzip(buf),X=t=>new DOMParser().parseFromString(t,'application/xml');
+ let sheet='xl/worksheets/sheet1.xml';try{const wb=X(await z.get('xl/workbook.xml')),first=wb.getElementsByTagName('sheet')[0],rid=first&&(first.getAttribute('r:id')||first.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id'));
+  const rels=X(await z.get('xl/_rels/workbook.xml.rels'));for(const r of rels.getElementsByTagName('Relationship'))if(r.getAttribute('Id')===rid){const t=r.getAttribute('Target');sheet=t.startsWith('/')?t.slice(1):'xl/'+t.replace(/^\.\//,'')}}catch(e){}
+ if(!z.files[sheet])sheet=Object.keys(z.files).filter(k=>/^xl\/worksheets\/[^/]+\.xml$/.test(k)).sort()[0];
+ const ss=[];const sst=await z.get('xl/sharedStrings.xml');if(sst)for(const si of X(sst).getElementsByTagName('si'))ss.push([...si.getElementsByTagName('t')].map(t=>t.textContent).join(''));
+ const rows=[];for(const row of X(await z.get(sheet)).getElementsByTagName('row')){const r=[];for(const c of row.getElementsByTagName('c')){const ref=c.getAttribute('r')||'';let col=0;for(const ch of ref.replace(/\d+/g,''))col=col*26+ch.charCodeAt(0)-64;col=col?col-1:r.length;
+  const t=c.getAttribute('t'),v=c.getElementsByTagName('v')[0];let val='';if(t==='s')val=ss[+(v&&v.textContent)]||'';else if(t==='inlineStr')val=[...c.getElementsByTagName('t')].map(x=>x.textContent).join('');else val=v?v.textContent:'';r[col]=val}
+  rows.push([...r].map(x=>x==null?'':String(x)))}
+ return rows}
+const loadSheetJS=()=>window.XLSX?Promise.resolve():new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc)});
+function csvRows(txt){const d=[',',';','\t'].map(x=>[x,(txt.split('\n')[0].match(new RegExp(x==='\t'?'\\t':x,'g'))||[]).length]).sort((a,b)=>b[1]-a[1])[0][0];const rows=[];let row=[],cell='',q=false;
+ for(let i=0;i<txt.length;i++){const ch=txt[i];if(q){if(ch==='"'){if(txt[i+1]==='"'){cell+='"';i++}else q=false}else cell+=ch}else if(ch==='"')q=true;else if(ch===d){row.push(cell);cell=''}else if(ch==='\n'){row.push(cell.replace(/\r$/,''));rows.push(row);row=[];cell=''}else cell+=ch}
+ if(cell||row.length){row.push(cell.replace(/\r$/,''));rows.push(row)}return rows}
+async function readSheet(fl){const ext=(fl.name.split('.').pop()||'').toLowerCase(),buf=await fl.arrayBuffer();
+ if(ext==='xlsx'&&'DecompressionStream' in window)try{return await xlsxRows(buf)}catch(e){}
+ if(ext==='xlsx'||ext==='xls'){await loadSheetJS();const wb=XLSX.read(buf,{type:'array'});return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:false,defval:''})}
+ let txt;try{txt=new TextDecoder('utf-8',{fatal:true}).decode(buf)}catch(e){txt=new TextDecoder('windows-1256').decode(buf)}
+ txt=txt.replace(/^\ufeff/,'');if(!/[,;\t]/.test(txt))return txt.split(/\r?\n/).map(l=>[l]);return csvRows(txt)}
+const HDR={name:/(\u0627\u0644\u0627\u0633\u0645|\u0627\u0633\u0645|name)/i,reason:/(\u0627\u0644\u0633\u0628\u0628|\u0633\u0628\u0628|reason)/i,rank:/(\u0627\u0644\u0645\u0631\u0643\u0632|\u0627\u0644\u062a\u0631\u062a\u064a\u0628|\u0627\u0644\u0645\u0631\u062a\u0628\u0629|rank)/i,note:/(\u0631\u0633\u0627\u0644\u0629|\u0645\u0644\u0627\u062d\u0638|note|message)/i,gender:/(\u0627\u0644\u062c\u0646\u0633|\u0627\u0644\u0646\u0648\u0639|gender|sex)/i};
+function rowsToLines(rows){rows=rows.map(r=>(r||[]).map(x=>String(x==null?'':x).trim())).filter(r=>r.some(Boolean));if(!rows.length)return[];
+ let h=-1,idx={};for(let i=0;i<Math.min(5,rows.length)&&h<0;i++){const r=rows[i];const ni=r.findIndex(c=>c.length<30&&HDR.name.test(c));if(ni>=0){h=i;idx.name=ni;for(const k of['reason','rank','note','gender'])idx[k]=r.findIndex((c,j)=>j!==ni&&c.length<30&&HDR[k].test(c))}}
+ if(h<0){const w=rows[0].length;let best=0,bs=-1;for(let j=0;j<Math.max(w,1);j++){const sc=rows.filter(r=>/[\u0621-\u064a]/.test(r[j]||'')&&(r[j]||'').trim().split(/\s+/).length>=2).length;if(sc>bs){bs=sc;best=j}}idx={name:best,reason:-1,rank:-1,note:-1,gender:-1}}
+ const def=$('gender').value==='f',out=[];
+ for(const r of rows.slice(h+1)){const name=(r[idx.name]||'').replace(/\s+/g,' ').trim();if(!name||/^\d+$/.test(name)||HDR.name.test(name)&&name.length<12)continue;
+  let flip=false;if(idx.gender>=0){const g=r[idx.gender]||'';const isF=/(\u0623\u0646\u062b\u0649|\u0627\u0646\u062b\u0649|\u0628\u0646\u062a|\u0637\u0627\u0644\u0628\u0629|\u0625\u0646\u0627\u062b|\u0627\u0646\u0627\u062b|female|^f$)/i.test(g),isM=/(\u0630\u0643\u0631|\u0648\u0644\u062f|\u0637\u0627\u0644\u0628|\u0630\u0643\u0648\u0631|male|^m$)/i.test(g);if(isF||isM)flip=isF!==def}
+  const cols=[name+(flip?' *':''),idx.reason>=0?r[idx.reason]||'':'',idx.rank>=0?r[idx.rank]||'':'',idx.note>=0?r[idx.note]||'':''].map(x=>x.replace(/\|/g,'/'));
+  while(cols.length>1&&!cols[cols.length-1])cols.pop();out.push(cols.join(' | '))}
+ return out}
+$('file').onchange=async e=>{const fl=e.target.files[0];e.target.value='';if(!fl)return;$('importMsg').style.color='#0a7d4f';
+ try{const lines=rowsToLines(await readSheet(fl));if(!lines.length)throw new Error('empty');$('names').value=lines.join('\n');const n=lines.length;$('importMsg').textContent=`\u2714 \u062a\u0645 \u0627\u0633\u062a\u064a\u0631\u0627\u062f ${n===1?'\u0627\u0633\u0645 \u0648\u0627\u062d\u062f':n===2?'\u0627\u0633\u0645\u064a\u0646':n<=10?n+' \u0623\u0633\u0645\u0627\u0621':n+' \u0627\u0633\u0645\u064b\u0627'} \u0645\u0646 \u00ab${fl.name}\u00bb`;render()}
+ catch(err){$('importMsg').style.color='#c0392b';$('importMsg').textContent='\u062a\u0639\u0630\u0651\u0631 \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0645\u0644\u0641. \u0627\u062d\u0641\u0638\u0647 \u0645\u0646 Excel \u0628\u0635\u064a\u063a\u0629 xlsx \u0623\u0648 CSV \u0648\u062d\u0627\u0648\u0644 \u0645\u062c\u062f\u062f\u064b\u0627.'}};
 $('logo').onchange=e=>{const fl=e.target.files[0];e.target.value='';if(!fl)return;const rd=new FileReader();rd.onload=()=>{S.logo=rd.result;render()};rd.readAsDataURL(fl)};
 fields.forEach(f=>{$(f).addEventListener('input',render);$(f).addEventListener('change',render)});
 $('gender').addEventListener('change',()=>{S.prevGender=null});
