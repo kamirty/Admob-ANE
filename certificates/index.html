@@ -7,7 +7,7 @@
 <meta name="description" content="اكتب أسماء الطلاب واحصل على شهادات تقدير مصممة للجميع دفعة واحدة، جاهزة للطباعة. مجاني ويعمل في متصفحك.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700;800&family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Reem+Kufi:wght@500;700&family=Lalezar&family=El+Messiri:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700;800&family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Reem+Kufi:wght@500;700&family=Lalezar&family=El+Messiri:wght@500;700&family=Rakkas&family=Lemonada:wght@500;700&display=swap" rel="stylesheet">
 <style>
 /* ===== هوية الموقع: عدّل هذه المتغيرات لتطابق kamirtyai.com ===== */
 :root{
@@ -63,13 +63,57 @@ footer{text-align:center;color:#ccc;background:#000;padding:24px 16px;font-size:
 .cert .lead{font-size:17pt;margin-top:4mm}
 .cert .name{font-family:'Reem Kufi',sans-serif;font-weight:700;white-space:nowrap;margin:3mm 0;line-height:1.4;max-width:100%}
 .cert .body{font-family:Amiri,serif;font-size:18pt;max-width:220mm;line-height:1.8}
-.cert .foot{margin-top:auto;width:100%;display:flex;justify-content:space-between;font-size:13pt}
-.cert .foot div{min-width:60mm}
-.cert .foot b{display:block;margin-top:2mm}
+.cert .foot{margin-top:auto;width:100%;display:flex;justify-content:space-between;align-items:flex-end;font-size:13pt}
+.cert .foot>.sig{min-width:60mm;position:relative}
+.cert .foot b{display:block;margin-top:1mm}
+.cert .sigimg{display:block;height:13mm;max-width:52mm;margin:0 auto -1mm;object-fit:contain}
+.cert .foot>.mid{flex:0 0 auto;align-self:flex-end;line-height:0}
+.cert .medallion{width:30mm;height:30mm;display:block}
+.cert .medallion.rk{height:36mm}
+.cert.has-medal svg.bg .tmedal{display:none}
+.cert .stamp{position:absolute;width:28mm;height:28mm;left:-7mm;top:-5mm;transform:rotate(-14deg);opacity:.88;pointer-events:none}
+.cert .content{margin-top:auto;display:flex;flex-direction:column;align-items:center;width:100%}
+.cert .basmala{font-family:'Aref Ruqaa',serif;font-size:15pt;line-height:1.2;margin-bottom:1mm}
+.cert .head .hc{display:flex;flex-direction:column;align-items:center}
+.cert .head .hr,.cert .head .hl{max-width:85mm}
+.cert .head .hr span,.cert .head .hl span{display:block}
+.cert .head .hr .off{font-weight:700;font-size:12pt}
+.cert .rank{display:inline-block;margin:0 0 2mm;padding:1mm 7mm;border-radius:20mm;font-family:Cairo,sans-serif;font-weight:800;font-size:15pt;color:#3a2a00;box-shadow:0 .6mm 0 rgba(0,0,0,.18)}
+.cert .rank.r1{background:linear-gradient(135deg,#fff3b0,#e5b53a 45%,#fbe08a 60%,#b8862b)}
+.cert .rank.r2{background:linear-gradient(135deg,#ffffff,#b9c2ce 45%,#eef1f5 60%,#8a94a3);color:#2b3440}
+.cert .rank.r3{background:linear-gradient(135deg,#ffd9b8,#c27a3e 45%,#efb27f 60%,#7d4a22);color:#3b1f08}
+.cert .note{font-family:'Aref Ruqaa',serif;font-size:17pt;color:#1f4fa8;margin-top:1mm;padding:0 6mm;border-bottom:.4mm dashed #1f4fa866;line-height:1.5;max-width:200mm}
+.cert .wm{position:absolute;left:50%;top:50%;width:90mm;height:90mm;transform:translate(-50%,-50%);object-fit:contain;opacity:.07;filter:grayscale(1);z-index:0;pointer-events:none}
+.cert>svg.paper{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;mix-blend-mode:multiply}
+/* تأثيرات الاسم المعدنية */
+.cert .name.foil{color:transparent!important;-webkit-background-clip:text;background-clip:text;text-shadow:none!important;filter:drop-shadow(0 .5mm .3mm rgba(0,0,0,.28));padding:0 2mm}
+.cert .name.foil-gold{background-image:linear-gradient(100deg,#8a6214 0%,#f6e27a 22%,#c9962c 40%,#fff4b8 52%,#b7862b 70%,#f2d36b 88%,#7a5410 100%)}
+.cert .name.foil-silver{background-image:linear-gradient(100deg,#5d6672 0%,#e9edf2 22%,#9aa4b1 40%,#ffffff 52%,#8792a0 70%,#dfe4ea 88%,#4f5763 100%)}
+.cert .name.foil-rose{background-image:linear-gradient(100deg,#8c4a3f 0%,#f7c6b8 22%,#c97c6b 40%,#ffe4dc 52%,#b86a5a 70%,#f2b9a8 88%,#7a3d33 100%)}
+.cert .name.foil-bronze{background-image:linear-gradient(100deg,#5e3414 0%,#e9b07f 22%,#a8642e 40%,#ffd8b0 52%,#93541f 70%,#dc9d66 88%,#4f2a0e 100%)}
+.cert .name.foil-holo{background-image:linear-gradient(100deg,#7b5cff 0%,#ff7ad9 20%,#ffd36e 38%,#6ee7ff 56%,#8affc1 72%,#c08bff 88%,#ff7ad9 100%)}
+.cert .name.foil-ink{color:var(--c)!important}
+.tgl{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);margin:8px 0 0;cursor:pointer}
+.tgl input{width:auto;accent-color:#000}
+.grid3{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.sigbtns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.btn.small{padding:8px 12px;font-size:14px;border-radius:10px}
+.btn.cer{background:#000;color:var(--accent);width:100%;margin-top:8px}
+#sigModal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+#sigModal .box{background:var(--card);border-radius:14px;padding:16px;width:min(560px,100%)}
+#sigCanvas{width:100%;height:200px;background:#fff;border:1px dashed var(--line);border-radius:10px;touch-action:none;display:block}
+#ceremony{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 30%,#2a2350,#0b0a1a);display:none;align-items:center;justify-content:center;flex-direction:column;color:#fff}
+#ceremony .stage{position:relative}
+#ceremony .stage .cert{transform-origin:top left;box-shadow:0 10px 60px rgba(0,0,0,.6)}
+#ceremony canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#ceremony .ctrl{display:flex;gap:12px;align-items:center;margin-top:16px;z-index:2}
+#ceremony .ctrl button{background:#ffd400;color:#000;border:0;border-radius:99px;padding:10px 18px;font:inherit;font-weight:800;cursor:pointer}
+#ceremony .ctrl span{min-width:70px;text-align:center;font-weight:700}
+
 .cert .date{font-size:12pt;color:#666;margin-top:3mm}
 .cert>svg.bg{position:absolute;inset:0;width:100%;height:100%}
 .cert .frame{z-index:1}
-.cert .title{margin-top:auto!important}
+.cert .title{margin-top:0!important}
 .cert .name{position:relative}
 /* شخصيات الطلاب */
 .t-cycle1 .frame,.t-cycle2 .frame,.t-secGirl .frame,.t-secBoy .frame{inset:14mm 16mm 14mm 120mm}
@@ -77,6 +121,10 @@ footer{text-align:center;color:#ccc;background:#000;padding:24px 16px;font-size:
 .t-cycle1 .name,.t-cycle2 .name,.t-secGirl .name,.t-secBoy .name{font-family:Cairo,sans-serif;font-weight:800;color:#1d1d2c}
 .t-cycle1 .name::after,.t-cycle2 .name::after,.t-secGirl .name::after,.t-secBoy .name::after{content:"";display:block;height:1.4mm;width:40%;margin:1mm auto 0;border-radius:2mm;background:linear-gradient(90deg,transparent,var(--c),transparent)}
 .t-cycle1 .body,.t-cycle2 .body,.t-secGirl .body,.t-secBoy .body{font-family:Tajawal,sans-serif}
+.t-cycle1 .head,.t-cycle2 .head,.t-secGirl .head,.t-secBoy .head{font-size:10.5pt}
+.t-cycle1 .head .hr .off,.t-cycle2 .head .hr .off,.t-secGirl .head .hr .off,.t-secBoy .head .hr .off{font-size:10pt}
+.t-cycle1 .basmala,.t-cycle2 .basmala,.t-secGirl .basmala,.t-secBoy .basmala{font-size:12pt;white-space:nowrap}
+.t-cycle1 .head .hr,.t-cycle2 .head .hr,.t-secGirl .head .hr,.t-secBoy .head .hr,.t-cycle1 .head .hl,.t-cycle2 .head .hl,.t-secGirl .head .hl,.t-secBoy .head .hl{max-width:52mm}
 /* ملكي */
 .t-royal .frame{inset:20mm 24mm 16mm}
 .t-royal .title{font-family:'Aref Ruqaa',serif;color:#b8892b;font-size:50pt}
@@ -141,7 +189,9 @@ footer{text-align:center;color:#ccc;background:#000;padding:24px 16px;font-size:
   <aside class="card">
     <div class="step"><i>1</i>أسماء الطلاب</div>
     <textarea id="names" placeholder="اسم في كل سطر&#10;محمد أحمد العتيبي&#10;سارة خالد *"></textarea>
-    <div class="hint">اسم في كل سطر، ويمكنك اللصق من Excel أو نور. ضع <b>*</b> بعد الاسم لعكس الجنس عن الإعداد العام.</div>
+    <div class="hint">اسم في كل سطر، ويمكنك اللصق من Excel أو نور. ضع <b>*</b> بعد الاسم لعكس الجنس عن الإعداد العام.<br>
+<b>✨ جديد:</b> أضف لكل طالب أعمدة اختيارية مفصولة بـ <b>|</b> أو منسوخة من Excel: <b>الاسم | السبب | المركز | رسالة المعلم</b><br>
+مثال: <code>سارة خالد * | لفوزها بمسابقة الروبوت | 1 | فخورون بك يا سارة</code> <a href="#" id="sample">جرّب مثالًا</a></div>
     <div class="row">
       <div><label>الجنس الافتراضي</label><select id="gender"><option value="m">طلاب (مذكر)</option><option value="f">طالبات (مؤنث)</option></select></div>
       <div><label>استيراد ملف</label><input type="file" id="file" accept=".csv,.txt"></div>
@@ -168,8 +218,38 @@ footer{text-align:center;color:#ccc;background:#000;padding:24px 16px;font-size:
       <div><label>التاريخ</label><input id="date"></div>
       <div><label>شعار المدرسة</label><input type="file" id="logo" accept="image/*"></div>
     </div>
+    <div class="step" style="margin-top:18px"><i>3</i>لمسات إبداعية ✨</div>
+    <div class="row">
+      <div><label>خط الاسم</label><select id="nfont">
+        <option value="">حسب القالب</option><option value="'Aref Ruqaa',serif">رقعة (خط اليد)</option><option value="'Reem Kufi',sans-serif">كوفي</option>
+        <option value="'El Messiri',serif">المسيري الأنيق</option><option value="Amiri,serif">أميري (نسخ)</option><option value="Rakkas,serif">رقّاص الفاخر</option>
+        <option value="Lalezar,sans-serif">لاله‌زار المرح</option><option value="Lemonada,sans-serif">ليمونادة</option><option value="Cairo,sans-serif">القاهرة الحديث</option></select></div>
+      <div><label>تأثير الاسم</label><select id="foil">
+        <option value="auto">تلقائي (حسب المركز)</option><option value="none">بدون</option><option value="gold">رقائق ذهبية</option><option value="silver">رقائق فضية</option>
+        <option value="rose">ذهبي وردي</option><option value="bronze">برونزي</option><option value="holo">هولوغرافي ملوّن</option><option value="ink">بلون القالب</option></select></div>
+    </div>
+    <div class="grid3">
+      <label class="tgl"><input type="checkbox" id="kashida">مدّ الكشيدة في الاسم</label>
+      <label class="tgl"><input type="checkbox" id="seal" checked>ميدالية فريدة لكل طالب</label>
+      <label class="tgl"><input type="checkbox" id="stamp">ختم دائري باسم المدرسة</label>
+      <label class="tgl"><input type="checkbox" id="paper">ملمس ورق فاخر</label>
+      <label class="tgl"><input type="checkbox" id="wm">الشعار علامة مائية</label>
+      <label class="tgl"><input type="checkbox" id="basmala">البسملة أعلى الشهادة</label>
+    </div>
+    <label>الترويسة الرسمية (سطر لكل جهة، اختياري)</label>
+    <textarea id="header" style="min-height:70px" placeholder="سلطنة عُمان&#10;وزارة التربية والتعليم&#10;المديرية العامة للتربية والتعليم بمحافظة ..."></textarea>
+    <div class="row">
+      <div><label>العام الدراسي</label><input id="year" placeholder="2026 / 2027"></div>
+      <div><label>صيغة التاريخ</label><select id="dateFmt"><option value="h">هجري</option><option value="g">ميلادي</option><option value="hg">هجري وميلادي</option></select></div>
+    </div>
+    <label>التوقيعات</label>
+    <div class="sigbtns">
+      <button type="button" class="btn ghost small" data-sig="sig1">✍️ توقيع المعلم/ة</button>
+      <button type="button" class="btn ghost small" data-sig="sig2">✍️ توقيع المدير/ة</button>
+    </div>
     <button class="btn main" id="printBtn">🖨️ طباعة / حفظ PDF</button>
     <div class="hint" style="text-align:center">لحفظ PDF اختر «حفظ كـ PDF» من نافذة الطباعة.</div>
+    <button class="btn cer" id="cerBtn" type="button">🎉 وضع حفل التكريم (للعرض على السبورة الذكية)</button>
   </aside>
 
   <section>
@@ -178,6 +258,21 @@ footer{text-align:center;color:#ccc;background:#000;padding:24px 16px;font-size:
     <div id="preview"></div>
   </section>
 </main>
+<div id="sigModal"><div class="box">
+  <div class="step" id="sigTitle">التوقيع</div>
+  <canvas id="sigCanvas"></canvas>
+  <div class="hint">وقّع بإصبعك أو بالفأرة، أو ارفع صورة التوقيع (PNG بخلفية شفافة أفضل).</div>
+  <div class="sigbtns">
+    <button type="button" class="btn main small" id="sigSave" style="width:auto;margin:0">حفظ</button>
+    <button type="button" class="btn ghost small" id="sigClear">مسح</button>
+    <label class="btn ghost small" style="margin:0">رفع صورة<input type="file" id="sigFile" accept="image/*" style="display:none"></label>
+    <button type="button" class="btn ghost small" id="sigDel">حذف التوقيع</button>
+    <button type="button" class="btn ghost small" id="sigClose">إغلاق</button>
+  </div>
+</div></div>
+<div id="ceremony"><div class="stage" id="cerStage"></div><canvas id="confetti"></canvas>
+  <div class="ctrl"><button type="button" id="cerPrev">→ السابق</button><span id="cerCount"></span><button type="button" id="cerNext">التالي ←</button><button type="button" id="cerClose">إغلاق ✕</button></div>
+</div>
 
 <footer>«وسام» أداة مجانية من <a href="https://www.kamirtyai.com/">Kamirty.AI</a> · تعمل بالكامل في متصفحك ولا ترفع أي بيانات.</footer>
 <div id="print"></div>
@@ -258,7 +353,7 @@ const TPLS={
   const corner=(tx,sx,sy)=>`<g transform="translate(${tx}) scale(${sx},${sy})"><path d="M0 0H70L0 70Z" fill="${c}"/><path d="M0 0H52L0 52Z" fill="${GOLD}" opacity=".9"/><path d="M0 0H40L0 40Z" fill="${c}"/></g>`;
   return `<rect width="297" height="210" fill="#fffdf7"/>${corner('0,0',1,1)}${corner('297,0',-1,1)}<g transform="translate(0,210) scale(1,-1)">${corner('0,0',1,1)}${corner('297,0',-1,1)}</g>
   <rect x="9" y="9" width="279" height="192" fill="none" stroke="${c}" stroke-width="2.4"/><rect x="12.5" y="12.5" width="272" height="185" fill="none" stroke="${GOLD}" stroke-width="1.2"/>
-  <rect x="15" y="15" width="267" height="180" fill="none" stroke="${GOLD}" stroke-width=".4"/>${medal(148.5,170,13,c)}`}},
+  <rect x="15" y="15" width="267" height="180" fill="none" stroke="${GOLD}" stroke-width=".4"/><g class="tmedal">${medal(148.5,170,13,c)}</g>`}},
  stars:{n:'نجوم',c:'#6a2c91',svg:c=>{const R=rnd(7),cols=['#ffd166','#ef476f','#06d6a0','#118ab2','#ff9f1c','#9b5de5'];let st='';
   for(let i=0;i<34;i++){const x=R()*297,y=R()*210;if(x>40&&x<257&&y>25&&y<185)continue;st+=star(x,y,3+R()*5,cols[i%6],R()*2)}
   const balloon=(x,y,col)=>`<path d="M${x} ${y+15} q-3 8 2 14 q-4 6 0 14" stroke="#999" stroke-width=".5" fill="none"/><ellipse cx="${x}" cy="${y}" rx="10" ry="12.5" fill="${col}"/><ellipse cx="${x-3.5}" cy="${y-5}" rx="2.5" ry="4" fill="#fff" opacity=".5"/><path d="M${x-1.5} ${y+12.3}h3l-1.5 2.5z" fill="${col}"/>`;
@@ -291,7 +386,7 @@ const TPLS={
   <rect width="297" height="210" fill="url(#sky)"/>${st}
   <circle cx="26" cy="30" r="13" fill="#ff7b54"/><circle cx="22" cy="26" r="3" fill="#fff" opacity=".25"/><ellipse cx="26" cy="30" rx="23" ry="4.5" fill="none" stroke="#ffd166" stroke-width="1.6" transform="rotate(-18 26 30)"/>
   <circle cx="274" cy="186" r="9" fill="#8ecae6" opacity=".9"/><circle cx="271" cy="183" r="2" fill="#fff" opacity=".3"/><path d="M200 0 L150 22" stroke="#fff" stroke-width=".8" opacity=".6"/>
-  <rect x="8" y="8" width="281" height="194" rx="6" fill="none" stroke="${c}" stroke-width="1.2" opacity=".8"/>${medal(148.5,174,11,'#e63946')}`}}
+  <rect x="8" y="8" width="281" height="194" rx="6" fill="none" stroke="${c}" stroke-width="1.2" opacity=".8"/><g class="tmedal">${medal(148.5,174,11,'#e63946')}</g>`}}
 };
 // [مذكر, مؤنث]
 const REASONS=[
@@ -316,41 +411,100 @@ const REASONS=[
  ['لحسن أخلاقه وتعامله مع زملائه','لحسن أخلاقها وتعاملها مع زميلاتها'],
  ['لحفاظه على نظافة الصف والمدرسة','لحفاظها على نظافة الصف والمدرسة']];
 const $=id=>document.getElementById(id);
-const S={tpl:'royal',logo:''};
-const fields=['names','gender','title','color','reason','custom','school','grade','teacher','principal','date'];
+const S={tpl:'royal',logo:'',sig1:'',sig2:''};
+const fields=['names','gender','title','color','reason','custom','school','grade','teacher','principal','date','nfont','foil','kashida','seal','stamp','paper','wm','basmala','header','year','dateFmt'];
+const V=id=>{const e=$(id);return e.type==='checkbox'?e.checked:e.value};
+const setV=(id,v)=>{const e=$(id);if(e.type==='checkbox')e.checked=!!v;else e.value=v};
 
 REASONS.forEach((r,i)=>$('reason').add(new Option(r[0],i)));
 $('reason').add(new Option('✏️ سبب آخر (اكتبه بنفسك)','custom'));
 Object.entries(TPLS).forEach(([k,t])=>{const d=document.createElement('div');d.className='tpl';d.dataset.k=k;
  d.innerHTML=`<span class="th">${svg(t.svg(t.c)).replace('class="bg"','')}</span>${t.n}`;d.onclick=()=>{S.tpl=k;$('color').value=t.c;if(t.g)$('gender').value=t.g;render()};$('tpls').append(d)});
-$('date').value=new Date().toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
+function fmtDate(k){const d=new Date(),h=d.toLocaleDateString('ar-SA-u-ca-islamic-umalqura',{year:'numeric',month:'long',day:'numeric'}),g=d.toLocaleDateString('ar-OM-u-ca-gregory',{year:'numeric',month:'long',day:'numeric'});return k==='g'?g:k==='hg'?h+' — الموافق '+g:h}
+$('date').value=fmtDate('h');
+{const d=new Date(),y=d.getFullYear(),m=d.getMonth();$('year').value=m>=7?`${y} / ${y+1}`:`${y-1} / ${y}`}
 
-try{const s=JSON.parse(localStorage.getItem('certs')||'{}');fields.forEach(f=>{if(f!=='names'&&s[f]!=null)$(f).value=s[f]});if(s.tpl&&TPLS[s.tpl])S.tpl=s.tpl;else $('color').value=TPLS[S.tpl].c;if(s.logo)S.logo=s.logo}catch(e){}
-const save=()=>{try{const s={tpl:S.tpl,logo:S.logo};fields.forEach(f=>{if(f!=='names')s[f]=$(f).value});localStorage.setItem('certs',JSON.stringify(s))}catch(e){}};
+try{const s=JSON.parse(localStorage.getItem('certs')||'{}');fields.forEach(f=>{if(f!=='names'&&s[f]!=null)setV(f,s[f])});if(s.tpl&&TPLS[s.tpl])S.tpl=s.tpl;else $('color').value=TPLS[S.tpl].c;['logo','sig1','sig2'].forEach(k=>{if(s[k])S[k]=s[k]})}catch(e){}
+const save=()=>{try{const s={tpl:S.tpl,logo:S.logo,sig1:S.sig1,sig2:S.sig2};fields.forEach(f=>{if(f!=='names')s[f]=V(f)});localStorage.setItem('certs',JSON.stringify(s))}catch(e){}};
 
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function parse(){return $('names').value.split(/\r?\n/).map(l=>l.split(/[,\t;]/)[0].trim()).filter(Boolean).map(l=>{
- const flip=l.endsWith('*');const name=l.replace(/\*+$/,'').trim();let f=$('gender').value==='f';if(flip)f=!f;return{name,f}})}
+const RANKS=[[/^(1|١|الاول|الأول|اول|أول|الأولى|الاولى|first)$/i,1],[/^(2|٢|الثاني|ثاني|الثانية|second)$/i,2],[/^(3|٣|الثالث|ثالث|الثالثة|third)$/i,3]];
+const rankOf=v=>{v=(v||'').replace(/^المركز\s*/,'').trim();for(const[re,n]of RANKS)if(re.test(v))return n;return 0};
+function parse(){return $('names').value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+ const c=l.split(/\t|\||;|,(?=\s*\S)/).map(x=>x.trim());
+ const flip=/\*\s*$/.test(c[0]);const name=c[0].replace(/\*+\s*$/,'').trim();let f=$('gender').value==='f';if(flip)f=!f;
+ return{name,f,reason:c[1]||'',rank:rankOf(c[2]),note:c[3]||''}}).filter(p=>p.name)}
 
-function cert({name,f}){
+// ===== أدوات الزينة =====
+const hash=t=>{let h=2166136261;for(const ch of t)h=Math.imul(h^ch.codePointAt(0),16777619);return h>>>0};
+const NOJOIN='اأإآدذرزوؤةىءـ';
+function kashida(name){return name.split(' ').map(w=>{const L=[...w];if(L.length<3)return w;const cand=[];
+ for(let i=0;i<L.length-1;i++){const a=L[i],b=L[i+1];if(!/[ب-ي]/.test(a)||NOJOIN.includes(a)||!/[ء-ي]/.test(b))continue;if(a==='ل'&&'اأإآ'.includes(b))continue;if(i===0&&L.length<4)continue;cand.push(i)}
+ if(!cand.length)return w;const mid=(L.length-1)/2;const i=cand.sort((x,y)=>Math.abs(x+.5-mid)-Math.abs(y+.5-mid))[0];L.splice(i+1,0,'ـــ');return L.join('')}).join(' ')}
+const METAL={1:['#fff3b0','#e5b53a','#fbe08a','#a87b1f'],2:['#ffffff','#b9c2ce','#eef1f5','#7d8796'],3:['#ffd9b8','#c27a3e','#efb27f','#6e3f1b'],0:['#f7e08a','#d4a73a','#f3d27a','#a87b1f']};
+const AR_NUM=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+let MID=0;
+function medallion(p,c){const u='m'+(++MID),h=hash(p.name),m=METAL[p.rank]||METAL[0];
+ const k=3+h%5,d=2.2+(h>>3)%4*.9,R=k*5;let path='',path2='';
+ for(let t=0;t<=Math.PI*2*k+.01;t+=Math.PI/90){const x=(R+k)*Math.cos(t/k)-d*Math.cos((R+k)/k*t/k),y=(R+k)*Math.sin(t/k)-d*Math.sin((R+k)/k*t/k);
+  const sc=30/(R+k+d);path+=(path?'L':'M')+(50+x*sc).toFixed(2)+' '+(50+y*sc).toFixed(2);}
+ const k2=5+(h>>7)%6;for(let t=0;t<=Math.PI*2+.01;t+=Math.PI/180){const r=21+3.2*Math.sin(k2*t+(h%7));path2+=(path2?'L':'M')+(50+r*Math.cos(t)).toFixed(2)+' '+(50+r*Math.sin(t)).toFixed(2)}
+ let teeth='';for(let i=0;i<48;i++){const a=Math.PI/24*i,rr=i%2?46:49;teeth+=(i?'L':'M')+(50+rr*Math.cos(a)).toFixed(2)+' '+(50+rr*Math.sin(a)).toFixed(2)}
+ const ringRaw=(V('school')||'وسام التميّز')+(V('year')?' • '+V('year'):''),ring=esc(ringRaw),ringLen=[...ringRaw].length;
+ const center=p.rank?AR_NUM(p.rank):esc([...p.name.replace(/^(ال)/,'')][0]||'★');
+ const tails=p.rank?`<path d="M34 78L24 118L34 111L41 120L48 84Z" fill="${c}"/><path d="M66 78L76 118L66 111L59 120L52 84Z" fill="${c}" opacity=".85"/>`:'';
+ return `<svg class="medallion${p.rank?' rk':''}" viewBox="0 0 100 ${p.rank?120:100}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="${u}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${m[0]}"/><stop offset=".45" stop-color="${m[1]}"/><stop offset=".7" stop-color="${m[2]}"/><stop offset="1" stop-color="${m[3]}"/></linearGradient>
+ <path id="${u}p" d="M50 86a36 36 0 1 1 0 -72a36 36 0 1 1 0 72"/></defs>${tails}
+ <path d="${teeth}Z" fill="url(#${u}g)"/><circle cx="50" cy="50" r="42.5" fill="${c}"/><circle cx="50" cy="50" r="41" fill="none" stroke="url(#${u}g)" stroke-width=".8"/>
+ <path d="${path}" fill="none" stroke="url(#${u}g)" stroke-width=".35" opacity=".9"/><circle cx="50" cy="50" r="27.5" fill="${c}"/><path d="${path2}Z" fill="none" stroke="url(#${u}g)" stroke-width=".5"/>
+ <circle cx="50" cy="50" r="17" fill="url(#${u}g)"/><circle cx="50" cy="50" r="15.3" fill="none" stroke="${c}" stroke-width=".5" stroke-dasharray="1 1.2"/>
+ <text font-family="Cairo,sans-serif" font-size="${Math.min(6.4,175/(ringLen*.56)).toFixed(2)}" font-weight="700" fill="${m[0]}"><textPath href="#${u}p" startOffset="50%" text-anchor="middle">${ring}</textPath></text>
+ <text x="50" y="${p.rank?57:56.5}" text-anchor="middle" font-family="${p.rank?'Rakkas,serif':"'Aref Ruqaa',serif"}" font-size="${p.rank?20:17}" fill="${c}">${center}</text></svg>`}
+function schoolStamp(){const u='s'+(++MID),col=S.tpl==='hero'?'#cfe0ff':'#23408e',name=esc(V('school')||'المدرسة');
+ return `<svg class="stamp" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><filter id="${u}f"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="${hash(name)%50}"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 1.6"/><feComposite in="SourceGraphic" operator="in"/></filter>
+ <path id="${u}t" d="M50 50m-34 0a34 34 0 1 1 68 0"/><path id="${u}b" d="M14 50a36 36 0 0 0 72 0"/></defs>
+ <g filter="url(#${u}f)" fill="none" stroke="${col}"><circle cx="50" cy="50" r="46" stroke-width="2.6"/><circle cx="50" cy="50" r="42" stroke-width=".9"/><circle cx="50" cy="50" r="24" stroke-width="1.1"/>
+ <text fill="${col}" stroke="none" font-family="Cairo,sans-serif" font-weight="800" font-size="${Math.min(8.5,98/([...(V('school')||'المدرسة')].length*.56)).toFixed(2)}"><textPath href="#${u}t" startOffset="50%" text-anchor="middle">${name}</textPath></text>
+ <text fill="${col}" stroke="none" font-family="Cairo,sans-serif" font-weight="700" font-size="7"><textPath href="#${u}b" startOffset="50%" text-anchor="middle">${esc(V('year')||'')}</textPath></text>
+ <text x="50" y="47" text-anchor="middle" fill="${col}" stroke="none" font-family="Cairo,sans-serif" font-weight="800" font-size="8">الإدارة</text>
+ <text x="50" y="58" text-anchor="middle" fill="${col}" stroke="none" font-family="'Aref Ruqaa',serif" font-size="9">★ ★ ★</text></g></svg>`}
+const PAPER=`<svg class="paper" viewBox="0 0 297 210" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><filter id="paperF"><feTurbulence type="fractalNoise" baseFrequency=".75" numOctaves="3" seed="4"/><feColorMatrix values="0 0 0 0 .55  0 0 0 0 .5  0 0 0 0 .42  0 0 0 .22 0"/></filter><rect width="297" height="210" filter="url(#paperF)"/></svg>`;
+const RANK_TXT={1:'الأول',2:'الثاني',3:'الثالث'};
+
+function cert(p){const {name,f}=p;
  const g=f?1:0,r=$('reason').value;
  const cp=$('custom').value.split('|').map(x=>x.trim());
- const reason=r==='custom'?esc(cp[f&&cp[1]?1:0]||''):REASONS[r][g];
+ const reason=p.reason?esc(p.reason):r==='custom'?esc(cp[f&&cp[1]?1:0]||''):REASONS[r][g];
  const grade=$('grade').value?` في الصف ${esc($('grade').value)}`:'';
  const school=esc($('school').value);
  const c=$('color').value;
- return `<div class="cert t-${S.tpl}" style="--c:${c}">${svg(TPLS[S.tpl].svg(c))}<div class="frame">
-  <div class="head"><div>${school?'المدرسة: '+school:''}</div>${S.logo?`<img src="${S.logo}" alt="">`:'<div></div>'}<div>${grade?'الصف: '+esc($('grade').value):''}</div></div>
+ const hdr=V('header').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ let foil=V('foil');if(foil==='auto')foil=p.rank?{1:'gold',2:'silver',3:'bronze'}[p.rank]:'none';
+ const nameCls='name'+(foil!=='none'?' foil foil-'+foil:'');
+ const nfont=V('nfont')?` style="font-family:${V('nfont')}"`:'';
+ const shown=V('kashida')?kashida(name):name;
+ const useMed=V('seal')||p.rank;
+ const sig=k=>S[k]?`<img class="sigimg" src="${S[k]}" alt="">`:'';
+ return `<div class="cert t-${S.tpl}${useMed?' has-medal':''}" style="--c:${c}">${svg(TPLS[S.tpl].svg(c))}${V('paper')?PAPER:''}${V('wm')&&S.logo?`<img class="wm" src="${S.logo}" alt="">`:''}<div class="frame">
+  <div class="head"><div class="hr">${hdr.map(x=>`<span class="off">${esc(x)}</span>`).join('')}${school?`<span>${hdr.length?'':'المدرسة: '}${school}</span>`:''}</div>
+   <div class="hc">${V('basmala')?'<div class="basmala">بسم الله الرحمن الرحيم</div>':''}${S.logo?`<img src="${S.logo}" alt="">`:''}</div>
+   <div class="hl">${V('year')?`<span>العام الدراسي: ${esc(V('year'))}</span>`:''}${grade?`<span>الصف: ${esc($('grade').value)}</span>`:''}</div></div>
+  <div class="content">
   <div class="title">${esc($('title').value)}</div>
   <div class="lead">${f?'تتقدم إدارة المدرسة بالشكر والتقدير للطالبة':'تتقدم إدارة المدرسة بالشكر والتقدير للطالب'}</div>
-  <div class="name">${esc(name)}</div>
+  <div class="${nameCls}"${nfont}>${esc(shown)}</div>
+  ${p.rank?`<div class="rank r${p.rank}">${f?'الحاصلة':'الحاصل'} على المركز ${RANK_TXT[p.rank]}</div>`:''}
   <div class="body">${reason}${grade}، ${f?'متمنين لها':'متمنين له'} دوام التوفيق والنجاح.</div>
+  ${p.note?`<div class="note">${esc(p.note)}</div>`:''}
   <div class="date">${esc($('date').value)}</div>
-  <div class="foot"><div>المعلم/ة<b>${esc($('teacher').value)||'&nbsp;'}</b></div><div>مدير/ة المدرسة<b>${esc($('principal').value)||'&nbsp;'}</b></div></div>
+  </div>
+  <div class="foot"><div class="sig">المعلم/ة${sig('sig1')}<b>${esc($('teacher').value)||'&nbsp;'}</b></div>${useMed?`<div class="mid">${medallion(p,c)}</div>`:''}<div class="sig">مدير/ة المدرسة${sig('sig2')}<b>${esc($('principal').value)||'&nbsp;'}</b>${V('stamp')?schoolStamp():''}</div></div>
  </div></div>`}
 
-function fit(root){root.querySelectorAll('.name').forEach(el=>{let s=44;el.style.fontSize=s+'pt';const cs=getComputedStyle(el.parentElement),max=(el.parentElement.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight))*0.98;
- while(el.scrollWidth>max&&s>18){s-=1;el.style.fontSize=s+'pt'}})}
+function fit(root){root.querySelectorAll('.cert').forEach(ct=>{const fr=ct.querySelector('.frame'),co=ct.querySelector('.content'),el=ct.querySelector('.name');co.style.zoom='';
+ let s=44;el.style.fontSize=s+'pt';const cs=getComputedStyle(fr),max=(fr.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight))*0.98;
+ while(el.scrollWidth>max&&s>18){s-=1;el.style.fontSize=s+'pt'}
+ let z=1;while(fr.scrollHeight>fr.clientHeight+1&&z>.62){z-=.04;co.style.zoom=z}})}
 
 function render(){
  document.querySelectorAll('.tpl').forEach(t=>t.classList.toggle('on',t.dataset.k===S.tpl));
@@ -368,7 +522,34 @@ $('printBtn').onclick=()=>{const list=parse();if(!list.length){alert('أضف أ�
  document.fonts.ready.then(()=>window.print())};
 $('file').onchange=e=>{const fl=e.target.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>{$('names').value=rd.result.replace(/^﻿/,'');render()};rd.readAsText(fl,'utf-8')};
 $('logo').onchange=e=>{const fl=e.target.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>{S.logo=rd.result;render()};rd.readAsDataURL(fl)};
-fields.forEach(f=>$(f).addEventListener('input',render));$('reason').addEventListener('change',render);
+fields.forEach(f=>{$(f).addEventListener('input',render);$(f).addEventListener('change',render)});
+$('dateFmt').addEventListener('change',()=>{$('date').value=fmtDate(V('dateFmt'));render()});
+$('sample').onclick=e=>{e.preventDefault();$('names').value='محمد سالم البلوشي | | 1 | أنت مصدر فخر لنا\nمريم خالد الحارثية * | لفوزها بمسابقة القراءة | 2\nعبدالله ناصر الهنائي | | 3\nفاطمة سعيد الكندية * | | | استمري في التألق';render()};
+// ===== التوقيع =====
+{const cv=$('sigCanvas'),ctx=cv.getContext('2d');let key='',drawing=false,dirty=false;
+ const open=k=>{key=k;$('sigTitle').textContent=k==='sig1'?'توقيع المعلم/ة':'توقيع المدير/ة';$('sigModal').style.display='flex';const r=cv.getBoundingClientRect();cv.width=r.width*2;cv.height=r.height*2;ctx.setTransform(2,0,0,2,0,0);ctx.lineWidth=2.6;ctx.lineCap=ctx.lineJoin='round';ctx.strokeStyle='#1d3f9e';ctx.clearRect(0,0,cv.width,cv.height);dirty=false;if(S[k]){const im=new Image();im.onload=()=>ctx.drawImage(im,0,0,r.width,r.height);im.src=S[k]}};
+ const pos=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+ cv.onpointerdown=e=>{drawing=dirty=true;cv.setPointerCapture(e.pointerId);ctx.beginPath();ctx.moveTo(...pos(e))};
+ cv.onpointermove=e=>{if(!drawing)return;ctx.lineTo(...pos(e));ctx.stroke()};
+ cv.onpointerup=()=>drawing=false;
+ document.querySelectorAll('[data-sig]').forEach(b=>b.onclick=()=>open(b.dataset.sig));
+ $('sigClear').onclick=()=>{ctx.clearRect(0,0,cv.width,cv.height);dirty=true};
+ $('sigClose').onclick=()=>$('sigModal').style.display='none';
+ $('sigDel').onclick=()=>{S[key]='';$('sigModal').style.display='none';render()};
+ $('sigSave').onclick=()=>{if(dirty)S[key]=cv.toDataURL('image/png');$('sigModal').style.display='none';render()};
+ $('sigFile').onchange=e=>{const fl=e.target.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>{S[key]=rd.result;$('sigModal').style.display='none';render()};rd.readAsDataURL(fl)};}
+// ===== وضع الحفل =====
+{let i=0,list=[];const st=$('cerStage'),cnv=$('confetti'),cx=cnv.getContext('2d');let parts=[],raf=0;
+ const burst=()=>{cnv.width=innerWidth;cnv.height=innerHeight;const cols=['#ffd400','#ff4d6d','#4cc9f0','#7bf1a8','#c77dff','#ffffff'];
+  parts=Array.from({length:180},()=>({x:innerWidth/2,y:innerHeight*.35,vx:(Math.random()-.5)*16,vy:Math.random()*-14-4,s:4+Math.random()*6,c:cols[Math.random()*6|0],r:Math.random()*6,vr:(Math.random()-.5)*.3,l:1}));
+  cancelAnimationFrame(raf);const step=()=>{cx.clearRect(0,0,cnv.width,cnv.height);let alive=0;for(const q of parts){q.vy+=.35;q.x+=q.vx;q.y+=q.vy;q.vx*=.99;q.r+=q.vr;q.l-=.006;if(q.l>0&&q.y<cnv.height+20){alive++;cx.save();cx.globalAlpha=Math.max(q.l,0);cx.translate(q.x,q.y);cx.rotate(q.r);cx.fillStyle=q.c;cx.fillRect(-q.s/2,-q.s/4,q.s,q.s/2);cx.restore()}}if(alive)raf=requestAnimationFrame(step)};step()};
+ const show=()=>{st.innerHTML=cert(list[i]);const c=st.firstElementChild;fit(st);const k=Math.min(innerWidth*.92/c.offsetWidth,(innerHeight-90)/c.offsetHeight);c.style.transform=`scale(${k})`;st.style.width=c.offsetWidth*k+'px';st.style.height=c.offsetHeight*k+'px';$('cerCount').textContent=`${AR_NUM(i+1)} / ${AR_NUM(list.length)}`;burst()};
+ const go=d=>{i=(i+d+list.length)%list.length;show()};
+ const close=()=>{$('ceremony').style.display='none';cancelAnimationFrame(raf);if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})};
+ $('cerBtn').onclick=()=>{list=parse();if(!list.length){alert('أضف أسماء الطلاب أولًا');return}i=0;const el=$('ceremony');el.style.display='flex';if(el.requestFullscreen)el.requestFullscreen().catch(()=>{});document.fonts.ready.then(show)};
+ $('cerNext').onclick=()=>go(1);$('cerPrev').onclick=()=>go(-1);$('cerClose').onclick=close;
+ addEventListener('keydown',e=>{if($('ceremony').style.display!=='flex')return;if(e.key==='ArrowLeft'||e.key===' '){e.preventDefault();go(1)}else if(e.key==='ArrowRight')go(-1);else if(e.key==='Escape')close()});
+ document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&$('ceremony').style.display==='flex')setTimeout(show,50)});}
 $('theme').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'};
 addEventListener('resize',scale);document.fonts.ready.then(render);render();
 </script>
