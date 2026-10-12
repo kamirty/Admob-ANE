@@ -86,7 +86,7 @@
 </div>
 <script>
 (function(){
-// ===== رسومات القوالب (SVG بمقاس 297×210 ملم) =====
+// ===== \u0631\u0633\u0648\u0645\u0627\u062a \u0627\u0644\u0642\u0648\u0627\u0644\u0628 (SVG \u0628\u0645\u0642\u0627\u0633 297\u00d7210 \u0645\u0644\u0645) =====
 const rnd=seed=>()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 const star=(x,y,r,fill,rot=0,extra='')=>{let p=[];for(let i=0;i<10;i++){const a=Math.PI/5*i-Math.PI/2+rot,rr=i%2?r*.45:r;p.push((x+rr*Math.cos(a)).toFixed(2)+','+(y+rr*Math.sin(a)).toFixed(2))}return`<polygon points="${p.join(' ')}" fill="${fill}" ${extra}/>`};
 const burst=(x,y,r,n,fill)=>{let p=[];for(let i=0;i<n*2;i++){const a=Math.PI/n*i,rr=i%2?r*.9:r;p.push((x+rr*Math.cos(a)).toFixed(2)+','+(y+rr*Math.sin(a)).toFixed(2))}return`<polygon points="${p.join(' ')}" fill="${fill}"/>`};
@@ -96,15 +96,15 @@ const medal=(x,y,r,c)=>`<g><polygon points="${x-r*.55},${y} ${x-r*.95},${y+r*2.1
 let UID=0;
 const svg=(inner,c)=>{const u='g'+(++UID);return `<svg class="bg" viewBox="0 0 297 210" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">${defs(c)}${inner}</svg>`.replace(/#(gold|sky)\)/g,`#$1${u})`).replace(/id="(gold|sky)"/g,`id="$1${u}"`)};
 
-// ===== صور الشخصيات: ضع رابط صورة PNG بخلفية شفافة، أو اتركه فارغًا لاستخدام الرسم المدمج =====
+// ===== \u0635\u0648\u0631 \u0627\u0644\u0634\u062e\u0635\u064a\u0627\u062a: \u0636\u0639 \u0631\u0627\u0628\u0637 \u0635\u0648\u0631\u0629 PNG \u0628\u062e\u0644\u0641\u064a\u0629 \u0634\u0641\u0627\u0641\u0629\u060c \u0623\u0648 \u0627\u062a\u0631\u0643\u0647 \u0641\u0627\u0631\u063a\u064b\u0627 \u0644\u0627\u0633\u062a\u062e\u062f\u0627\u0645 \u0627\u0644\u0631\u0633\u0645 \u0627\u0644\u0645\u062f\u0645\u062c =====
 const CHAR_IMG={
- cycle1:'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEimc8toIxQ66drd2wj5n1y7dr7gFsBPzVBV-Hw2Pkuq9pD3RLfLWIXn4jP0FjlnIyDbRkdZq-XMAQSPHIhjfIJakGiSuD9w8cAy6A3rbPIFKrmQJUktlMfWTK2nTN-MfRjLYsLh0qfGDNyP64vZ0JEKJfsoS5kOE8n_97agg42JfqEAz8u32zN5yLxYpXpy/s1600/cycle1-girl.png',   // الحلقة الأولى - بنت
- cycle2:'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgQ4I7da_vC0WX9uQw2pEo3ETbKyvKpF1O-dXm6UkQprnYIQ-J3bzQdeVrJY6xCEMVNSmTBshllmL1Q8zn7hCstL_5qRT7-jZzYARfJ3Ig849crQspmb6tEvmcCsyiGo2gkXmtGeVEjqmSeZ-Vo0_rUsEyYtT12e22SuB36aZSYcJQ9wwOYUKun1W9G61y-/s1600/cycle2-boy.png',   // الحلقة الثانية - ولد
- secGirl:'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhUEyyavWGs1Xs9JJ85-852ZcS6elhuMeeT1iEeMyLGm5hKgFPi4eIwBT2NC0GYsSmMaPjWrKLDUCInboPHgI6HTMPtJ0drPd6Bwx0d-RFWYW2UiyZoOLjK0czdtTXSsyxmdrE2BhsDlfVJGzaA-sTTcUx08AHw-huWCIborvl8hchTmABU6ozFdHJAFRaz/s1600/secondary-girl.png',  // الثانوية - بنت
- secBoy:'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiRf41KpKqOM_DSCeMT2TiXekMbvOnGkMYXldQ3hFE194OPAlyz4eE9aclhVW_zCdYSUKptqmb-N2yiNPiAIq9zqCRoKhE85T9cOb6ipNwtiwl7vRHMfG93Gb8YZFMFxWCZNOajBs5hG8AkLO1A09evT-abUDWI20qEVoVGmMYdizcZ2J-vQJKW_RFaK9ZF/s1600/secondary-boy.png',   // الثانوية - ولد
+ cycle1:'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEimc8toIxQ66drd2wj5n1y7dr7gFsBPzVBV-Hw2Pkuq9pD3RLfLWIXn4jP0FjlnIyDbRkdZq-XMAQSPHIhjfIJakGiSuD9w8cAy6A3rbPIFKrmQJUktlMfWTK2nTN-MfRjLYsLh0qfGDNyP64vZ0JEKJfsoS5kOE8n_97agg42JfqEAz8u32zN5yLxYpXpy/s1600/cycle1-girl.png',   // \u0627\u0644\u062d\u0644\u0642\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 - \u0628\u0646\u062a
+ cycle2:'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgQ4I7da_vC0WX9uQw2pEo3ETbKyvKpF1O-dXm6UkQprnYIQ-J3bzQdeVrJY6xCEMVNSmTBshllmL1Q8zn7hCstL_5qRT7-jZzYARfJ3Ig849crQspmb6tEvmcCsyiGo2gkXmtGeVEjqmSeZ-Vo0_rUsEyYtT12e22SuB36aZSYcJQ9wwOYUKun1W9G61y-/s1600/cycle2-boy.png',   // \u0627\u0644\u062d\u0644\u0642\u0629 \u0627\u0644\u062b\u0627\u0646\u064a\u0629 - \u0648\u0644\u062f
+ secGirl:'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhUEyyavWGs1Xs9JJ85-852ZcS6elhuMeeT1iEeMyLGm5hKgFPi4eIwBT2NC0GYsSmMaPjWrKLDUCInboPHgI6HTMPtJ0drPd6Bwx0d-RFWYW2UiyZoOLjK0czdtTXSsyxmdrE2BhsDlfVJGzaA-sTTcUx08AHw-huWCIborvl8hchTmABU6ozFdHJAFRaz/s1600/secondary-girl.png',  // \u0627\u0644\u062b\u0627\u0646\u0648\u064a\u0629 - \u0628\u0646\u062a
+ secBoy:'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiRf41KpKqOM_DSCeMT2TiXekMbvOnGkMYXldQ3hFE194OPAlyz4eE9aclhVW_zCdYSUKptqmb-N2yiNPiAIq9zqCRoKhE85T9cOb6ipNwtiwl7vRHMfG93Gb8YZFMFxWCZNOajBs5hG8AkLO1A09evT-abUDWI20qEVoVGmMYdizcZ2J-vQJKW_RFaK9ZF/s1600/secondary-boy.png',   // \u0627\u0644\u062b\u0627\u0646\u0648\u064a\u0629 - \u0648\u0644\u062f
 };
 const charImg=url=>`<ellipse cx="52" cy="193" rx="30" ry="3.6" fill="#000" opacity=".12"/><image href="${url}" x="4" y="18" width="96" height="176" preserveAspectRatio="xMidYMax meet"/>`;
-// ===== شخصيات الطلاب (رسم مسطح بلا ملامح) — الأصل عند القدمين =====
+// ===== \u0634\u062e\u0635\u064a\u0627\u062a \u0627\u0644\u0637\u0644\u0627\u0628 (\u0631\u0633\u0645 \u0645\u0633\u0637\u062d \u0628\u0644\u0627 \u0645\u0644\u0627\u0645\u062d) \u2014 \u0627\u0644\u0623\u0635\u0644 \u0639\u0646\u062f \u0627\u0644\u0642\u062f\u0645\u064a\u0646 =====
 const SKIN='#f3cfb3';
 const girlYoung=(x,y,k,dress)=>`<g transform="translate(${x},${y}) scale(${k})">
  <ellipse cx="0" cy="0" rx="24" ry="3.2" fill="#000" opacity=".12"/>
@@ -152,43 +152,43 @@ const scene=(c)=>`<rect width="297" height="210" fill="#f5f6f8"/>
  <rect x="117" y="9" width="171" height="192" rx="4" fill="none" stroke="${c}" stroke-width=".5" opacity=".5"/>
  ${star(276,22,4,GOLD)}${star(286,34,2.4,c)}${star(270,190,3,c)}`;
 const TPLS={
- cycle1:{n:'الحلقة الأولى - بنت',c:'#8a1c3c',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="122" r="46" fill="${c}" opacity=".08"/>`+(CHAR_IMG.cycle1?charImg(CHAR_IMG.cycle1):girlYoung(52,190,1.25,c))},
- cycle2:{n:'الحلقة الثانية - ولد',c:'#1d6fa5',g:'m',svg:c=>scene(c)+`<circle cx="52" cy="122" r="46" fill="${c}" opacity=".08"/>`+(CHAR_IMG.cycle2?charImg(CHAR_IMG.cycle2):boyTeen(52,192,.95,'#8a1c3c'))},
- secGirl:{n:'الثانوية - بنت',c:'#1b2f5e',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="116" r="48" fill="${c}" opacity=".08"/>`+(CHAR_IMG.secGirl?charImg(CHAR_IMG.secGirl):girlOlder(52,192,1.13,c))},
- secBoy:{n:'الثانوية - ولد',c:'#0f6b5c',g:'m',svg:c=>scene(c)+`<circle cx="52" cy="110" r="50" fill="${c}" opacity=".1"/>`+(CHAR_IMG.secBoy?charImg(CHAR_IMG.secBoy):boyTeen(52,193,1.08,'#8a1c3c'))},
+ cycle1:{n:'\u0627\u0644\u062d\u0644\u0642\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 - \u0628\u0646\u062a',c:'#8a1c3c',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="122" r="46" fill="${c}" opacity=".08"/>`+(CHAR_IMG.cycle1?charImg(CHAR_IMG.cycle1):girlYoung(52,190,1.25,c))},
+ cycle2:{n:'\u0627\u0644\u062d\u0644\u0642\u0629 \u0627\u0644\u062b\u0627\u0646\u064a\u0629 - \u0648\u0644\u062f',c:'#1d6fa5',g:'m',svg:c=>scene(c)+`<circle cx="52" cy="122" r="46" fill="${c}" opacity=".08"/>`+(CHAR_IMG.cycle2?charImg(CHAR_IMG.cycle2):boyTeen(52,192,.95,'#8a1c3c'))},
+ secGirl:{n:'\u0627\u0644\u062b\u0627\u0646\u0648\u064a\u0629 - \u0628\u0646\u062a',c:'#1b2f5e',g:'f',svg:c=>scene(c)+`<circle cx="52" cy="116" r="48" fill="${c}" opacity=".08"/>`+(CHAR_IMG.secGirl?charImg(CHAR_IMG.secGirl):girlOlder(52,192,1.13,c))},
+ secBoy:{n:'\u0627\u0644\u062b\u0627\u0646\u0648\u064a\u0629 - \u0648\u0644\u062f',c:'#0f6b5c',g:'m',svg:c=>scene(c)+`<circle cx="52" cy="110" r="50" fill="${c}" opacity=".1"/>`+(CHAR_IMG.secBoy?charImg(CHAR_IMG.secBoy):boyTeen(52,193,1.08,'#8a1c3c'))},
 
- royal:{n:'ملكي',c:'#14365f',svg:c=>{
+ royal:{n:'\u0645\u0644\u0643\u064a',c:'#14365f',svg:c=>{
   const corner=(tx,sx,sy)=>`<g transform="translate(${tx}) scale(${sx},${sy})"><path d="M0 0H70L0 70Z" fill="${c}"/><path d="M0 0H52L0 52Z" fill="${GOLD}" opacity=".9"/><path d="M0 0H40L0 40Z" fill="${c}"/></g>`;
   return `<rect width="297" height="210" fill="#fffdf7"/>${corner('0,0',1,1)}${corner('297,0',-1,1)}<g transform="translate(0,210) scale(1,-1)">${corner('0,0',1,1)}${corner('297,0',-1,1)}</g>
   <rect x="9" y="9" width="279" height="192" fill="none" stroke="${c}" stroke-width="2.4"/><rect x="12.5" y="12.5" width="272" height="185" fill="none" stroke="${GOLD}" stroke-width="1.2"/>
   <rect x="15" y="15" width="267" height="180" fill="none" stroke="${GOLD}" stroke-width=".4"/>${medal(148.5,170,13,c)}`}},
- stars:{n:'نجوم',c:'#6a2c91',svg:c=>{const R=rnd(7),cols=['#ffd166','#ef476f','#06d6a0','#118ab2','#ff9f1c','#9b5de5'];let st='';
+ stars:{n:'\u0646\u062c\u0648\u0645',c:'#6a2c91',svg:c=>{const R=rnd(7),cols=['#ffd166','#ef476f','#06d6a0','#118ab2','#ff9f1c','#9b5de5'];let st='';
   for(let i=0;i<34;i++){const x=R()*297,y=R()*210;if(x>40&&x<257&&y>25&&y<185)continue;st+=star(x,y,3+R()*5,cols[i%6],R()*2)}
   const balloon=(x,y,col)=>`<path d="M${x} ${y+15} q-3 8 2 14 q-4 6 0 14" stroke="#999" stroke-width=".5" fill="none"/><ellipse cx="${x}" cy="${y}" rx="10" ry="12.5" fill="${col}"/><ellipse cx="${x-3.5}" cy="${y-5}" rx="2.5" ry="4" fill="#fff" opacity=".5"/><path d="M${x-1.5} ${y+12.3}h3l-1.5 2.5z" fill="${col}"/>`;
   const rb=['#ef476f','#ff9f1c','#ffd166','#06d6a0','#118ab2','#9b5de5'].map((col,i)=>`<path d="M${-10+i*5} 0 A${60-i*5} ${60-i*5} 0 0 0 ${50} ${60-i*5}" stroke="${col}" stroke-width="5" fill="none"/>`).join('');
   return `<rect width="297" height="210" fill="#fffaf0"/><g opacity=".85" transform="translate(-10,-10)">${rb}</g><g opacity=".85" transform="translate(307,-10) scale(-1,1)">${rb}</g><circle cx="270" cy="185" r="60" fill="#ffd16633"/>
   <rect x="7" y="7" width="283" height="196" rx="14" fill="none" stroke="${c}" stroke-width="2.5" stroke-dasharray="6 3"/>${st}
   ${balloon(22,165,'#ef476f')}${balloon(36,155,'#118ab2')}${balloon(275,160,'#06d6a0')}${balloon(261,170,'#ffd166')}`}},
- modern:{n:'عصري',c:'#7c3aed',svg:c=>`<rect width="297" height="210" fill="#fff"/>
+ modern:{n:'\u0639\u0635\u0631\u064a',c:'#7c3aed',svg:c=>`<rect width="297" height="210" fill="#fff"/>
   <polygon points="0,0 88,0 62,210 0,210" fill="${c}"/><polygon points="0,0 96,0 70,210 64,210 90,0" fill="${GOLD}" opacity=".85"/>
   <polygon points="0,120 70,210 0,210" fill="#000" opacity=".18"/><polygon points="0,0 60,0 0,70" fill="#fff" opacity=".1"/>
   <circle cx="270" cy="20" r="40" fill="${c}" opacity=".07"/><circle cx="285" cy="200" r="28" fill="${c}" opacity=".07"/>
   ${[...Array(6)].map((_,i)=>[...Array(4)].map((_,j)=>`<circle cx="${255+j*6}" cy="${150+i*6}" r=".9" fill="${c}" opacity=".35"/>`).join('')).join('')}
   ${medal(40,92,20,'#1d1d2c')}`},
- party:{n:'احتفال',c:'#e63946',svg:c=>{const R=rnd(3),cols=['#e63946','#f4a261','#2a9d8f','#e9c46a','#457b9d','#9b5de5','#ff70a6'];let cf='';
+ party:{n:'\u0627\u062d\u062a\u0641\u0627\u0644',c:'#e63946',svg:c=>{const R=rnd(3),cols=['#e63946','#f4a261','#2a9d8f','#e9c46a','#457b9d','#9b5de5','#ff70a6'];let cf='';
   for(let i=0;i<120;i++){const x=R()*297,y=R()*210;if(x>25&&x<272&&y>22&&y<190)continue;const col=cols[i%7],r=R()*360;
    cf+=i%3?`<rect x="${x}" y="${y}" width="${2+R()*3}" height="${1+R()*1.6}" fill="${col}" transform="rotate(${r} ${x} ${y})"/>`:`<circle cx="${x}" cy="${y}" r="${.8+R()*1.4}" fill="${col}"/>`}
   const pen=(x,col)=>`<line x1="${x}" y1="0" x2="${x}" y2="0" />`;
   let flags='';for(let i=0;i<14;i++){const x=10+i*20.5,col=cols[i%7];flags+=`<polygon points="${x},4 ${x+16},4 ${x+8},${16}" fill="${col}"/>`}
   return `<rect width="297" height="210" fill="#fff"/><path d="M0 2 Q148 12 297 2" stroke="#555" stroke-width=".5" fill="none"/>${flags}${cf}
   ${star(24,190,9,GOLD,.2)}${star(273,190,9,GOLD,-.2)}`}},
- islamic:{n:'إسلامي',c:'#0f6b5c',svg:c=>{const oct=(x,y,r,f,o=1)=>`<g opacity="${o}"><rect x="${x-r}" y="${y-r}" width="${2*r}" height="${2*r}" fill="${f}"/><rect x="${x-r}" y="${y-r}" width="${2*r}" height="${2*r}" fill="${f}" transform="rotate(45 ${x} ${y})"/></g>`;
+ islamic:{n:'\u0625\u0633\u0644\u0627\u0645\u064a',c:'#0f6b5c',svg:c=>{const oct=(x,y,r,f,o=1)=>`<g opacity="${o}"><rect x="${x-r}" y="${y-r}" width="${2*r}" height="${2*r}" fill="${f}"/><rect x="${x-r}" y="${y-r}" width="${2*r}" height="${2*r}" fill="${f}" transform="rotate(45 ${x} ${y})"/></g>`;
   let pat='';for(let x=0;x<=297;x+=18)for(let y=0;y<=210;y+=18)pat+=oct(x,y,4,c,.13);
   return `<rect width="297" height="210" fill="#fbf7ec"/>${pat}
   <path d="M18 200V60Q18 44 34 40Q120 30 148.5 8Q177 30 263 40Q279 44 279 60V200Z" fill="#fffdf6" stroke="${c}" stroke-width="2.2"/>
   <path d="M23 195V62Q23 49 36 45Q122 35 148.5 15Q175 35 261 45Q274 49 274 62V195Z" fill="none" stroke="${GOLD}" stroke-width="1"/>
   ${oct(148.5,24,4.5,GOLD)}${oct(148.5,24,2.4,c)}${[[30,190],[267,190]].map(([x,y])=>oct(x,y,7,c)+oct(x,y,4.5,GOLD)+oct(x,y,2,c)).join('')}`}},
- hero:{n:'بطل',c:'#ffc93c',svg:c=>{const R=rnd(11);let st='';for(let i=0;i<140;i++)st+=`<circle cx="${R()*297}" cy="${R()*210}" r="${R()*.7+.15}" fill="#fff" opacity="${.4+R()*.6}"/>`;
+ hero:{n:'\u0628\u0637\u0644',c:'#ffc93c',svg:c=>{const R=rnd(11);let st='';for(let i=0;i<140;i++)st+=`<circle cx="${R()*297}" cy="${R()*210}" r="${R()*.7+.15}" fill="#fff" opacity="${.4+R()*.6}"/>`;
   for(let i=0;i<10;i++){const x=R()*297,y=R()*210;if(x>40&&x<257&&y>30&&y<180)continue;st+=star(x,y,1.5+R()*2.5,c)}
   return `<defs><radialGradient id="sky" cx=".5" cy=".4" r=".8"><stop offset="0" stop-color="#22457f"/><stop offset="1" stop-color="#0a1630"/></radialGradient></defs>
   <rect width="297" height="210" fill="url(#sky)"/>${st}
@@ -196,34 +196,34 @@ const TPLS={
   <circle cx="274" cy="186" r="9" fill="#8ecae6" opacity=".9"/><circle cx="271" cy="183" r="2" fill="#fff" opacity=".3"/><path d="M200 0 L150 22" stroke="#fff" stroke-width=".8" opacity=".6"/>
   <rect x="8" y="8" width="281" height="194" rx="6" fill="none" stroke="${c}" stroke-width="1.2" opacity=".8"/>${medal(148.5,174,11,'#e63946')}`}}
 };
-// [مذكر, مؤنث]
+// [\u0645\u0630\u0643\u0631, \u0645\u0624\u0646\u062b]
 const REASONS=[
- ['لتفوقه الدراسي وتميّزه','لتفوقها الدراسي وتميّزها'],
- ['لحسن سلوكه وانضباطه','لحسن سلوكها وانضباطها'],
- ['لمشاركته المتميزة في الإذاعة المدرسية','لمشاركتها المتميزة في الإذاعة المدرسية'],
- ['لحفظه جزءًا من القرآن الكريم','لحفظها جزءًا من القرآن الكريم'],
- ['لتميّزه في القراءة','لتميّزها في القراءة'],
- ['لمواظبته وحضوره المثالي','لمواظبتها وحضورها المثالي'],
- ['لفوزه في المسابقة','لفوزها في المسابقة'],
- ['لتعاونه ومبادرته','لتعاونها ومبادرتها'],
- ['لتحسّن مستواه الدراسي','لتحسّن مستواها الدراسي'],
- ['لتميّزه في مادة الرياضيات','لتميّزها في مادة الرياضيات'],
- ['لتميّزه في مادة العلوم','لتميّزها في مادة العلوم'],
- ['لتميّزه في اللغة العربية','لتميّزها في اللغة العربية'],
- ['لتميّزه في اللغة الإنجليزية','لتميّزها في اللغة الإنجليزية'],
- ['لحسن خطه وترتيب دفاتره','لحسن خطها وترتيب دفاترها'],
- ['لمشاركته الفاعلة في الأنشطة المدرسية','لمشاركتها الفاعلة في الأنشطة المدرسية'],
- ['لتميّزه في الأنشطة الرياضية','لتميّزها في الأنشطة الرياضية'],
- ['لتميّزه في الإلقاء والخطابة','لتميّزها في الإلقاء والخطابة'],
- ['لتمثيله المدرسة خير تمثيل','لتمثيلها المدرسة خير تمثيل'],
- ['لحسن أخلاقه وتعامله مع زملائه','لحسن أخلاقها وتعاملها مع زميلاتها'],
- ['لحفاظه على نظافة الصف والمدرسة','لحفاظها على نظافة الصف والمدرسة']];
+ ['\u0644\u062a\u0641\u0648\u0642\u0647 \u0627\u0644\u062f\u0631\u0627\u0633\u064a \u0648\u062a\u0645\u064a\u0651\u0632\u0647','\u0644\u062a\u0641\u0648\u0642\u0647\u0627 \u0627\u0644\u062f\u0631\u0627\u0633\u064a \u0648\u062a\u0645\u064a\u0651\u0632\u0647\u0627'],
+ ['\u0644\u062d\u0633\u0646 \u0633\u0644\u0648\u0643\u0647 \u0648\u0627\u0646\u0636\u0628\u0627\u0637\u0647','\u0644\u062d\u0633\u0646 \u0633\u0644\u0648\u0643\u0647\u0627 \u0648\u0627\u0646\u0636\u0628\u0627\u0637\u0647\u0627'],
+ ['\u0644\u0645\u0634\u0627\u0631\u0643\u062a\u0647 \u0627\u0644\u0645\u062a\u0645\u064a\u0632\u0629 \u0641\u064a \u0627\u0644\u0625\u0630\u0627\u0639\u0629 \u0627\u0644\u0645\u062f\u0631\u0633\u064a\u0629','\u0644\u0645\u0634\u0627\u0631\u0643\u062a\u0647\u0627 \u0627\u0644\u0645\u062a\u0645\u064a\u0632\u0629 \u0641\u064a \u0627\u0644\u0625\u0630\u0627\u0639\u0629 \u0627\u0644\u0645\u062f\u0631\u0633\u064a\u0629'],
+ ['\u0644\u062d\u0641\u0638\u0647 \u062c\u0632\u0621\u064b\u0627 \u0645\u0646 \u0627\u0644\u0642\u0631\u0622\u0646 \u0627\u0644\u0643\u0631\u064a\u0645','\u0644\u062d\u0641\u0638\u0647\u0627 \u062c\u0632\u0621\u064b\u0627 \u0645\u0646 \u0627\u0644\u0642\u0631\u0622\u0646 \u0627\u0644\u0643\u0631\u064a\u0645'],
+ ['\u0644\u062a\u0645\u064a\u0651\u0632\u0647 \u0641\u064a \u0627\u0644\u0642\u0631\u0627\u0621\u0629','\u0644\u062a\u0645\u064a\u0651\u0632\u0647\u0627 \u0641\u064a \u0627\u0644\u0642\u0631\u0627\u0621\u0629'],
+ ['\u0644\u0645\u0648\u0627\u0638\u0628\u062a\u0647 \u0648\u062d\u0636\u0648\u0631\u0647 \u0627\u0644\u0645\u062b\u0627\u0644\u064a','\u0644\u0645\u0648\u0627\u0638\u0628\u062a\u0647\u0627 \u0648\u062d\u0636\u0648\u0631\u0647\u0627 \u0627\u0644\u0645\u062b\u0627\u0644\u064a'],
+ ['\u0644\u0641\u0648\u0632\u0647 \u0641\u064a \u0627\u0644\u0645\u0633\u0627\u0628\u0642\u0629','\u0644\u0641\u0648\u0632\u0647\u0627 \u0641\u064a \u0627\u0644\u0645\u0633\u0627\u0628\u0642\u0629'],
+ ['\u0644\u062a\u0639\u0627\u0648\u0646\u0647 \u0648\u0645\u0628\u0627\u062f\u0631\u062a\u0647','\u0644\u062a\u0639\u0627\u0648\u0646\u0647\u0627 \u0648\u0645\u0628\u0627\u062f\u0631\u062a\u0647\u0627'],
+ ['\u0644\u062a\u062d\u0633\u0651\u0646 \u0645\u0633\u062a\u0648\u0627\u0647 \u0627\u0644\u062f\u0631\u0627\u0633\u064a','\u0644\u062a\u062d\u0633\u0651\u0646 \u0645\u0633\u062a\u0648\u0627\u0647\u0627 \u0627\u0644\u062f\u0631\u0627\u0633\u064a'],
+ ['\u0644\u062a\u0645\u064a\u0651\u0632\u0647 \u0641\u064a \u0645\u0627\u062f\u0629 \u0627\u0644\u0631\u064a\u0627\u0636\u064a\u0627\u062a','\u0644\u062a\u0645\u064a\u0651\u0632\u0647\u0627 \u0641\u064a \u0645\u0627\u062f\u0629 \u0627\u0644\u0631\u064a\u0627\u0636\u064a\u0627\u062a'],
+ ['\u0644\u062a\u0645\u064a\u0651\u0632\u0647 \u0641\u064a \u0645\u0627\u062f\u0629 \u0627\u0644\u0639\u0644\u0648\u0645','\u0644\u062a\u0645\u064a\u0651\u0632\u0647\u0627 \u0641\u064a \u0645\u0627\u062f\u0629 \u0627\u0644\u0639\u0644\u0648\u0645'],
+ ['\u0644\u062a\u0645\u064a\u0651\u0632\u0647 \u0641\u064a \u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629','\u0644\u062a\u0645\u064a\u0651\u0632\u0647\u0627 \u0641\u064a \u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629'],
+ ['\u0644\u062a\u0645\u064a\u0651\u0632\u0647 \u0641\u064a \u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629','\u0644\u062a\u0645\u064a\u0651\u0632\u0647\u0627 \u0641\u064a \u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629'],
+ ['\u0644\u062d\u0633\u0646 \u062e\u0637\u0647 \u0648\u062a\u0631\u062a\u064a\u0628 \u062f\u0641\u0627\u062a\u0631\u0647','\u0644\u062d\u0633\u0646 \u062e\u0637\u0647\u0627 \u0648\u062a\u0631\u062a\u064a\u0628 \u062f\u0641\u0627\u062a\u0631\u0647\u0627'],
+ ['\u0644\u0645\u0634\u0627\u0631\u0643\u062a\u0647 \u0627\u0644\u0641\u0627\u0639\u0644\u0629 \u0641\u064a \u0627\u0644\u0623\u0646\u0634\u0637\u0629 \u0627\u0644\u0645\u062f\u0631\u0633\u064a\u0629','\u0644\u0645\u0634\u0627\u0631\u0643\u062a\u0647\u0627 \u0627\u0644\u0641\u0627\u0639\u0644\u0629 \u0641\u064a \u0627\u0644\u0623\u0646\u0634\u0637\u0629 \u0627\u0644\u0645\u062f\u0631\u0633\u064a\u0629'],
+ ['\u0644\u062a\u0645\u064a\u0651\u0632\u0647 \u0641\u064a \u0627\u0644\u0623\u0646\u0634\u0637\u0629 \u0627\u0644\u0631\u064a\u0627\u0636\u064a\u0629','\u0644\u062a\u0645\u064a\u0651\u0632\u0647\u0627 \u0641\u064a \u0627\u0644\u0623\u0646\u0634\u0637\u0629 \u0627\u0644\u0631\u064a\u0627\u0636\u064a\u0629'],
+ ['\u0644\u062a\u0645\u064a\u0651\u0632\u0647 \u0641\u064a \u0627\u0644\u0625\u0644\u0642\u0627\u0621 \u0648\u0627\u0644\u062e\u0637\u0627\u0628\u0629','\u0644\u062a\u0645\u064a\u0651\u0632\u0647\u0627 \u0641\u064a \u0627\u0644\u0625\u0644\u0642\u0627\u0621 \u0648\u0627\u0644\u062e\u0637\u0627\u0628\u0629'],
+ ['\u0644\u062a\u0645\u062b\u064a\u0644\u0647 \u0627\u0644\u0645\u062f\u0631\u0633\u0629 \u062e\u064a\u0631 \u062a\u0645\u062b\u064a\u0644','\u0644\u062a\u0645\u062b\u064a\u0644\u0647\u0627 \u0627\u0644\u0645\u062f\u0631\u0633\u0629 \u062e\u064a\u0631 \u062a\u0645\u062b\u064a\u0644'],
+ ['\u0644\u062d\u0633\u0646 \u0623\u062e\u0644\u0627\u0642\u0647 \u0648\u062a\u0639\u0627\u0645\u0644\u0647 \u0645\u0639 \u0632\u0645\u0644\u0627\u0626\u0647','\u0644\u062d\u0633\u0646 \u0623\u062e\u0644\u0627\u0642\u0647\u0627 \u0648\u062a\u0639\u0627\u0645\u0644\u0647\u0627 \u0645\u0639 \u0632\u0645\u064a\u0644\u0627\u062a\u0647\u0627'],
+ ['\u0644\u062d\u0641\u0627\u0638\u0647 \u0639\u0644\u0649 \u0646\u0638\u0627\u0641\u0629 \u0627\u0644\u0635\u0641 \u0648\u0627\u0644\u0645\u062f\u0631\u0633\u0629','\u0644\u062d\u0641\u0627\u0638\u0647\u0627 \u0639\u0644\u0649 \u0646\u0638\u0627\u0641\u0629 \u0627\u0644\u0635\u0641 \u0648\u0627\u0644\u0645\u062f\u0631\u0633\u0629']];
 const $=id=>document.getElementById(id);
 const S={tpl:'royal',logo:''};
 const fields=['names','gender','title','color','reason','custom','school','grade','teacher','principal','date'];
 
 REASONS.forEach((r,i)=>$('reason').add(new Option(r[0],i)));
-$('reason').add(new Option('✏️ سبب آخر (اكتبه بنفسك)','custom'));
+$('reason').add(new Option('\u270f\ufe0f \u0633\u0628\u0628 \u0622\u062e\u0631 (\u0627\u0643\u062a\u0628\u0647 \u0628\u0646\u0641\u0633\u0643)','custom'));
 Object.entries(TPLS).forEach(([k,t])=>{const d=document.createElement('div');d.className='tpl';d.dataset.k=k;
  d.innerHTML=`<span class="th">${svg(t.svg(t.c)).replace('class="bg"','')}</span>${t.n}`;d.onclick=()=>{S.tpl=k;$('color').value=t.c;if(t.g)$('gender').value=t.g;render()};$('tpls').append(d)});
 $('date').value=new Date().toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
@@ -239,17 +239,17 @@ function cert({name,f}){
  const g=f?1:0,r=$('reason').value;
  const cp=$('custom').value.split('|').map(x=>x.trim());
  const reason=r==='custom'?esc(cp[f&&cp[1]?1:0]||''):REASONS[r][g];
- const grade=$('grade').value?` في الصف ${esc($('grade').value)}`:'';
+ const grade=$('grade').value?` \u0641\u064a \u0627\u0644\u0635\u0641 ${esc($('grade').value)}`:'';
  const school=esc($('school').value);
  const c=$('color').value;
  return `<div class="cert t-${S.tpl}" style="--c:${c}">${svg(TPLS[S.tpl].svg(c))}<div class="frame">
-  <div class="head"><div>${school?'المدرسة: '+school:''}</div>${S.logo?`<img src="${S.logo}" alt="">`:'<div></div>'}<div>${grade?'الصف: '+esc($('grade').value):''}</div></div>
+  <div class="head"><div>${school?'\u0627\u0644\u0645\u062f\u0631\u0633\u0629: '+school:''}</div>${S.logo?`<img src="${S.logo}" alt="">`:'<div></div>'}<div>${grade?'\u0627\u0644\u0635\u0641: '+esc($('grade').value):''}</div></div>
   <div class="title">${esc($('title').value)}</div>
-  <div class="lead">${f?'تتقدم إدارة المدرسة بالشكر والتقدير للطالبة':'تتقدم إدارة المدرسة بالشكر والتقدير للطالب'}</div>
+  <div class="lead">${f?'\u062a\u062a\u0642\u062f\u0645 \u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u062f\u0631\u0633\u0629 \u0628\u0627\u0644\u0634\u0643\u0631 \u0648\u0627\u0644\u062a\u0642\u062f\u064a\u0631 \u0644\u0644\u0637\u0627\u0644\u0628\u0629':'\u062a\u062a\u0642\u062f\u0645 \u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u062f\u0631\u0633\u0629 \u0628\u0627\u0644\u0634\u0643\u0631 \u0648\u0627\u0644\u062a\u0642\u062f\u064a\u0631 \u0644\u0644\u0637\u0627\u0644\u0628'}</div>
   <div class="name">${esc(name)}</div>
-  <div class="body">${reason}${grade}، ${f?'متمنين لها':'متمنين له'} دوام التوفيق والنجاح.</div>
+  <div class="body">${reason}${grade}\u060c ${f?'\u0645\u062a\u0645\u0646\u064a\u0646 \u0644\u0647\u0627':'\u0645\u062a\u0645\u0646\u064a\u0646 \u0644\u0647'} \u062f\u0648\u0627\u0645 \u0627\u0644\u062a\u0648\u0641\u064a\u0642 \u0648\u0627\u0644\u0646\u062c\u0627\u062d.</div>
   <div class="date">${esc($('date').value)}</div>
-  <div class="foot"><div>المعلم/ة<b>${esc($('teacher').value)||'&nbsp;'}</b></div><div>مدير/ة المدرسة<b>${esc($('principal').value)||'&nbsp;'}</b></div></div>
+  <div class="foot"><div>\u0627\u0644\u0645\u0639\u0644\u0645/\u0629<b>${esc($('teacher').value)||'&nbsp;'}</b></div><div>\u0645\u062f\u064a\u0631/\u0629 \u0627\u0644\u0645\u062f\u0631\u0633\u0629<b>${esc($('principal').value)||'&nbsp;'}</b></div></div>
  </div></div>`}
 
 function fit(root){root.querySelectorAll('.name').forEach(el=>{let s=44;el.style.fontSize=s+'pt';const cs=getComputedStyle(el.parentElement),max=(el.parentElement.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight))*0.98;
@@ -258,18 +258,18 @@ function fit(root){root.querySelectorAll('.name').forEach(el=>{let s=44;el.style
 function render(){
  document.querySelectorAll('.tpl').forEach(t=>t.classList.toggle('on',t.dataset.k===S.tpl));
  $('customBox').style.display=$('reason').value==='custom'?'block':'none';if($('reason').value==='custom'&&document.activeElement===$('reason'))$('custom').focus();
- const list=parse();$('count').textContent=list.length?`${list.length} شهادة جاهزة`:'';
+ const list=parse();$('count').textContent=list.length?`${list.length} \u0634\u0647\u0627\u062f\u0629 \u062c\u0627\u0647\u0632\u0629`:'';
  const pv=$('preview');
- if(!list.length){pv.innerHTML='<div class="card empty">اكتب الأسماء لتظهر المعاينة هنا ✨<br><br>'+'</div>';
-   pv.querySelector('.empty').insertAdjacentHTML('beforeend',`<div class="scale">${cert({name:'اسم الطالب',f:$('gender').value==='f'})}</div>`);}
- else pv.innerHTML=list.slice(0,30).map(p=>`<div class="scale">${cert(p)}</div>`).join('')+(list.length>30?`<div class="hint">تُعرض أول 30 فقط، وستُطبع جميع الشهادات (${list.length}).</div>`:'');
+ if(!list.length){pv.innerHTML='<div class="card empty">\u0627\u0643\u062a\u0628 \u0627\u0644\u0623\u0633\u0645\u0627\u0621 \u0644\u062a\u0638\u0647\u0631 \u0627\u0644\u0645\u0639\u0627\u064a\u0646\u0629 \u0647\u0646\u0627 \u2728<br><br>'+'</div>';
+   pv.querySelector('.empty').insertAdjacentHTML('beforeend',`<div class="scale">${cert({name:'\u0627\u0633\u0645 \u0627\u0644\u0637\u0627\u0644\u0628',f:$('gender').value==='f'})}</div>`);}
+ else pv.innerHTML=list.slice(0,30).map(p=>`<div class="scale">${cert(p)}</div>`).join('')+(list.length>30?`<div class="hint">\u062a\u064f\u0639\u0631\u0636 \u0623\u0648\u0644 30 \u0641\u0642\u0637\u060c \u0648\u0633\u062a\u064f\u0637\u0628\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0634\u0647\u0627\u062f\u0627\u062a (${list.length}).</div>`:'');
  scale();fit(pv);save()}
 function scale(){document.querySelectorAll('#preview .scale').forEach(w=>{const c=w.firstElementChild;const k=w.clientWidth/c.offsetWidth;c.style.transform=`scale(${k})`;w.style.height=c.offsetHeight*k+'px'})}
 
-$('printBtn').onclick=()=>{const list=parse();if(!list.length){alert('أضف أسماء الطلاب أولًا');return}
+$('printBtn').onclick=()=>{const list=parse();if(!list.length){alert('\u0623\u0636\u0641 \u0623\u0633\u0645\u0627\u0621 \u0627\u0644\u0637\u0644\u0627\u0628 \u0623\u0648\u0644\u064b\u0627');return}
  let p=document.querySelector('body>.shp-print');if(!p){p=document.createElement('div');p.className='shp shp-print';document.body.appendChild(p)}p.innerHTML=list.map(cert).join('');p.style.cssText='display:block;position:absolute;left:-99999px';fit(p);p.style.cssText='';
  document.fonts.ready.then(()=>window.print())};
-$('file').onchange=e=>{const fl=e.target.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>{$('names').value=rd.result.replace(/^﻿/,'');render()};rd.readAsText(fl,'utf-8')};
+$('file').onchange=e=>{const fl=e.target.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>{$('names').value=rd.result.replace(/^\ufeff/,'');render()};rd.readAsText(fl,'utf-8')};
 $('logo').onchange=e=>{const fl=e.target.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>{S.logo=rd.result;render()};rd.readAsDataURL(fl)};
 fields.forEach(f=>$(f).addEventListener('input',render));$('reason').addEventListener('change',render);
 $('theme').onclick=()=>{const r=$('shahada');r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'};
