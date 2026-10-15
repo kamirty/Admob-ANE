@@ -206,18 +206,26 @@ function drawImg(im,B,p,lt){
   return p<1?{x:x+w*(1-part),y:y+rh*(full+.5)}:null;
 }
 
+// يد مرسومة (SVG) — رأس القلم عند (10,20) والساعد يخرج من أسفل اليمين كما في الكتابة العربية
+var HAND_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 440">'+
+ '<path d="M150 70 C175 40 235 35 265 70 C295 105 305 150 292 195 L335 440 L215 440 L198 240 C165 215 140 175 142 135 C120 125 112 100 125 80 Z" fill="#fbd5b5" stroke="#e7a678" stroke-width="4" stroke-linejoin="round"/>'+
+ '<path d="M150 150 C165 160 185 162 200 155 M160 178 C175 188 195 188 210 180 M178 205 C190 212 205 212 216 206" fill="none" stroke="#e7a678" stroke-width="4" stroke-linecap="round"/>'+
+ '<g transform="translate(10 20) rotate(24)">'+
+  '<path d="M0 0 L40 -10 L40 10 Z" fill="#f2c48d" stroke="#d29a5c" stroke-width="2" stroke-linejoin="round"/>'+
+  '<path d="M0 0 L13 -3.3 L13 3.3 Z" fill="#2b2b33"/>'+
+  '<rect x="40" y="-10" width="230" height="20" fill="#2f7fd8"/><rect x="40" y="-10" width="230" height="7" fill="#5aa6f0"/><rect x="40" y="4" width="230" height="6" fill="#1f5fae"/>'+
+  '<rect x="270" y="-11" width="16" height="22" fill="#c9ccd3" stroke="#9a9ea8" stroke-width="2"/>'+
+  '<rect x="286" y="-11" width="22" height="22" rx="7" fill="#f2f2f4" stroke="#b8bcc6" stroke-width="2"/>'+
+ '</g>'+
+ '<path d="M118 62 C140 45 185 50 205 72 C212 84 202 97 186 95 C162 92 138 86 122 82 C108 79 106 68 118 62 Z" fill="#fbd5b5" stroke="#e7a678" stroke-width="4" stroke-linejoin="round"/>'+
+ '<path d="M205 66 C225 72 240 92 236 112 C232 126 216 126 210 114 C204 102 198 94 186 92" fill="#fbd5b5" stroke="#e7a678" stroke-width="4" stroke-linejoin="round"/>'+
+ '<path d="M124 68 C120 70 120 76 125 77" fill="none" stroke="#f0b08a" stroke-width="3" stroke-linecap="round"/>'+
+'</svg>';
+var HAND=new Image();HAND.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(HAND_SVG);
 function drawHand(h){
-  ctx.save();ctx.translate(h.x,h.y);ctx.rotate(-0.55);
-  // القلم
-  ctx.fillStyle='#111';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-7,-22);ctx.lineTo(7,-22);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#22222a';ctx.fillRect(-11,-150,22,130);ctx.fillStyle='#d4a72c';ctx.fillRect(-11,-62,22,10);
-  // اليد
-  ctx.fillStyle='#f0c6a0';ctx.strokeStyle='#8a5a3c';ctx.lineWidth=2.5;
-  ctx.beginPath();ctx.ellipse(-16,-58,17,11,-.4,0,7);ctx.fill();ctx.stroke();
-  ctx.beginPath();ctx.moveTo(-14,-80);ctx.bezierCurveTo(-60,-90,-70,-150,-40,-190);ctx.lineTo(70,-210);ctx.bezierCurveTo(90,-150,60,-80,14,-70);ctx.closePath();ctx.fill();ctx.stroke();
-  ctx.beginPath();ctx.ellipse(18,-62,18,10,.5,0,7);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#e9b78f';ctx.beginPath();ctx.moveTo(-40,-190);ctx.lineTo(70,-210);ctx.lineTo(90,-400);ctx.lineTo(-30,-400);ctx.closePath();ctx.fill();ctx.stroke();
-  ctx.restore();
+  if(!HAND.complete)return;var s=.95;
+  ctx.save();ctx.globalAlpha=.13;ctx.filter='blur(6px)';ctx.drawImage(HAND,h.x-10*s+14,h.y-20*s+18,360*s,440*s);ctx.restore();
+  ctx.drawImage(HAND,h.x-10*s,h.y-20*s,360*s,440*s);
 }
 
 function drawWm(){if(!S.wm)return;ctx.save();ctx.font='700 20px Cairo';ctx.direction='ltr';ctx.textAlign='left';ctx.fillStyle=S.acc;ctx.globalAlpha=.7;ctx.fillText('Kamirty.ai',24,H-22);ctx.restore()}
