@@ -10,8 +10,12 @@ import base64, re, sys
 
 src, out = sys.argv[1], sys.argv[2]
 s = open(src, encoding='utf-8').read()
-i, j = s.index('<script>'), s.index('</script>')
-head, js, tail = s[:i], s[i + len('<script>'):j], s[j + len('</script>'):]
+import re as _re
+blocks = list(_re.finditer(r'<script>(.*?)</script>', s, flags=_re.S))
+js = ';\n'.join(m.group(1) for m in blocks)
+head, tail = s[:blocks[0].start()], s[blocks[-1].end():]
+mid = s[blocks[0].start():blocks[-1].end()]
+assert not _re.sub(r'<script>.*?</script>', '', mid, flags=_re.S).strip(), 'markup between scripts'
 
 def flat(h):
     h = re.sub(r'<!--.*?-->', '', h, flags=re.S)
