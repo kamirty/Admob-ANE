@@ -850,7 +850,7 @@ function guessIcon(text,avoid){var ws=String(text).split(/\s+/).map(stem).filter
  KW.forEach(function(o){if(o.k===avoid||/^(arr|curve|vline|hline|wavy|frame|banner|ring|cycle)/.test(o.k))return;var sc=0;ws.forEach(function(w){o.w.forEach(function(k){if(k.length<3)return;if(w===k)sc+=3;else if(w.indexOf(k)===0||k.indexOf(w)===0)sc+=1})});if(sc>bs){bs=sc;best=o.k}});
  if(best)return best;var F=['bulb','star','target','check','info','spark','book'];return F[(text.length+(avoid||'').length)%F.length]}
 function doPaste(){var raw=($('#k2ptxt')||{}).value||'';var lines=raw.split('\n').map(function(s){return s.trim()}).filter(Boolean);if(!lines.length){alert('الصق نص الدرس أولاً.');return}
- var title=lines.shift(),sents=[];lines.join(' ').split(/(?<=[.!؟?؛])\s+|\n/).forEach(function(s){s=s.trim().replace(/[.]+$/,'');if(s.length>1)sents.push(s)});
+ var title=lines.shift(),sents=[];lines.join(' ').replace(/([.!؟?؛])\s+/g,'$1\n').split('\n').forEach(function(s){s=s.trim().replace(/[.]+$/,'');if(s.length>1)sents.push(s)});
  if(!sents.length&&lines.length)sents=lines;var grp=$('#k2pgrp').checked,end=$('#k2pend').checked,slides=[mkSlide('title',{icon:guessIcon(title),title:title,sub:''})],last=null;
  sents.slice(0,30).forEach(function(s,i){var t='',b=s,ci=s.indexOf(':');if(ci>0&&ci<40){t=s.slice(0,ci).trim();b=s.slice(ci+1).trim()}var ic=guessIcon(s,last);last=ic;
   var same=grp&&i%3!==0;slides.push(mkSlide('hero',{icon:ic,title:t,body:b,flip:i%2===1},{mode:same?'same':'new',trans:i===0?'erase':['erase','slide','fade'][Math.floor(i/3)%3]}))});
