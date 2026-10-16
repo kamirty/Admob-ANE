@@ -176,6 +176,7 @@
     <h4>الصوت</h4>
     <label class="k2-chk"><input type="checkbox" data-s="autosfx" data-t="b"> مؤثرات تلقائية — تُضاف وحدها وتظهر في إعدادات كل شريحة وعنصر بعلامة ✨، لتغييرها أو حذفها متى شئت</label>
     <label class="k2-chk"><input type="checkbox" data-s="sfx" data-t="b"> صوت القلم تلقائياً أثناء الكتابة والرسم (طباشير على السبورة الخضراء والسوداء، وقلم رصاص على غيرها)</label>
+    <label>مستوى صوت القلم</label><input type="range" min="0" max="1.5" step="0.05" data-s="pvol" data-t="n">
     <label>مستوى المؤثرات</label><input type="range" min="0" max="1.5" step="0.05" data-s="fvol" data-t="n">
     <label>مستوى التعليق الصوتي</label><input type="range" min="0" max="2" step="0.05" data-s="vvol" data-t="n">
     <label>موسيقى خلفية (تنخفض تلقائياً أثناء الكلام)</label>
@@ -445,7 +446,7 @@ var TEMPLATES=[
   mkSlide('quote',{text:'العلم نور',author:'العبرة من القصة'},{trans:'fade'})]}},
  {k:'blank',e:'⬜',n:'مشروع فارغ',d:'ابدأ من الصفر بشريحة عنوان واحدة.',f:function(){return[mkSlide('title',{icon:'star',title:'عنوان الفيديو',sub:'وصف قصير'})]}}
 ];
-function defaults(){return{v:3,ratio:'16:9',board:'white',font:'Marhey',ink:'#1b1b1f',acc:'#c8941c',speed:1,pointer:'pen',penColor:'#d4a72c',overview:true,sfx:true,autosfx:true,fvol:.8,vvol:1,music:null,musicName:'',wm:true,mvol:.4,slides:TEMPLATES[0].f()}}
+function defaults(){return{v:3,ratio:'16:9',board:'white',font:'Marhey',ink:'#1b1b1f',acc:'#c8941c',speed:1,pointer:'pen',penColor:'#d4a72c',pvol:.6,overview:true,sfx:true,autosfx:true,fvol:.8,vvol:1,music:null,musicName:'',wm:true,mvol:.4,slides:TEMPLATES[0].f()}}
 
 /* ====================== الحفظ والتراجع ====================== */
 var saveT=0;
@@ -630,16 +631,20 @@ function camSfx(sl,i){if(!i||sl.mode!=='same')return null;return resSfx(sl.csfx,
 function elSfx(el){return resSfx(el.esfx,autoEl(el))}
 function sfxOpts(v,auto){return opts([['auto','✨ تلقائي'+(P.autosfx?(auto?': '+SFXM[auto].n:': بدون'):' (معطّل من «عام»)')],['none','🔇 بدون صوت']].concat(SFX.map(function(a){return[a[0],a[1]]})),v||'auto')}
 var NOISE=null,ACTIVE=[],BUF={},penG=null,penBP=null,fxG=null,penPv=0;
-var PENS={pencil:['✏ قلم رصاص',3200,.7,.12],chalk:['🧱 طباشير',1600,1.6,.18],marker:['🖊 ماركر',900,.6,.13]};
+var PENS={pencil:['✏ قلم رصاص',3600,1.1,.35],chalk:['🧱 طباشير',2100,1.3,.45],marker:['🖊 ماركر',1500,.8,.25]},penNext=0,penLast=null;
 function penAuto(){return P.board==='chalk'||P.board==='black'?'chalk':'pencil'}
 function strokeAnim(el){if(el.type==='text')return el.anim!=='type';if(el.type==='draw')return el.anim==='draw'||el.anim==='drawfill'||!el.anim;if(el.type==='image')return el.anim==='sketch'||!el.anim;return el.type==='free'}
 function wsfxOf(el){if(!el||el.type==='sound')return null;var v=el.wsfx;if(v==='none')return null;if(v&&PENS[v])return v;return P.sfx?penAuto():null}
-function penSet(k,on){if(!penG)return;var W2=PENS[k],t=actx.currentTime;if(on&&W2){penBP.frequency.setTargetAtTime(W2[1]*(.8+Math.random()*.4),t,.02);penBP.Q.value=W2[2];penG.gain.setTargetAtTime(W2[3]*(.5+Math.random()*.9),t,.02)}else penG.gain.setTargetAtTime(0,t,.03)}
-function previewPen(k){ensureAudio();if(!PENS[k])return;clearInterval(penPv);var n=0;penPv=setInterval(function(){n++;penSet(k,n<26&&(n%9)<7);if(n>28){clearInterval(penPv);penSet(null,false)}},50)}
+function penGrain(k,t,amt){var W2=PENS[k],v=W2?W2[3]*amt*(P.pvol==null?.6:P.pvol):0;if(v<=.0005)return;
+ if(k==='marker')nz(penG,t,.08+Math.random()*.05,v,'bandpass',W2[1]*(.9+Math.random()*.2),0,W2[2],.025);
+ else{nz(penG,t,.03+Math.random()*.04,v,'bandpass',W2[1]*(.8+Math.random()*.4),0,W2[2],.006);if(k==='chalk'&&Math.random()<.18)nz(penG,t+.008,.01,v*1.2,'highpass',5000)}}
+function penTick(k,speed){var now=actx.currentTime;if(penNext<now)penNext=now;var amt=clamp(.2+speed/700);
+ while(penNext<now+.08){if(Math.random()>.14)penGrain(k,penNext,amt*(.6+Math.random()*.4));penNext+=k==='marker'?.065:.04+Math.random()*.035}}
+function previewPen(k){ensureAudio();if(!PENS[k])return;clearInterval(penPv);var n=0;penPv=setInterval(function(){n++;if(n%10<7)penTick(k,320);if(n>30){clearInterval(penPv);penPv=0}},50)}
 function ctxInit(){if(actx)return true;try{var AC=window.AudioContext||window.webkitAudioContext;actx=new AC();master=actx.createGain();var cmp=actx.createDynamicsCompressor();cmp.threshold.value=-10;cmp.ratio.value=6;master.connect(cmp);cmp.connect(actx.destination);recDest=actx.createMediaStreamDestination();cmp.connect(recDest);
   musicG=actx.createGain();musicG.gain.value=P.mvol;musicG.connect(master);voiceG=actx.createGain();voiceG.gain.value=P.vvol;voiceG.connect(master);fxG=actx.createGain();fxG.gain.value=P.fvol;fxG.connect(master);
   var len=actx.sampleRate*2;NOISE=actx.createBuffer(1,len,actx.sampleRate);var d=NOISE.getChannelData(0);for(var i=0;i<len;i++)d[i]=Math.random()*2-1;
-  var src=actx.createBufferSource();src.buffer=NOISE;src.loop=true;var bp=actx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2600;bp.Q.value=.8;penBP=bp;penG=actx.createGain();penG.gain.value=0;src.connect(bp);bp.connect(penG);penG.connect(master);src.start();return true}catch(e){actx=null;return false}}
+  penG=actx.createGain();penG.gain.value=1;penG.connect(master);return true}catch(e){actx=null;return false}}
 function ensureAudio(){if(ctxInit()&&actx.state==='suspended')actx.resume()}
 function env(g,t,a,pk,dur){g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,pk),t+a);g.gain.exponentialRampToValueAtTime(.0001,t+dur)}
 function tone(out,type,f0,f1,t,dur,vol,a){var o=actx.createOscillator(),g=actx.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);if(f1&&f1!==f0)o.frequency.exponentialRampToValueAtTime(f1,t+dur);env(g,t,a||.005,vol,dur);o.connect(g);g.connect(out);o.start(t);o.stop(t+dur+.05);return o}
@@ -680,8 +685,8 @@ function audioStart(from){if(!actx||!TL)return;lastAT=from-1e-4;TL.au.forEach(fu
 function syncAudio(t,ptr){if(!actx||!TL)return;if(playing){if(lastAT==null||t<lastAT)lastAT=t-1e-4;var lt=lastAT;TL.au.forEach(function(e){if(e.t>lt&&e.t<=t)fire(e,t-e.t)});lastAT=t}
  var any=playing&&TL.au.some(function(e){return e.k==='voice'&&t>=e.t&&t<e.t+e.dur});
  musicG.gain.setTargetAtTime((P.mvol||0)*(any?.25:1),actx.currentTime,.15);
- if(!penPv||!playing){var wk=playing&&ptr&&ptr.el?wsfxOf(ptr.el):null;if(playing)penSet(wk,!!wk)}}
-function stopAudio(){ACTIVE.slice().forEach(function(sr){try{sr.stop()}catch(e){}});ACTIVE=[];lastAT=null;if(penG&&actx)penG.gain.setTargetAtTime(0,actx.currentTime,.02)}
+ var wk=playing&&ptr&&ptr.el?wsfxOf(ptr.el):null;if(wk){var sp=0;if(penLast&&t>penLast.t)sp=Math.hypot(ptr.x-penLast.x,ptr.y-penLast.y)/Math.max(.008,t-penLast.t)/U;penLast={x:ptr.x,y:ptr.y,t:t};penTick(wk,sp)}else penLast=null}
+function stopAudio(){ACTIVE.slice().forEach(function(sr){try{sr.stop()}catch(e){}});ACTIVE=[];lastAT=null;penLast=null}
 function buildAudio(){var au=[];if(P.music)getBuf(P.music);
  TL.flat.forEach(function(sl){var s=sl.s;if(s.voice&&s.voice.src){au.push({t:sl.start,k:'voice',src:s.voice.src,dur:s.voice.dur,v:1});getBuf(s.voice.src)}
   var cs=sl.k>0?camSfx(s,sl.i):null;if(cs)au.push({t:sl.camS,k:'synth',n:cs,v:.7});
