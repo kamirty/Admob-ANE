@@ -173,7 +173,7 @@
     <select data-s="pointer"><option value="dot">⚫ دائرة سوداء</option><option value="gold">🟡 نقطة ذهبية متوهجة</option><option value="pen">✏️ رأس قلم</option><option value="none">بدون مؤشر</option></select>
     <label class="k2-chk"><input type="checkbox" data-s="overview" data-t="b"> لقطة شاملة في نهاية كل سبورة (الكاميرا تبتعد لتُظهر كل الأفكار)</label>
     <h4>الصوت</h4>
-    <label class="k2-chk"><input type="checkbox" data-s="autosfx" data-t="b"> مؤثرات تلقائية (الانتقالات، حركة الكاميرا، الظهور بقفزة)</label>
+    <label class="k2-chk"><input type="checkbox" data-s="autosfx" data-t="b"> مؤثرات تلقائية — تُضاف وحدها وتظهر في إعدادات كل شريحة وعنصر بعلامة ✨، لتغييرها أو حذفها متى شئت</label>
     <label class="k2-chk"><input type="checkbox" data-s="sfx" data-t="b"> صوت احتكاك القلم أثناء الكتابة</label>
     <label>مستوى المؤثرات</label><input type="range" min="0" max="1.5" step="0.05" data-s="fvol" data-t="n">
     <label>مستوى التعليق الصوتي</label><input type="range" min="0" max="2" step="0.05" data-s="vvol" data-t="n">
@@ -616,6 +616,13 @@ var SFX=[['pop','💥 فرقعة',.2],['click','🖱 نقرة',.1],['whoosh','�
  ['magic','✨ سحر',1],['drum','🥁 قرع طبول',2],['applause','👏 تصفيق',2.2],['type','⌨ آلة كاتبة',.8],['camera','📸 التقاط صورة',.4],['knock','🚪 طرق الباب',.5],['rise','📈 صعود',.6],['fall','📉 هبوط',.6],
  ['boing','🤸 قفزة مرحة',.6],['tick','⏱ عقارب الساعة',3],['erase','🧽 مسح السبورة',.9],['flip','📖 قلب صفحة',.5],['heart','💓 نبض',1.4],['coin','🪙 عملة',.5]];
 var SFXM={};SFX.forEach(function(a){SFXM[a[0]]={n:a[1],d:a[2]}});
+function autoTrans(tr){return tr==='erase'?'erase':tr==='flip'?'flip':tr==='slide'?'whoosh':tr==='fade'?'swish':null}
+function autoEl(el){if(!el||el.type==='sound'||el.type==='free')return null;if(el.anim==='pop'||el.anim==='shake')return 'pop';if(el.anim==='type')return 'type';if(el.anim==='slide')return 'swish';return null}
+function resSfx(v,auto){if(v==='none')return null;if(!v||v==='auto')return P.autosfx?auto:null;return SFXM[v]?v:null}
+function trSfx(sl,i){if(!i||sl.mode==='same'||sl.trans==='none')return null;return resSfx(sl.tsfx,autoTrans(sl.trans))}
+function camSfx(sl,i){if(!i||sl.mode!=='same')return null;return resSfx(sl.csfx,'swish')}
+function elSfx(el){return resSfx(el.esfx,autoEl(el))}
+function sfxOpts(v,auto){return opts([['auto','✨ تلقائي'+(P.autosfx?(auto?': '+SFXM[auto].n:': بدون'):' (معطّل من «عام»)')],['none','🔇 بدون صوت']].concat(SFX.map(function(a){return[a[0],a[1]]})),v||'auto')}
 var NOISE=null,ACTIVE=[],BUF={},penG=null,fxG=null;
 function ctxInit(){if(actx)return true;try{var AC=window.AudioContext||window.webkitAudioContext;actx=new AC();master=actx.createGain();var cmp=actx.createDynamicsCompressor();cmp.threshold.value=-10;cmp.ratio.value=6;master.connect(cmp);cmp.connect(actx.destination);recDest=actx.createMediaStreamDestination();cmp.connect(recDest);
   musicG=actx.createGain();musicG.gain.value=P.mvol;musicG.connect(master);voiceG=actx.createGain();voiceG.gain.value=P.vvol;voiceG.connect(master);fxG=actx.createGain();fxG.gain.value=P.fvol;fxG.connect(master);
@@ -665,10 +672,10 @@ function syncAudio(t,ptr){if(!actx||!TL)return;if(playing){if(lastAT==null||t<la
 function stopAudio(){ACTIVE.slice().forEach(function(sr){try{sr.stop()}catch(e){}});ACTIVE=[];lastAT=null;if(penG&&actx)penG.gain.setTargetAtTime(0,actx.currentTime,.02)}
 function buildAudio(){var au=[];if(P.music)getBuf(P.music);
  TL.flat.forEach(function(sl){var s=sl.s;if(s.voice&&s.voice.src){au.push({t:sl.start,k:'voice',src:s.voice.src,dur:s.voice.dur,v:1});getBuf(s.voice.src)}
-  if(P.autosfx&&sl.k>0)au.push({t:sl.camS,k:'synth',n:'swish',v:.7});
+  var cs=sl.k>0?camSfx(s,sl.i):null;if(cs)au.push({t:sl.camS,k:'synth',n:cs,v:.7});
   sl.els.forEach(function(it){var el=it.el;if(el.type==='sound'){if(el.src){au.push({t:it.s,k:'file',src:el.src,dur:el.dur||0,v:el.vol==null?1:el.vol});getBuf(el.src)}else au.push({t:it.s,k:'synth',n:el.sfx,v:el.vol==null?1:el.vol})}
-   else if(P.autosfx&&(el.anim==='pop'||el.anim==='shake'))au.push({t:it.s,k:'synth',n:'pop',v:.6})})});
- if(P.autosfx)TL.G.forEach(function(g,gi){if(gi>0&&g.tr)au.push({t:g.start,k:'synth',n:g.trans==='erase'?'erase':g.trans==='flip'?'flip':'whoosh',v:.8});if(g.ovS!=null)au.push({t:g.ovS,k:'synth',n:'whoosh',v:.5})});
+   else{var es=elSfx(el);if(es)au.push({t:it.s,k:'synth',n:es,v:.6})}})});
+ TL.G.forEach(function(g,gi){var f=g.slides[0];if(gi>0&&g.tr){var ts=trSfx(f.s,f.i);if(ts)au.push({t:g.start,k:'synth',n:ts,v:.8})}if(g.ovS!=null&&P.autosfx)au.push({t:g.ovS,k:'synth',n:'whoosh',v:.5})});
  TL.au=au}
 function blobToData(b){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result)};r.onerror=rej;r.readAsDataURL(b)})}
 function audioFromBlob(b){return blobToData(b).then(function(src){return decodeSrc(src).then(function(buf){return{src:src,dur:buf.duration}})})}
@@ -709,7 +716,7 @@ $('#k2rec').onclick=function(){if(!window.MediaRecorder||!cv.captureStream){aler
  rec.onstop=function(){isRec=false;root.classList.remove('k2-recording');$('#k2recl').hidden=true;$('#k2cancel').hidden=true;$('#k2rec').disabled=false;st.getVideoTracks().forEach(function(t){t.stop()});
   if(recCancel){recCancel=false;$('#k2dli').textContent='تم إلغاء التسجيل.';toEdit();return}
   var type=(rec.mimeType||mt||'video/webm').split(';')[0],ext=type.indexOf('mp4')>-1?'mp4':'webm',blob=new Blob(ch,{type:type}),a=$('#k2dl');if(a.href)try{URL.revokeObjectURL(a.href)}catch(e){}
-  a.href=URL.createObjectURL(blob);a.download='kamirty-whiteboard.'+ext;a.hidden=false;$('#k2dli').textContent=ext.toUpperCase()+' — '+(blob.size/1048576).toFixed(1)+' ميجابايت'+(ext==='webm'?' (يعمل في يوتيوب وواتساب ومتصفحات الكمبيوتر)':'');rec=null};
+  a.href=URL.createObjectURL(blob);a.download='kamirty-whiteboard.'+ext;a.hidden=false;$('#k2dli').textContent=ext.toUpperCase()+' — '+(blob.size/1048576).toFixed(1)+' ميجابايت'+(/avc1/.test(mt)?' ✓ متوافق مع كل الأجهزة':' — ملاحظة: متصفحك لا يدعم ترميز H.264، فقد لا يعمل الملف على الآيفون. يعمل في يوتيوب ومتصفحات الكمبيوتر. للحصول على أعلى توافق استخدم Chrome أو Edge حديثاً.');rec=null};
  isRec=true;recCancel=false;root.classList.add('k2-recording');$('#k2recl').hidden=false;$('#k2cancel').hidden=false;$('#k2rec').disabled=true;$('#k2dl').hidden=true;$('#k2dli').textContent='';
  render(0);rec.start(250);setTimeout(function(){play(0)},250)};
 $('#k2cancel').onclick=function(){if(!rec)return;recCancel=true;pause();try{rec.stop()}catch(e){}};
@@ -729,28 +736,30 @@ function renderStrip(){var h='';P.slides.forEach(function(s,i){var t=s.els.filte
 $('#k2strip').addEventListener('click',function(e){var c=e.target.closest('.k2-chip');if(!c||isRec)return;selSlide(+c.dataset.i)});
 function selSlide(i){if(!ta.hidden)ta.blur();SEL=Math.max(0,Math.min(i,P.slides.length-1));ESEL=-1;if(MODE!=='edit')toEdit();renderStrip();renderSlidePane();renderProps();renderTL();renderEdit()}
 function renderTL(){var box=$('#k2tl');if(!TL)build();var sl=TL.flat[SEL];if(!sl){box.innerHTML='';return}var st=sl.camS,dur=Math.max(.1,sl.end-st),h='';
- if(sl.k>0)h+='<div class="k2-cam" style="right:0;width:'+(CAM/dur*100)+'%" title="حركة الكاميرا"></div>';
- sl.els.forEach(function(it,i){var r=(it.s-st)/dur*100,w=Math.max(it.el.type==='sound'?3:0,(it.d0+it.de)/dur*100);h+='<div class="k2-bar'+(i===ESEL?' on':'')+'" data-i="'+i+'" style="right:'+r+'%;width:'+w+'%;background:'+TYPEC[it.el.type]+';top:'+(4+(i%2)*2)+'px" title="'+esc(elLabel(it.el))+'">'+(i+1)+' '+esc(elLabel(it.el))+'</div>'});
+ if(sl.k>0)h+='<div class="k2-cam" style="right:0;width:'+(CAM/dur*100)+'%" title="حركة الكاميرا'+(camSfx(sl.s,sl.i)?' 🔊':'')+'"></div>';
+ sl.els.forEach(function(it,i){var r=(it.s-st)/dur*100,w=Math.max(it.el.type==='sound'?3:0,(it.d0+it.de)/dur*100);h+='<div class="k2-bar'+(i===ESEL?' on':'')+'" data-i="'+i+'" style="right:'+r+'%;width:'+w+'%;background:'+TYPEC[it.el.type]+';top:'+(4+(i%2)*2)+'px" title="'+esc(elLabel(it.el))+'">'+(i+1)+' '+(elSfx(it.el)?'🔊':'')+esc(elLabel(it.el))+'</div>'});
  box.innerHTML=h}
 $('#k2tl').addEventListener('click',function(e){var b=e.target.closest('.k2-bar');if(!b)return;ESEL=+b.dataset.i;if(MODE!=='edit')toEdit();renderEls();renderProps();renderTL();renderEdit();tab('el')});
 
 function opts(list,v){return list.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===v?' selected':'')+'>'+o[1]+'</option>'}).join('')}
 var MODES=[['new','⬜ سبورة جديدة'],['same','🎥 تكمل على نفس السبورة (الكاميرا تنتقل)']];
 var TRANS=[['erase','🧽 ممحاة تمسح السبورة'],['slide','↔ انزلاق'],['fade','🌫 تلاشٍ'],['flip','📖 قلب الصفحة'],['none','بدون انتقال']];
+function sfxRow(lb,k,v,auto,isEl){return '<label>'+lb+'</label><div style="display:flex;gap:5px"><select '+(isEl?'data-k':'data-sk')+'="'+k+'" style="flex:1">'+sfxOpts(v,auto)+'</select><button class="k2-sm" data-act="pvS" data-k="'+k+'" title="استماع">▶</button><button class="k2-sm" data-act="noS" data-k="'+k+'" title="حذف الصوت">✕</button></div>'}
 function renderSlidePane(){var s=P.slides[SEL],box=$('#k2pSlide');if(!s){box.innerHTML='';return}var v=s.voice;
  box.innerHTML='<h4>الشريحة '+(SEL+1)+' من '+P.slides.length+'</h4>'+
  (SEL===0?'<div class="k2-note" style="margin-top:0">الشريحة الأولى تبدأ دائماً بسبورة جديدة.</div>':'<label>كيف تبدأ هذه الشريحة؟</label><select data-sk="mode">'+opts(MODES,s.mode)+'</select>'+(s.mode==='new'?'<label>طريقة الانتقال</label><select data-sk="trans">'+opts(TRANS,s.trans)+'</select>':''))+
+ (SEL>0&&s.mode==='new'&&s.trans!=='none'?sfxRow('🔊 صوت الانتقال','tsfx',s.tsfx,autoTrans(s.trans)):'')+(SEL>0&&s.mode==='same'?sfxRow('🔊 صوت حركة الكاميرا','csfx',s.csfx,'swish'):'')+
  '<div class="k2-row2"><div><label>مدة البقاء بعد الرسم (ث)</label><input type="number" min="0.3" max="30" step="0.5" data-sk="hold" value="'+s.hold+'"></div><div><label>التخطيط</label><button data-act="layout" style="width:100%;justify-content:center">'+esc((LAYOUTS[s.layout]||{}).e||'')+' تغيير</button></div></div>'+
  '<h4>العناصر <small style="color:var(--mut);font-weight:400">(تظهر بهذا الترتيب)</small></h4><div class="k2-els">'+
- (s.els.length?s.els.map(function(el,i){return '<div class="k2-el'+(i===ESEL?' on':'')+'" data-i="'+i+'"><span class="k2-n">'+(i+1)+'</span><span>'+TYPEI[el.type]+'</span><span class="k2-lb">'+esc(elLabel(el))+'</span><span class="k2-tg">'+(el.timing==='with'?'مع السابق':'')+(el.delay>0?' +'+el.delay+'ث':'')+'</span><button class="k2-sm k2-ghost" data-ea="up" title="يظهر أبكر">↑</button><button class="k2-sm k2-ghost" data-ea="dn" title="يظهر لاحقاً">↓</button><button class="k2-sm k2-ghost" data-ea="del" title="حذف">✕</button></div>'}).join(''):'<div class="k2-note">لا توجد عناصر بعد — أضف من الأزرار بالأسفل.</div>')+'</div>'+
+ (s.els.length?s.els.map(function(el,i){return '<div class="k2-el'+(i===ESEL?' on':'')+'" data-i="'+i+'"><span class="k2-n">'+(i+1)+'</span><span>'+TYPEI[el.type]+'</span><span class="k2-lb">'+esc(elLabel(el))+'</span><span class="k2-tg">'+(elSfx(el)?'🔊 ':'')+(el.timing==='with'?'مع السابق':'')+(el.delay>0?' +'+el.delay+'ث':'')+'</span><button class="k2-sm k2-ghost" data-ea="up" title="يظهر أبكر">↑</button><button class="k2-sm k2-ghost" data-ea="dn" title="يظهر لاحقاً">↓</button><button class="k2-sm k2-ghost" data-ea="del" title="حذف">✕</button></div>'}).join(''):'<div class="k2-note">لا توجد عناصر بعد — أضف من الأزرار بالأسفل.</div>')+'</div>'+
  '<div class="k2-add"><button data-act="addText"><span>✎</span>نص</button><button data-act="addDraw"><span>◇</span>رسم</button><button data-act="addImg"><span>🖼</span>صورة</button><button data-act="addFree"><span>✍</span>ارسم بنفسك</button><button data-act="addArrow"><span>↙</span>سهم</button><button data-act="addNum"><span>١</span>رقم</button><button data-act="addSound"><span>🔊</span>صوت ومؤثرات</button></div>'+
  '<h4>🎙 التعليق الصوتي للشريحة</h4>'+(VREC&&VREC._tag===s.id?'<button class="k2-pri" data-act="vstop" style="width:100%;justify-content:center">⏹ إيقاف التسجيل (<span class="k2-vt">0</span> ث)</button>':
   v?'<div style="display:flex;gap:6px;flex-wrap:wrap"><button data-act="vplay">▶ استماع ('+v.dur.toFixed(1)+' ث)</button><button data-act="vrec">🎙 إعادة التسجيل</button><button data-act="vfile">📁 استبدال بملف</button><button data-act="vdel">✕ حذف</button></div>':
   '<div class="k2-row2"><button data-act="vrec" style="justify-content:center">🎙 سجّل صوتك</button><button data-act="vfile" style="justify-content:center">📁 أدرج ملفاً صوتياً</button></div>')+
  '<div class="k2-note">يبدأ التعليق مع بداية الشريحة، ومدة الشريحة تطول تلقائياً لتناسبه. لإضافة أصوات في لحظات محددة استخدم زر «🔊 صوت ومؤثرات».</div>'}
-function renderEls(){var s=P.slides[SEL];$$('#k2pSlide .k2-el').forEach(function(r){var i=+r.dataset.i,el=s&&s.els[i];r.classList.toggle('on',i===ESEL);if(el){var lb=r.querySelector('.k2-lb');if(lb)lb.textContent=elLabel(el);var tg=r.querySelector('.k2-tg');if(tg)tg.textContent=(el.timing==='with'?'مع السابق':'')+(el.delay>0?' +'+el.delay+'ث':'')}});
+function renderEls(){var s=P.slides[SEL];$$('#k2pSlide .k2-el').forEach(function(r){var i=+r.dataset.i,el=s&&s.els[i];r.classList.toggle('on',i===ESEL);if(el){var lb=r.querySelector('.k2-lb');if(lb)lb.textContent=elLabel(el);var tg=r.querySelector('.k2-tg');if(tg)tg.textContent=(elSfx(el)?'🔊 ':'')+(el.timing==='with'?'مع السابق':'')+(el.delay>0?' +'+el.delay+'ث':'')}});
  if(s&&$$('#k2pSlide .k2-el').length!==s.els.length)renderSlidePane()}
-$('#k2pSlide').addEventListener('change',function(e){var k=e.target.dataset.sk;if(!k)return;var s=P.slides[SEL];pushUndo(true);s[k]=k==='hold'?Math.max(.3,+e.target.value||2):e.target.value;changed();if(k==='mode')renderSlidePane()});
+$('#k2pSlide').addEventListener('change',function(e){var k=e.target.dataset.sk;if(!k)return;var s=P.slides[SEL];pushUndo(true);s[k]=k==='hold'?Math.max(.3,+e.target.value||2):e.target.value;changed();if(k==='mode'||k==='trans')renderSlidePane()});
 $('#k2pSlide').addEventListener('click',function(e){var row=e.target.closest('.k2-el'),ea=e.target.dataset.ea,s=P.slides[SEL];if(!row)return;var i=+row.dataset.i;
  if(ea){pushUndo(true);var L=s.els;if(ea==='up'&&i>0){L.splice(i-1,0,L.splice(i,1)[0]);ESEL=i-1}else if(ea==='dn'&&i<L.length-1){L.splice(i+1,0,L.splice(i,1)[0]);ESEL=i+1}else if(ea==='del'){L.splice(i,1);ESEL=-1}renderSlidePane();renderProps();changed();return}
  ESEL=i;if(MODE!=='edit')toEdit();renderEls();renderProps();renderTL();renderEdit();tab('el')});
@@ -769,6 +778,7 @@ function renderProps(){var box=$('#k2pEl'),s=P.slides[SEL],el=s&&s.els[ESEL];
  if(el.type==='free')h+='<button data-act="redraw">✍ إعادة الرسم</button><label>سُمك الخط: <b>'+(el.lw||5)+'</b></label><input type="range" min="2" max="16" data-k="lw" data-t="n" value="'+(el.lw||5)+'">';
  if(el.type!=='free')h+='<div class="k2-row2"><div><label>طريقة الظهور</label><select data-k="anim">'+opts(el.type==='text'?TA:el.type==='draw'?DA:IA,el.anim)+'</select></div><div><label>التوقيت</label><select data-k="timing">'+opts(TM,el.timing)+'</select></div></div>';
  else h+='<label>التوقيت</label><select data-k="timing">'+opts(TM,el.timing)+'</select>';
+ if(el.type!=='free')h+=sfxRow('🔊 صوت الظهور','esfx',el.esfx,autoEl(el),1);
  h+='<div class="k2-row2"><div><label>تأخير قبل الظهور (ث)</label><input type="number" min="0" max="20" step="0.1" data-k="delay" data-t="n" value="'+(el.delay||0)+'"></div>';
  if(el.type!=='image')h+='<div><label>اللون</label><select data-k="cmode">'+opts([['ink','لون الكتابة'],['acc','لون التمييز'],['custom','لون خاص…']],cm)+'</select></div>';h+='</div>';
  if(cm==='custom')h+='<label>اللون الخاص</label><input type="color" data-k="chex" value="'+el.color+'">';
@@ -794,7 +804,7 @@ function gotAudio(t,o,name){if(!o)return;var s=P.slides[SEL];pushUndo(true);
  else if(t==='repl'&&s.els[ESEL]){s.els[ESEL].src=o.src;s.els[ESEL].dur=o.dur;s.els[ESEL].name=name||s.els[ESEL].name;renderProps();changed()}
  else{closeModal();addEl({type:'sound',src:o.src,dur:o.dur,name:name||'تسجيل صوتي',vol:1,wait:!name,timing:'after',delay:0})}}
 function propIn(e){var k=e.target.dataset.k;if(!k)return;var el=P.slides[SEL].els[ESEL];if(!el)return;var t=e.target.dataset.t,v=t==='b'?e.target.checked:t==='n'?+e.target.value:e.target.value;
- pushUndo(e.type==='change');if(k==='cmode'){el.color=v==='custom'?(/^#/.test(el.color)?el.color:'#c0392b'):v;renderProps()}else if(k==='chex')el.color=v;else el[k]=v;
+ pushUndo(e.type==='change');if(k==='anim'||k==='esfx')setTimeout(renderProps,0);if(k==='cmode'){el.color=v==='custom'?(/^#/.test(el.color)?el.color:'#c0392b'):v;renderProps()}else if(k==='chex')el.color=v;else el[k]=v;
  if(k==='size'||k==='lw'){var lb=e.target.parentNode.querySelector('b');if(lb)lb.textContent=v}changed()}
 $('#k2pEl').addEventListener('input',propIn);$('#k2pEl').addEventListener('change',function(e){if(e.target.type!=='range'&&e.target.tagName!=='TEXTAREA'&&e.target.type!=='color')propIn(e)});
 
@@ -893,6 +903,9 @@ function act(a,el){var s=P.slides[SEL];
  case 'vplay':if(s.voice)preview({src:s.voice.src,voice:1});break;
  case 'vdel':if(s.voice){pushUndo(true);delete s.voice;stopAudio();renderSlidePane();changed()}break;
  case 'addSound':sfxPicker();break;
+ case 'pvS':case 'noS':var kk=el.dataset.k,tgt=kk==='esfx'?s.els[ESEL]:s;if(!tgt)break;
+  if(a==='noS'){pushUndo(true);tgt[kk]='none';if(kk==='esfx')renderProps();else renderSlidePane();changed();break}
+  var nm=kk==='esfx'?elSfx(tgt):kk==='tsfx'?trSfx(tgt,SEL):camSfx(tgt,SEL);if(nm)preview({sfx:nm,vol:1});else alert('لا يوجد صوت محدد.');break;
  case 'sfxPrev':preview({sfx:el.dataset.n,vol:1});break;
  case 'sfxAdd':closeModal();addEl({type:'sound',sfx:el.dataset.n,vol:1,wait:false,timing:'after',delay:0});break;
  case 'recEl':recAudio('el',function(o){if(o==='rec'){sfxPicker();return}if(o)gotAudio('el',o,'');else sfxPicker()});break;
