@@ -36,6 +36,8 @@
   function liveApi() {
     const BASE = C.SUPABASE_URL.replace(/\/+$/, '');
     const KEY = C.SUPABASE_ANON_KEY;
+    // المفاتيح القديمة (JWT) تُرسل أيضاً كـ Bearer؛ المفاتيح الجديدة sb_publishable_ تكفيها ترويسة apikey
+    const AUTHZ = /^eyJ/.test(KEY) ? { Authorization: `Bearer ${KEY}` } : {};
     let sb = null;
     let loading = null;
     let user = null;
@@ -47,7 +49,7 @@
       let res;
       try {
         res = await fetch(`${BASE}/rest/v1/${table}?${qs}`, {
-          headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, Accept: 'application/json' },
+          headers: Object.assign({ apikey: KEY, Accept: 'application/json' }, AUTHZ),
         });
       } catch (e) { throw new ApiError(e); }
       if (!res.ok) {
@@ -62,7 +64,7 @@
       try {
         res = await fetch(`${BASE}/rest/v1/rpc/${fn}`, {
           method: 'POST',
-          headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
+          headers: Object.assign({ apikey: KEY, 'Content-Type': 'application/json' }, AUTHZ),
           body: JSON.stringify(args),
         });
       } catch (e) { throw new ApiError(e); }

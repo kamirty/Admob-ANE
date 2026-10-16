@@ -7,8 +7,8 @@ window.APP_CONFIG = {
   SITE_TAGLINE: 'حصص مجانية مباشرة يقدّمها معلمون متطوعون',
 
   // من Supabase → Project Settings → API (اتركهما فارغين لتشغيل الوضع التجريبي)
-  SUPABASE_URL: '',
-  SUPABASE_ANON_KEY: '',
+  SUPABASE_URL: 'https://thrfesoahytbdyycoivm.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_EPrkQNEHKH0NODXgyIrvGQ_zGuARgKM',
 
   // بريد أو رقم للتواصل مع إدارة المنصة (اختياري، يظهر في صفحة "عن المنصة")
   CONTACT: '',
