@@ -295,8 +295,17 @@
     const mine = store.get('grade');
     view.innerHTML = `
       <section class="hero">
-        <h1>${esc(C.SITE_TAGLINE)}</h1>
-        <p>اختر صفّك لترى جدول الحصص. ادخل أي حصة مع المعلم الذي تفضّله، أو شاهد تسجيلها لاحقاً. لا تحتاج إلى حساب.</p>
+        <div class="hero-text">
+          <h1>${esc(C.SITE_TAGLINE)}</h1>
+          <p>اختر صفّك لترى جدول الحصص. ادخل أي حصة مع المعلم الذي تفضّله، أو شاهد تسجيلها لاحقاً. لا تحتاج إلى حساب.</p>
+        </div>
+        <figure class="hadith">
+          <span class="orn" aria-hidden="true">❁ ❁ ❁</span>
+          <figcaption>قال رسول الله ﷺ</figcaption>
+          <blockquote>«إذا مات ابنُ آدمَ انقطع عملُه إلا من ثلاث: صدقةٍ جارية، أو <mark>علمٍ يُنتفَعُ به</mark>، أو ولدٍ صالحٍ يدعو له»</blockquote>
+          <figcaption>رواه مسلم</figcaption>
+          <a class="btn btn-primary btn-sm" href="#/dashboard">اجعل علمك صدقة جارية</a>
+        </figure>
       </section>
       ${mine && GRADES[mine] ? `<div class="mine"><span>صفّك:</span><b>${esc(gradeName(mine))}</b><span class="spacer"></span><a class="btn btn-primary btn-sm" href="#/g/${esc(mine)}">افتح جدولي</a></div>` : ''}
       <section class="section" id="live-sec" hidden>
