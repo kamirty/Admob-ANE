@@ -1083,7 +1083,7 @@
   function pageGuide() {
     setNav(''); setTitle('دليل المعلم');
     view.innerHTML = `
-      <header class="page-head"><h1>دليل المعلم: كيف تشرح حصتك مع مشاركة الشاشة</h1>
+      <header class="page-head"><h1>دليل المعلم: اشرح بشاشتك وصوتك، دون إظهار وجهك</h1>
         <p class="muted">البث والتسجيل يجريان على قناتك في يوتيوب مجاناً، والمنصة تعرض الحصة في جدول الطلاب.</p></header>
       <article class="prose">
         <h2>أولاً: جهّز قناتك (مرة واحدة، قبل أول حصة بيوم)</h2>
@@ -1101,13 +1101,34 @@
         <h2>ثالثاً: احصل على رابط البث</h2>
         <p><b>الطريقة المفضّلة — رابط مسبق:</b> في YouTube Studio اختر <b>إنشاء ← بث مباشر ← إدارة ← جدولة بث</b> <span class="path">(Manage → Schedule stream)</span>، واكتب عنوان الحصة وموعدها. انسخ رابط المشاهدة وضعه في حصتك على المنصة. هكذا يرى الطلاب الرابط قبل الحصة.</p>
         <p><b>الطريقة السريعة:</b> ابدأ البث في وقت الحصة، ثم انسخ رابطه وضعه في الحصة فوراً. صفحة الحصة عند الطلاب تتحدّث تلقائياً خلال أقل من دقيقة.</p>
-        <h2>رابعاً: ابدأ البث وشارك شاشتك</h2>
+        <h2>رابعاً: ابدأ البث — شاشتك وصوتك فقط، بدون إظهار الوجه</h2>
+        <p>الطلاب يرون ما على شاشتك (عرض، ملف PDF، فيديو، سبورة) ويسمعون صوتك فقط. لا تحتاج كاميرا إطلاقاً. نستخدم برنامج <a href="https://obsproject.com" target="_blank" rel="noopener">OBS Studio</a> المجاني (يدعم اللغة العربية)، ويبث إلى قناتك في يوتيوب مباشرة.</p>
+        <p><b>التجهيز (مرة واحدة):</b></p>
         <ol>
-          <li>على حاسوبك افتح YouTube Studio بمتصفح <b>Chrome</b> أو <b>Firefox</b>، ثم <b>إنشاء ← بث مباشر ← كاميرا الويب</b> <span class="path">(Webcam)</span>.</li>
-          <li>بعد بدء البث اضغط زر <b>مشاركة الشاشة</b> <span class="path">(SHARE SCREEN)</span> واختر الشاشة كاملة أو نافذة السبورة أو ملف العرض.</li>
-          <li>يحتاج هذا الوضع إلى كاميرا ومايكروفون موصولين بالحاسوب.</li>
-          <li><b>إن لم يظهر لك زر مشاركة الشاشة:</b> استخدم برنامج <a href="https://obsproject.com" target="_blank" rel="noopener">OBS Studio</a> المجاني. أضف مصدراً من نوع <span class="path">Display Capture</span>، ثم من <span class="path">Settings → Stream</span> اختر YouTube واضغط <span class="path">Connect Account</span>. يمكنه أيضاً حفظ نسخة على حاسوبك في حال انقطاع الكهرباء أو الإنترنت.</li>
+          <li>حمّل OBS Studio من <a href="https://obsproject.com" target="_blank" rel="noopener">obsproject.com</a> وثبّته. عند أول تشغيل اختر <b>التحسين للبث</b> <span class="path">(Optimize for streaming)</span>.</li>
+          <li>في مربع <b>المصادر</b> <span class="path">(Sources)</span> اضغط <b>+</b> ← <b>التقاط الشاشة</b> <span class="path">(Display Capture)</span> ← موافق. ستظهر شاشتك كاملة.</li>
+          <li><b>لا تضف أي كاميرا</b> <span class="path">(Video Capture Device)</span>؛ هكذا لا يظهر وجهك أبداً.</li>
+          <li>في <b>خلّاط الصوت</b> <span class="path">(Audio Mixer)</span> تأكد أن شريط <span class="path">Mic/Aux</span> يتحرك عندما تتكلم. شريط <span class="path">Desktop Audio</span> ينقل صوت أي فيديو تشغّله للطلاب.</li>
+          <li>من <b>الإعدادات ← البث</b> <span class="path">(Settings → Stream)</span> اختر <span class="path">YouTube - RTMPS</span> واضغط <span class="path">Connect Account</span> وسجّل الدخول بحساب قناتك.</li>
         </ol>
+        <p><b>في وقت الحصة:</b></p>
+        <ol>
+          <li>افتح ملفاتك قبل البدء (العرض، الـPDF، السبورة) وأغلق كل ما هو شخصي.</li>
+          <li>فعّل <b>عدم الإزعاج</b> في الحاسوب وأغلق واتساب ويب والبريد، لأن الطلاب يرون <b>كل</b> ما يظهر على شاشتك، بما فيه الإشعارات.</li>
+          <li>في OBS اضغط <b>إدارة البث</b> <span class="path">(Manage Broadcast)</span> واختر البث الذي جدولته، ثم <b>بدء البث</b> <span class="path">(Start Streaming)</span>.</li>
+          <li>اضغط أيضاً <b>بدء التسجيل</b> <span class="path">(Start Recording)</span> لتحفظ نسخة على حاسوبك، تفيدك إن انقطع الإنترنت.</li>
+          <li>في نهاية الحصة اضغط <b>إيقاف البث</b> <span class="path">(Stop Streaming)</span>.</li>
+        </ol>
+        <p><b>تريد إظهار برنامج واحد فقط وإخفاء بقية الشاشة؟</b> استخدم <b>التقاط النافذة</b> <span class="path">(Window Capture)</span> بدلاً من التقاط الشاشة، واختر نافذة العرض أو السبورة.</p>
+        <h2>أدوات الشرح على الشاشة (كلها مجانية)</h2>
+        <ul>
+          <li><b>عرض بوربوينت:</b> أثناء العرض اضغط <span class="path">Ctrl + P</span> لتحويل المؤشر إلى قلم تكتب به على الشريحة، و<span class="path">Ctrl + A</span> للرجوع إلى السهم. شريحة بيضاء فارغة تصلح سبورة.</li>
+          <li><b>ملف PDF أو صفحة من الكتاب:</b> افتحه في متصفح <b>Microsoft Edge</b> واضغط زر <b>رسم</b> <span class="path">(Draw)</span> لتكتب وتظلّل عليه.</li>
+          <li><b>سبورة بيضاء:</b> تطبيق <a href="https://apps.microsoft.com/detail/9mspc6mp8fm4" target="_blank" rel="noopener">Microsoft Whiteboard</a> على ويندوز، أو موقع <a href="https://excalidraw.com" target="_blank" rel="noopener">excalidraw.com</a> من المتصفح دون تثبيت.</li>
+          <li><b>مقطع فيديو:</b> شغّله على حاسوبك، وOBS ينقل صورته وصوته للطلاب تلقائياً. تجنّب المقاطع المحمية بحقوق النشر.</li>
+          <li><b>للكتابة المريحة:</b> لوح رسم بقلم يوصل بالحاسوب (سعره بسيط)، أو حاسوب بشاشة لمس، يجعل الكتابة مثل السبورة تماماً.</li>
+        </ul>
+        <p class="muted">طريقة بديلة دون تثبيت برامج: <b>إنشاء ← بث مباشر ← كاميرا الويب</b> في YouTube Studio ثم زر <b>مشاركة الشاشة</b>. لكنها تشترط وجود كاميرا موصولة بالحاسوب، لذلك نوصي بـ OBS لمن لا يريد إظهار وجهه.</p>
         <h2>خامساً: بعد الحصة</h2>
         <ul>
           <li>يحفظ يوتيوب البث تلقائياً على <b>نفس الرابط</b> (للبث الأقصر من 12 ساعة)، وقد يحتاج بعض الوقت للمعالجة.</li>
