@@ -13,12 +13,26 @@ body{background:#F4F6F1;color:#1D5C4A;font-family:Cairo,sans-serif;overflow:hidd
 .bn .desc{color:#56676A;font-weight:600}
 .bn .url{color:#1D5C4A;font-weight:800;direction:ltr;text-align:right}
 .bn .line{height:4px;width:120px;background:#E7B456;border-radius:2px}
+.yt{background-image:radial-gradient(45% 40% at 50% 50%,#FFFFFF,transparent 80%),linear-gradient(90deg,#E8EFE9,#F4F6F1 30%,#F4F6F1 70%,#E8EFE9)}
+.yt .safe{width:1546px;height:423px;display:flex;align-items:center;justify-content:center;gap:44px}
+.yt .ytline{width:3px;height:200px;background:#E7B456;border-radius:2px;flex:none}
+.yt .txt{gap:.45em}
 </style></head><body><div id="root"></div>
 <script>
 const mode=location.hash.slice(1), r=document.getElementById('root');
 if(mode==='avatar'){document.body.style.cssText='width:1080px;height:1080px';
  r.innerHTML='<div class="av"><img src="midrar-logo-official.svg" alt=""></div>';}
-else{const [w,h,k]=mode==='youtube'?[2560,1440,1]:[1500,500,0.62];
+else if(mode==='youtube'){document.body.style.cssText='width:2560px;height:1440px';
+ // كل المحتوى داخل المنطقة الآمنة ليوتيوب (1546×423 في المنتصف) حتى لا يُقص على الجوال
+ r.innerHTML=`<div class="bn yt" style="width:2560px;height:1440px">
+  <div class="safe">
+   <img src="midrar-logo-wide.svg" alt="" style="height:215px">
+   <div class="ytline"></div>
+   <div class="txt" style="font-size:26px">
+    <div class="slogan" style="font-size:56px">علمٌ مِدْرار… وأجرٌ يبقى</div>
+    <div class="desc">حصص مجانية مباشرة يقدّمها معلمون متطوعون<br>من الصف 1 إلى 12 · سلطنة عُمان</div>
+    <div class="url">www.midrarelm.com</div></div></div></div>`;}
+else{const [w,h,k]=[1500,500,0.62];
  document.body.style.cssText=`width:${w}px;height:${h}px`;
  r.innerHTML=`<div class="bn" style="width:${w}px;height:${h}px">
   <img src="midrar-logo-official.svg" alt="" style="height:${mode==='youtube'?560:400}px">
