@@ -126,7 +126,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* ---------- home ---------- */
 .hero { padding-block: 28px 8px; display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); align-items: center; }
-.hero-text { display: grid; gap: 10px; min-width: 0; }
+.hero-text { display: grid; gap: 10px; min-width: 0; justify-items: start; }
+.motto { font: 700 1.2rem/1.5 "Amiri", serif; color: var(--board); background: var(--board-soft); padding: 2px 14px; border-radius: 999px; }
+.hadith-note { font: 700 1.1rem/1.5 "Amiri", serif; color: var(--board); }
 .hero p { color: var(--muted); max-width: 60ch; }
 .hadith {
   margin: 0; padding: 22px 22px 18px; border-radius: 16px; background: var(--board-soft);

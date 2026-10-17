@@ -3,8 +3,9 @@
    ===================================================================== */
 window.APP_CONFIG = {
   // اسم المنصة ووصفها القصير
-  SITE_NAME: 'منصة عطاء',
+  SITE_NAME: 'منصة أبقى',
   SITE_TAGLINE: 'حصص مجانية مباشرة يقدّمها معلمون متطوعون',
+  SITE_MOTTO: 'علمٌ يُنشر… وأجرٌ يبقى',
 
   // من Supabase → Project Settings → API (اتركهما فارغين لتشغيل الوضع التجريبي)
   SUPABASE_URL: 'https://thrfesoahytbdyycoivm.supabase.co',
