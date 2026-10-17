@@ -74,7 +74,7 @@
   // ------------------------------------------------------------------
   const rec = {
     state: 'idle', // idle | recording | paused | saving | done
-    id: null, type: '', label: '', started: 0, acc: 0, since: 0, bytes: 0, seq: 0,
+    id: null, type: '', label: '', info: null, started: 0, acc: 0, since: 0, bytes: 0, seq: 0,
     mem: [], dbUsed: false, useDb: false, chain: Promise.resolve(), finishing: false,
     tracks: [], ctx: null, analyser: null, peakAn: null, metered: false, recorder: null,
     sysAudio: false, sysLost: false, result: null, error: null,
@@ -85,7 +85,7 @@
     subs.forEach((fn) => { try { fn(s); } catch (e) { console.error(e); } });
   }
   const elapsed = () => rec.acc + (rec.state === 'recording' ? Date.now() - rec.since : 0);
-  const metaOf = (id, extra) => Object.assign({ id, type: rec.type, label: rec.label, started: rec.started, ms: elapsed(), bytes: rec.bytes, done: false }, extra || {});
+  const metaOf = (id, extra) => Object.assign({ id, type: rec.type, label: rec.label, info: rec.info, started: rec.started, ms: elapsed(), bytes: rec.bytes, done: false }, extra || {});
 
   function levelOf(an) {
     if (!an) return 0;
@@ -197,7 +197,7 @@
     clearResult();
     const id = 'r' + Date.now().toString(36);
     Object.assign(rec, {
-      id, type: recorder.mimeType || type || 'video/webm', label: String(opts.label || ''), started: Date.now(), acc: 0, since: Date.now(),
+      id, type: recorder.mimeType || type || 'video/webm', label: String(opts.label || ''), info: opts.info || null, started: Date.now(), acc: 0, since: Date.now(),
       bytes: 0, seq: 0, mem: [], dbUsed: false, useDb: false, chain: Promise.resolve(), finishing: false,
       tracks: display.getTracks().concat(mic.getTracks()), ctx, analyser, peakAn, metered: !!analyser, recorder,
       sysAudio: !!sys.length && audio !== mic.getAudioTracks()[0], sysLost: !!sys.length && audio === mic.getAudioTracks()[0], error: null,
@@ -284,7 +284,7 @@
       } catch (e) { /* النسخة في الذاكرة تكفي للحفظ الآن */ }
     }
     rec.mem = [];
-    rec.result = { id: rec.id, blob, url: URL.createObjectURL(blob), type: rec.type, ext: extOf(rec.type), ms: rec.acc, bytes: blob.size, started: rec.started, label: rec.label, saved, partial: false };
+    rec.result = { id: rec.id, blob, url: URL.createObjectURL(blob), type: rec.type, ext: extOf(rec.type), ms: rec.acc, bytes: blob.size, started: rec.started, label: rec.label, info: rec.info, saved, partial: false };
     setState('done');
   }
 
@@ -308,7 +308,7 @@
     clearResult();
     const blob = new Blob(parts, { type: meta.type });
     rec.error = null;
-    rec.result = { id, blob, url: URL.createObjectURL(blob), type: meta.type, ext: extOf(meta.type), ms: meta.ms, bytes: blob.size, started: meta.started, label: meta.label || '', saved: true, partial: !meta.done };
+    rec.result = { id, blob, url: URL.createObjectURL(blob), type: meta.type, ext: extOf(meta.type), ms: meta.ms, bytes: blob.size, started: meta.started, label: meta.label || '', info: meta.info || null, saved: true, partial: !meta.done };
     setState('done');
   }
   async function remove(id) {

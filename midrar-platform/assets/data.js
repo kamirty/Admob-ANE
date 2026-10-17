@@ -176,9 +176,16 @@
       },
       listRecordings(grade, subject, offset, limit) {
         const p = [['select', LIST_COLS], ['grade', 'eq.' + grade], ['status', 'eq.scheduled'],
-          ['ends_at', 'lt.' + iso(Date.now())], ['or', '(video_url.not.is.null,recording_url.not.is.null)'],
+          ['starts_at', 'lte.' + iso(Date.now())], ['or', '(video_url.not.is.null,recording_url.not.is.null)'],
           ['order', 'starts_at.desc,id.desc'], ['limit', String(limit)], ['offset', String(offset)]];
         if (subject) p.push(['subject', 'eq.' + subject]);
+        return rest('sessions', p);
+      },
+      // أحدث الدروس المنشورة (لصف معيّن أو لكل الصفوف)
+      listLatest(grade, limit) {
+        const p = [['select', LIST_COLS], ['status', 'eq.scheduled'], ['kind', 'eq.recorded'], ['starts_at', 'lte.' + iso(Date.now())],
+          ['video_url', 'not.is.null'], ['order', 'starts_at.desc,id.desc'], ['limit', String(limit)]];
+        if (grade) p.push(['grade', 'eq.' + grade]);
         return rest('sessions', p);
       },
       async getSession(id) {
@@ -270,7 +277,7 @@
   //  الوضع التجريبي: بيانات أمثلة محفوظة في هذا المتصفح فقط
   // ===================================================================
   function demoApi() {
-    const KEY = 'midrar-demo-v1';
+    const KEY = 'midrar-demo-v2';
     const DEMO_UID = 'demo-teacher-you';
     let db = null;
     let user = null;
@@ -297,19 +304,18 @@
       const sessions = [];
       const add = (t, grade, subject, title, start, mins, extra) => {
         sessions.push(Object.assign({
-          id: uid(), teacher_id: t, grade, subject, title, kind: 'live',
+          id: uid(), teacher_id: t, grade, subject, title, kind: 'recorded',
           description: 'شرح مبسّط مع أمثلة وحل أسئلة امتحانات سابقة. جهّز دفترك وقلمك.',
           starts_at: iso(start), ends_at: iso(+start + mins * 60000), video_url: 'https://youtu.be/demo-video',
           recording_url: null, status: 'scheduled', hidden: false, created_at: iso(Date.now() - 864e5),
         }, extra || {}));
       };
       const now = new Date();
-      const liveStart = new Date(now.getTime() - 20 * 60000);
-      // الآن: معلمان يشرحان للصف العاشر في نفس الوقت
-      add('t-ali', 'g10', 'math', 'المعادلات التربيعية — الحل بالقانون العام', liveStart, 60);
-      add('t-zainab', 'g10', 'science', 'قوانين نيوتن مع مسائل محلولة', liveStart, 75);
-      add('t-haider', 'g12', 'biology', 'الوراثة: مسائل التهجين الثنائي', new Date(now.getTime() - 10 * 60000), 90);
-      add('t-mustafa', 'g10', 'arabic', 'إعراب الأفعال الخمسة', new Date(now.getTime() + 10 * 60000), 45);
+      // دروس نُشرت اليوم: معلمان شرحا نفس المادة للصف العاشر، والطالب يختار
+      add('t-ali', 'g10', 'math', 'المعادلات التربيعية — الحل بالقانون العام', new Date(now.getTime() - 2 * 3600e3), 35);
+      add('t-maryam', 'g10', 'math', 'المعادلات التربيعية بطريقة مبسطة', new Date(now.getTime() - 3600e3), 28);
+      add('t-zainab', 'g10', 'science', 'قوانين نيوتن مع مسائل محلولة', new Date(now.getTime() - 40 * 60000), 32);
+      add('t-haider', 'g12', 'biology', 'الوراثة: مسائل التهجين الثنائي', new Date(now.getTime() - 20 * 60000), 41);
       const plan = [
         ['t-ali', 'g10', 'math', ['تحليل المقادير الجبرية', 'المتباينات', 'الهندسة الإحداثية', 'حل أسئلة سابقة']],
         ['t-maryam', 'g10', 'math', ['تحليل المقادير الجبرية (شرح ثانٍ)', 'المتباينات بطريقة مبسطة', 'الدوال', 'مراجعة الفصل الأول']],
@@ -331,13 +337,11 @@
           if ((d + pi) % 3 === 0) continue; // ليس كل يوم
           const h = hours[(pi + Math.abs(d)) % hours.length];
           const start = at(d, h, (pi % 2) * 30);
-          if (d === 0 && start < now) continue;
           const title = titles[(d + 12) % titles.length];
           add(t, g, s, title, start, [45, 60, 60, 90][pi % 4], d < 0 ? { recording_url: null } : null);
         }
       });
-      // درس مسجّل
-      add('t-maryam', 'g4', 'math', 'جدول الضرب بطريقة سهلة (درس مسجّل)', at(-1, 9), 20, { kind: 'recorded' });
+      add('t-maryam', 'g4', 'math', 'جدول الضرب بطريقة سهلة', at(-1, 9), 20);
       // حصة ملغاة
       add('t-noor', 'g10', 'english', 'Listening practice', at(1, 21), 45, { status: 'cancelled' });
       // إزالة الحجوزات المزدوجة لنفس المعلم
@@ -409,10 +413,17 @@
       async listRecordings(grade, subject, offset, limit) {
         load();
         const now = iso(Date.now());
-        const rows = db.sessions.filter((s) => s.grade === grade && s.status === 'scheduled' && visible(s) && s.ends_at < now
+        const rows = db.sessions.filter((s) => s.grade === grade && s.status === 'scheduled' && visible(s) && s.starts_at <= now
           && (s.video_url || s.recording_url) && (!subject || s.subject === subject))
           .sort((a, b) => b.starts_at.localeCompare(a.starts_at) || String(b.id).localeCompare(String(a.id)));
         return delay(rows.slice(offset, offset + limit).map(withTeacher));
+      },
+      async listLatest(grade, limit) {
+        load();
+        const now = iso(Date.now());
+        const rows = db.sessions.filter((s) => s.kind === 'recorded' && s.status === 'scheduled' && visible(s) && s.starts_at <= now && s.video_url && (!grade || s.grade === grade))
+          .sort((a, b) => b.starts_at.localeCompare(a.starts_at) || String(b.id).localeCompare(String(a.id)));
+        return delay(rows.slice(0, limit).map(withTeacher));
       },
       async getSession(id) {
         load();
