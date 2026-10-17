@@ -2,36 +2,28 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Cairo:wght@600;800;900&display=swap">
 <style>
 *{margin:0;box-sizing:border-box}
-body{background:#0F2A22;color:#F4F6F1;font-family:Cairo,sans-serif;overflow:hidden;
-background-image:radial-gradient(60% 60% at 50% 40%,rgba(91,195,154,.20),transparent 70%)}
-.mark{display:grid;place-items:center}
-.drops{position:absolute;inset:0;pointer-events:none}
-/* avatar */
-.av{width:1080px;height:1080px;display:grid;place-items:center;align-content:center;gap:34px}
-.av .mark{width:460px;height:460px}
-.av .name{font-size:120px;font-weight:900;line-height:1}
-.av .sub{font:700 54px/1 Amiri,serif;color:#E7B456}
-/* banners */
-.bn{display:grid;place-items:center;align-content:center;text-align:center}
-.bn .row{display:flex;align-items:center;gap:40px}
-.bn .name{font-weight:900;line-height:1.1}
-.bn .slogan{font-family:Amiri,serif;font-weight:700;color:#E7B456}
-.bn .desc{color:#B9CCC4;font-weight:600}
-.bn .url{color:#5BC39A;font-weight:800;direction:ltr}
-</style></head><body>
-<div id="root"></div>
+body{background:#F4F6F1;color:#1D5C4A;font-family:Cairo,sans-serif;overflow:hidden}
+.av{width:1080px;height:1080px;display:grid;place-items:center;background:#FFFFFF}
+.av img{width:780px}
+.bn{display:flex;align-items:center;justify-content:center;gap:5%;background:#F4F6F1;
+ background-image:radial-gradient(60% 80% at 50% 50%,#FFFFFF,transparent 75%)}
+.bn img{flex:none}
+.bn .txt{display:grid;gap:.35em;text-align:right}
+.bn .slogan{font-family:Amiri,serif;font-weight:700;color:#B9770E}
+.bn .desc{color:#56676A;font-weight:600}
+.bn .url{color:#1D5C4A;font-weight:800;direction:ltr;text-align:right}
+.bn .line{height:4px;width:120px;background:#E7B456;border-radius:2px}
+</style></head><body><div id="root"></div>
 <script>
-const mode=location.hash.slice(1);
-const svg=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#1D5C4A"/> <path d="M32 9c4.2 5.3 6.3 9 6.3 11.6a6.3 6.3 0 0 1-12.6 0C25.7 18 27.8 14.3 32 9Z" fill="#E7B456"/> <path d="M19.5 19c3 3.8 4.5 6.4 4.5 8.3a4.5 4.5 0 0 1-9 0c0-1.9 1.5-4.5 4.5-8.3Z" fill="#5BC39A"/> <path d="M44.5 19c3 3.8 4.5 6.4 4.5 8.3a4.5 4.5 0 0 1-9 0c0-1.9 1.5-4.5 4.5-8.3Z" fill="#5BC39A"/> <path d="M8 39.5c8.5-3 16.5-2.6 24 1.6v14c-7.5-4.2-15.5-4.6-24-1.6Z" fill="#F4F6F1"/> <path d="M56 39.5c-8.5-3-16.5-2.6-24 1.6v14c7.5-4.2 15.5-4.6 24-1.6Z" fill="#DCEBE4"/></svg>`;
-const r=document.getElementById('root');
-if(mode==='avatar'){document.body.style.width='1080px';document.body.style.height='1080px';
- r.innerHTML=`<div class="av"><div class="mark">${svg(460)}</div><div class="name">مِدْرار العلم</div><div class="sub">علمٌ يُنشر… وأجرٌ يبقى</div></div>`;}
-else{const [w,h,big]=mode==='youtube'?[2560,1440,1]:[1500,500,0];
- document.body.style.width=w+'px';document.body.style.height=h+'px';
- const k=big?1:0.62;
- r.innerHTML=`<div class="bn" style="width:${w}px;height:${h}px;gap:${24*k}px">
-  <div class="row"><div class="mark" style="width:${150*k}px;height:${150*k}px">${svg(150*k)}</div><div class="name" style="font-size:${130*k}px">منصة مِدْرار العلم</div></div>
-  <div class="slogan" style="font-size:${72*k}px">علمٌ يُنشر… وأجرٌ يبقى</div>
-  <div class="desc" style="font-size:${40*k}px">حصص مجانية مباشرة يقدّمها معلمون متطوعون · من الصف 1 إلى 12</div>
-  <div class="url" style="font-size:${40*k}px">www.midrarelm.com</div></div>`;}
+const mode=location.hash.slice(1), r=document.getElementById('root');
+if(mode==='avatar'){document.body.style.cssText='width:1080px;height:1080px';
+ r.innerHTML='<div class="av"><img src="midrar-logo-official.svg" alt=""></div>';}
+else{const [w,h,k]=mode==='youtube'?[2560,1440,1]:[1500,500,0.62];
+ document.body.style.cssText=`width:${w}px;height:${h}px`;
+ r.innerHTML=`<div class="bn" style="width:${w}px;height:${h}px">
+  <img src="midrar-logo-official.svg" alt="" style="height:${mode==='youtube'?560:400}px">
+  <div class="txt" style="font-size:${40*k}px">
+   <div class="slogan" style="font-size:${84*k}px">علمٌ يُنشر… وأجرٌ يبقى</div><div class="line"></div>
+   <div class="desc">حصص مجانية مباشرة يقدّمها معلمون متطوعون<br>من الصف 1 إلى 12 · سلطنة عُمان</div>
+   <div class="url">www.midrarelm.com</div></div></div>`;}
 </script></body></html>

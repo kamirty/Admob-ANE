@@ -81,7 +81,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .topbar-in { max-width: var(--wrap); margin-inline: auto; padding: 10px var(--gutter); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--ink); font: 700 1.2rem/1 var(--font-display); }
-.brand-mark { width: 30px; height: 30px; color: var(--board); flex: none; }
+.brand-mark { width: 40px; height: auto; flex: none; }
 .nav { display: flex; gap: 4px; flex-wrap: wrap; }
 .nav a { color: var(--muted); text-decoration: none; padding: 6px 10px; border-radius: 8px; font-weight: 600; font-size: .95rem; }
 .nav a:hover { color: var(--ink); background: var(--sunk); }
@@ -368,3 +368,6 @@ input[type="url"].input, input[type="email"].input { direction: ltr; text-align:
 .foot a { color: var(--muted); }
 .email { direction: ltr; unicode-bidi: plaintext; }
 h1[tabindex="-1"]:focus, #view:focus { outline: none; }
+/* الشعار فوق الخلفية الداكنة: لوحة فاتحة صغيرة خلفه حتى يبقى الأخضر الداكن واضحاً */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .brand-mark { background: #F4F6F1; border-radius: 8px; padding: 3px; } }
+:root[data-theme="dark"] .brand-mark { background: #F4F6F1; border-radius: 8px; padding: 3px; }
