@@ -16,7 +16,7 @@ window.APP_CONFIG = {
 
   // حسابات المنصة في وسائل التواصل (اتركها فارغة لإخفائها)
   SOCIAL: {
-    youtube: 'https://www.youtube.com/@مدرارالعلم',
+    youtube: 'https://www.youtube.com/@midrarelm',
     instagram: 'https://www.instagram.com/midrarelm',
     x: 'https://x.com/midrarelm',
   },
