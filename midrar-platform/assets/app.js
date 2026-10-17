@@ -88,6 +88,31 @@
     return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
   }
   const isYouTube = (url) => /^https:\/\/(www\.|m\.|music\.)?(youtube\.com|youtu\.be)\/\S+$/i.test(url || '');
+  // رابط قناة المعلم: نقبل «@الاسم» أو رابط القناة بأي صيغة، ونرفض روابط الفيديو
+  function channelUrl(raw) {
+    let v = String(raw || '').trim().replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '');
+    if (!v) return { error: 'empty' };
+    if (/^@[^\s/?#]{3,30}$/.test(v)) v = 'https://www.youtube.com/' + v;
+    else if (/^((www|m)\.)?youtube\.com\//i.test(v)) v = 'https://' + v;
+    v = v.replace(/^http:\/\//i, 'https://');
+    let u;
+    try { u = new URL(v); } catch (e) { return { error: 'bad' }; }
+    const host = u.hostname.toLowerCase();
+    let path = u.pathname;
+    try { path = decodeURIComponent(path); } catch (e) { /* يبقى كما هو */ }
+    let m;
+    if (host === 'studio.youtube.com' && (m = /^\/channel\/(UC[\w-]{22})(?:\/|$)/.exec(path))) return { url: 'https://www.youtube.com/channel/' + m[1] };
+    if (!/^((www|m)\.)?youtube\.com$/.test(host)) return { error: host === 'youtu.be' ? 'video' : 'bad' };
+    if ((m = /^\/(@[^/\s]{3,30})(?:\/|$)/.exec(path))) return { url: 'https://www.youtube.com/' + m[1] };
+    if ((m = /^\/channel\/(UC[\w-]{22})(?:\/|$)/.exec(path))) return { url: 'https://www.youtube.com/channel/' + m[1] };
+    if ((m = /^\/(c|user)\/([^/\s]{1,100})(?:\/|$)/.exec(path))) return { url: `https://www.youtube.com/${m[1]}/${m[2]}` };
+    return { error: /^\/(watch|live|shorts|embed|playlist)/.test(path) || u.searchParams.has('v') ? 'video' : 'bad' };
+  }
+  const CHANNEL_ERR = {
+    empty: 'أضف رابط قناتك على يوتيوب؛ عليها تبث حصصك وترفع دروسك المسجّلة.',
+    video: 'هذا رابط فيديو، والمطلوب رابط القناة نفسها، مثل https://www.youtube.com/@اسم_قناتك',
+    bad: 'رابط القناة غير صحيح. اكتب اسم قناتك المعرّف مثل @midrarelm، أو الصق رابط القناة من يوتيوب.',
+  };
   // من ينسخ عنوان صفحة الفيديو في YouTube Studio بدلاً من رابط المشاهدة
   const normYt = (url) => { const m = /^https:\/\/studio\.youtube\.com\/video\/([A-Za-z0-9_-]{11})(?:[/?#]|$)/.exec(url || ''); return m ? 'https://youtu.be/' + m[1] : url; };
   const isDemoVideo = (url) => API.mode === 'demo' && /demo-video/.test(url || '');
@@ -261,7 +286,7 @@
   // ------------------------------------------------------------------
   //  حالة التطبيق والمستخدم
   // ------------------------------------------------------------------
-  const app = { user: null, profile: undefined, settings: {}, token: 0, prefill: null };
+  const app = { user: null, profile: undefined, settings: {}, token: 0, prefill: null, afterProfile: null };
 
   async function loadProfile() {
     if (!app.user) { app.profile = null; return null; }
@@ -703,6 +728,13 @@
     if (!app.profile) { pageProfile(tok, true); return null; }
     return app.profile;
   }
+  // لا حصص جديدة ولا تسجيل قبل أن يضيف المعلم رابط قناته على يوتيوب
+  function channelGate() {
+    app.afterProfile = location.hash;
+    view.innerHTML = `<div class="empty" style="margin-top:28px"><b>أضف رابط قناتك على يوتيوب أولاً</b>
+      <span>عليها تبث حصصك وترفع دروسك المسجّلة، وبها تتحقق الإدارة من حسابك.</span>
+      <a class="btn btn-primary" href="#/profile">أضف رابط القناة</a></div>`;
+  }
   function statusPill(st) {
     return st === 'approved' ? '<span class="pill pill-ok">معتمد</span>'
       : st === 'pending' ? '<span class="pill pill-warn">قيد المراجعة</span>'
@@ -734,9 +766,16 @@
           <input class="input" id="pf-spec" maxlength="120" value="${esc(p.specialty || '')}" placeholder="مثال: رياضيات لما بعد الأساسي — 10 سنوات خبرة"></div>
         <div class="field"><label for="pf-bio">نبذة قصيرة (اختياري)</label>
           <textarea class="input" id="pf-bio" maxlength="400" rows="3" placeholder="عرّف الطلاب بنفسك وبطريقة شرحك">${esc(p.bio || '')}</textarea></div>
-        <div class="field"><label for="pf-yt">رابط قناتك على يوتيوب</label>
-          <input class="input" id="pf-yt" type="url" inputmode="url" maxlength="200" value="${esc(p.youtube_channel || '')}" placeholder="https://www.youtube.com/@channel">
-          <span class="hint">القناة التي ستبث منها حصصك. يساعد الإدارة على التحقق من حسابك.</span></div>
+        <div class="field"><label for="pf-yt">رابط قناتك على يوتيوب (مطلوب)</label>
+          <input class="input" id="pf-yt" type="url" inputmode="url" maxlength="200" required value="${esc(p.youtube_channel || '')}" placeholder="@اسم_قناتك أو https://www.youtube.com/@...">
+          <span class="hint">على قناتك تبث حصصك وترفع دروسك المسجّلة، وبها تتحقق الإدارة من حسابك. يكفي أن تكتب اسمها المعرّف مثل <span class="path">@midrarelm</span>.</span>
+          <details class="more"><summary>ليس لديك قناة؟ أنشئها مجاناً في دقيقة</summary>
+            <ol class="plain">
+              <li>افتح <a href="https://www.youtube.com/create_channel" target="_blank" rel="noopener">إنشاء قناة على يوتيوب</a> بحساب Google نفسه.</li>
+              <li>اكتب اسم القناة (مثلاً اسمك: أ. علي حسين)، ثم اضغط <b>إنشاء قناة</b>.</li>
+              <li>اضغط صورتك أعلى يوتيوب ← <b>قناتك</b>، وانسخ الرابط من شريط العنوان والصقه هنا.</li>
+              <li>وثّق القناة برقم هاتفك من <a href="https://www.youtube.com/verify" target="_blank" rel="noopener">youtube.com/verify</a>، لتستطيع البث ورفع دروس أطول من 15 دقيقة.</li>
+            </ol></details></div>
         ${first ? `<label class="check"><input type="checkbox" id="pf-ok"><span>أتعهّد بالالتزام بـ <a href="#/about" target="_blank">ميثاق المعلم المتطوع</a>: الشرح مجاني بالكامل، لا إعلانات لدروس مدفوعة، ولا تواصل خاص مع الطلاب.</span></label>` : ''}
         <div class="form-actions"><button class="btn btn-primary" type="submit">${first ? 'إنشاء ملفي' : 'حفظ التعديلات'}</button>
           ${first ? '' : '<a class="btn" href="#/dashboard">رجوع</a>'}
@@ -746,17 +785,20 @@
     $('#pf').addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const name = $('#pf-name').value.trim();
-      const yt = $('#pf-yt').value.trim();
+      const ch = channelUrl($('#pf-yt').value);
       $('#pf-name').removeAttribute('aria-invalid'); $('#pf-yt').removeAttribute('aria-invalid');
       if (name.length < 2) { $('#pf-name').setAttribute('aria-invalid', 'true'); $('#pf-name').focus(); return toast('اكتب اسمك (حرفان على الأقل).', true); }
-      if (yt && !/^https:\/\/(www\.|m\.)?youtube\.com\//i.test(yt)) { $('#pf-yt').setAttribute('aria-invalid', 'true'); $('#pf-yt').focus(); return toast('رابط القناة يجب أن يبدأ بـ https://www.youtube.com/', true); }
+      if (ch.error) { $('#pf-yt').setAttribute('aria-invalid', 'true'); $('#pf-yt').focus(); return toast(CHANNEL_ERR[ch.error], true); }
+      const yt = ch.url;
+      $('#pf-yt').value = yt;
       if (first && !$('#pf-ok').checked) return toast('يرجى الموافقة على ميثاق المعلم المتطوع.', true);
       const btn = $('#pf button[type=submit]'); btn.disabled = true;
       try {
         app.profile = await API.saveProfile({ display_name: name, specialty: $('#pf-spec').value.trim(), bio: $('#pf-bio').value.trim(), youtube_channel: yt, avatar_url: avatarUrl }, !first);
         renderAuth();
         toast(first ? 'تم إنشاء ملفك. أضف حصتك الأولى!' : 'حُفظت التعديلات');
-        location.hash = first ? '#/dashboard/new' : '#/dashboard';
+        location.hash = first ? '#/dashboard/new' : app.afterProfile || '#/dashboard';
+        app.afterProfile = null;
       } catch (e) { toast(errMsg(e), true); btn.disabled = false; }
     });
   }
@@ -812,6 +854,7 @@
       </header>
       ${p.status === 'pending' ? '<div class="note warn"><b>حسابك قيد المراجعة.</b><span>يمكنك إضافة حصصك الآن، وستظهر للطلاب بعد أن تعتمد إدارة المنصة حسابك.</span></div>' : ''}
       ${p.status === 'suspended' ? '<div class="note bad"><b>حسابك موقوف.</b><span>حصصك لا تظهر للطلاب. تواصل مع إدارة المنصة.</span></div>' : ''}
+      ${!p.youtube_channel && p.status !== 'suspended' ? '<div class="note warn" style="margin-top:10px"><b>أضف رابط قناتك على يوتيوب.</b><span>لن تستطيع إضافة حصص أو تسجيل دروس قبل ذلك. <a href="#/profile">أضفه الآن</a></span></div>' : ''}
       ${missingLinks ? `<div class="note warn" style="margin-top:10px"><b>${plural(missingLinks, 'حصة واحدة', 'حصتان', 'حصص', 'حصة')} خلال 24 ساعة بلا رابط بث.</b><span>أضف رابط يوتيوب حتى يتمكن الطلاب من الدخول.</span></div>` : ''}
       <section class="section"><div class="section-head"><h2>حصصي القادمة</h2><span class="muted">${fNum(upcoming.length)}</span></div>
         ${upcoming.length ? `<div class="list">${upcoming.map(row).join('')}</div>` : `<div class="empty"><b>لا توجد حصص قادمة</b>${p.status !== 'suspended' ? '<a class="btn btn-primary" href="#/dashboard/new">أضف حصتك الأولى</a>' : ''}</div>`}
@@ -842,6 +885,7 @@
     const p = await requireTeacher(tok, location.hash);
     if (!p) return;
     if (p.status === 'suspended') { view.innerHTML = '<div class="note bad" style="margin-top:24px">حسابك موقوف ولا يمكنك إضافة حصص.</div>'; return; }
+    if (mode !== 'edit' && !p.youtube_channel) return channelGate();
     let s = null;
     if (id) {
       try { s = (await API.mySessions()).find((x) => x.id === id) || null; } catch (e) { /* handled below */ }
@@ -1026,7 +1070,7 @@
           ${list.map((t) => `<tr>
             <td><a class="who" href="#/t/${esc(t.id)}">${avatar(t.display_name, t.avatar_url)}<span>${esc(t.display_name)}</span></a><span class="muted small">انضم ${esc(fDateShort.format(new Date(t.created_at)))}</span></td>
             <td class="email">${esc(t.email || '')}</td>
-            <td>${esc(t.specialty || '—')}${t.youtube_channel && isYouTube(t.youtube_channel) ? `<br><a href="${esc(t.youtube_channel)}" target="_blank" rel="noopener">القناة</a>` : ''}</td>
+            <td>${esc(t.specialty || '—')}<br>${t.youtube_channel && isYouTube(t.youtube_channel) ? `<a href="${esc(t.youtube_channel)}" target="_blank" rel="noopener">القناة</a>` : '<span class="pill pill-warn">بلا قناة</span>'}</td>
             <td class="num">${fNum(t.sessions_count || 0)}</td>
             <td>${statusPill(t.status)}${t.is_admin ? ' <span class="pill">مشرف</span>' : ''}</td>
             <td><div class="row">
@@ -1172,6 +1216,7 @@
     setNav(''); setTitle('استوديو التسجيل');
     const p = await requireTeacher(tok, location.hash);
     if (!p) return;
+    if (!p.youtube_channel && (!ST || ST.state === 'idle')) return channelGate();
     if (sid) studio.sid = sid;
     else if (ST && ST.state === 'idle') studio.sid = null;
     view.innerHTML = '<p class="loading">جارٍ فتح الاستوديو…</p>';
@@ -1246,6 +1291,7 @@
             <div><a class="btn btn-primary btn-lg" id="st-dl" href="${esc(r.url)}" download="${esc(name)}">حفظ الفيديو</a></div>
             <span class="hint">يُحفظ في مجلد «التنزيلات» باسم <span class="path">${esc(name)}</span></span></li>
           <li class="box"><h2>٢. ارفعه إلى قناتك في يوتيوب</h2>
+            ${r.ms > 15 * 60000 ? '<div class="note warn"><b>الفيديو أطول من 15 دقيقة.</b><span>يقبله يوتيوب بعد توثيق قناتك برقم الهاتف مرة واحدة من <a href="https://www.youtube.com/verify" target="_blank" rel="noopener">youtube.com/verify</a>. إن كانت قناتك موثقة فلا تحتاج شيئاً.</span></div>' : ''}
             <div><a class="btn" href="https://www.youtube.com/upload" target="_blank" rel="noopener">افتح صفحة الرفع في يوتيوب</a></div>
             <ol class="plain">
               <li>اسحب الملف الذي حفظته إلى صفحة يوتيوب.</li>
@@ -1319,6 +1365,7 @@
         <li class="box"><h2>٣. ابدأ التسجيل</h2>
           <p>سيسألك المتصفح ماذا تشارك: اختر <b>الشاشة بالكامل</b> (الأسهل)، أو <b>نافذة</b> برنامج واحد مثل العرض، ثم اضغط «مشاركة».</p>
           <div><button type="button" class="btn btn-live btn-lg" id="st-start"><span class="rec-dot" aria-hidden="true"></span>ابدأ التسجيل</button></div>
+          <span class="hint">لا يوجد حد لمدة التسجيل، والإيقاف المؤقت لا يُحسب منها. لرفع فيديو أطول من 15 دقيقة يشترط يوتيوب توثيق قناتك برقم الهاتف مرة واحدة من <a href="https://www.youtube.com/verify" target="_blank" rel="noopener">youtube.com/verify</a>.</span>
           <span class="hint" id="st-space"></span></li>
       </ol>
       <section class="section" id="st-saved" hidden></section>
@@ -1424,7 +1471,7 @@
           <li>اشرح براحتك، ويمكنك الإيقاف المؤقت متى شئت. عند الانتهاء اضغط <b>إنهاء التسجيل</b>.</li>
           <li>احفظ الفيديو، وارفعه إلى قناتك في يوتيوب، ثم الصق رابطه في الاستوديو ليظهر للطلاب.</li>
         </ol>
-        <p class="muted">لا يحتاج أي برنامج، والمنصة ممنوعة من تشغيل الكاميرا أصلاً. ويحفظ المتصفح التسجيل أولاً بأول، فلا يضيع إن أُغلقت الصفحة.</p>
+        <p class="muted">لا يحتاج أي برنامج، والمنصة ممنوعة من تشغيل الكاميرا أصلاً. ويحفظ المتصفح التسجيل أولاً بأول، فلا يضيع إن أُغلقت الصفحة. لا يوجد حد لمدة التسجيل، لكن يوتيوب لا يقبل فيديو أطول من 15 دقيقة إلا بعد توثيق القناة برقم الهاتف (الخطوة «أولاً» أعلاه).</p>
         <h3>بث مباشر بلا برامج: من يوتيوب نفسه</h3>
         <ol>
           <li>افتح YouTube Studio بمتصفح Chrome، ثم <b>إنشاء ← بث مباشر ← كاميرا الويب</b> <span class="path">(Create → Go live → Webcam)</span>.</li>
