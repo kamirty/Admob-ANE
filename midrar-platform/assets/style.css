@@ -371,3 +371,28 @@ h1[tabindex="-1"]:focus, #view:focus { outline: none; }
 /* الشعار فوق الخلفية الداكنة: لوحة فاتحة صغيرة خلفه حتى يبقى الأخضر الداكن واضحاً */
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .brand-mark { background: #F4F6F1; border-radius: 8px; padding: 3px; } }
 :root[data-theme="dark"] .brand-mark { background: #F4F6F1; border-radius: 8px; padding: 3px; }
+
+/* ---------- استوديو التسجيل ---------- */
+.studio { display: grid; gap: 14px; max-width: 760px; padding-block: 8px 32px; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.steps > li h2 { font-size: 1.1rem; }
+ol.plain, ul.plain { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; }
+.meter { height: 10px; border-radius: 999px; background: var(--sunk); overflow: hidden; max-width: 420px; }
+.meter span { display: block; height: 100%; width: 0; background: var(--ok); border-radius: inherit; transition: width .08s linear; }
+.btn-lg { min-height: 52px; padding-inline: 24px; font-size: 1.06rem; border-radius: 12px; }
+.rec-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rec-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--live); flex: none; animation: recpulse 1.2s ease-in-out infinite; }
+.btn .rec-dot { width: 12px; height: 12px; background: currentColor; animation: none; }
+.rec-panel.paused .rec-dot { animation: none; background: var(--muted); }
+.rec-time { margin-inline-start: auto; font: 800 2.2rem/1 var(--font-display); font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+@keyframes recpulse { 50% { opacity: .3; } }
+.st-video { width: 100%; aspect-ratio: 16 / 9; background: #0B1210; border-radius: var(--r); display: block; }
+.recbar {
+  position: fixed; inset-inline: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 45; display: block;
+  max-width: 560px; margin-inline: auto; padding: 10px 16px; border-radius: 12px; background: var(--live); color: var(--live-ink);
+  font-weight: 700; text-align: center; text-decoration: none; box-shadow: var(--shadow);
+}
+@media (prefers-reduced-motion: reduce) { .rec-dot { animation: none; } }
+details.more { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); padding: 12px 14px; display: grid; gap: 10px; }
+details.more summary { cursor: pointer; font-weight: 700; }
+details.more[open] summary { margin-bottom: 8px; }

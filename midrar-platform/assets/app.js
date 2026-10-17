@@ -6,6 +6,7 @@
   'use strict';
   const C = window.APP_CONFIG;
   const API = window.API;
+  const ST = window.Studio;
   const view = document.getElementById('view');
 
   // ------------------------------------------------------------------
@@ -87,6 +88,8 @@
     return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
   }
   const isYouTube = (url) => /^https:\/\/(www\.|m\.|music\.)?(youtube\.com|youtu\.be)\/\S+$/i.test(url || '');
+  // من ينسخ عنوان صفحة الفيديو في YouTube Studio بدلاً من رابط المشاهدة
+  const normYt = (url) => { const m = /^https:\/\/studio\.youtube\.com\/video\/([A-Za-z0-9_-]{11})(?:[/?#]|$)/.exec(url || ''); return m ? 'https://youtu.be/' + m[1] : url; };
   const isDemoVideo = (url) => API.mode === 'demo' && /demo-video/.test(url || '');
   const videoOf = (s) => s.recording_url || s.video_url;
   const watchUrl = (s) => {
@@ -258,7 +261,7 @@
   // ------------------------------------------------------------------
   //  حالة التطبيق والمستخدم
   // ------------------------------------------------------------------
-  const app = { user: null, profile: undefined, settings: {}, token: 0 };
+  const app = { user: null, profile: undefined, settings: {}, token: 0, prefill: null };
 
   async function loadProfile() {
     if (!app.user) { app.profile = null; return null; }
@@ -802,8 +805,9 @@
           ${p.status !== 'suspended' ? '<a class="btn btn-primary" href="#/dashboard/new">+ حصة جديدة</a>' : ''}
           <a class="btn" href="#/profile">ملفي</a>
           <a class="btn" href="#/t/${esc(p.id)}">صفحتي العامة</a>
+          <a class="btn" href="#/studio">استوديو التسجيل</a>
           ${p.is_admin ? '<a class="btn" href="#/admin">الإدارة</a>' : ''}
-          <a class="btn btn-ghost" href="#/guide">دليل البث</a>
+          <a class="btn btn-ghost" href="#/guide">دليل المعلم</a>
         </div>
       </header>
       ${p.status === 'pending' ? '<div class="note warn"><b>حسابك قيد المراجعة.</b><span>يمكنك إضافة حصصك الآن، وستظهر للطلاب بعد أن تعتمد إدارة المنصة حسابك.</span></div>' : ''}
@@ -845,7 +849,9 @@
       if (!s) return pageNotFound('لم نجد هذه الحصة في حصصك.');
     }
     const editing = mode === 'edit';
-    const src = s || {};
+    const pre = mode === 'new' ? app.prefill : null;
+    app.prefill = null;
+    const src = s || pre || {};
     const lastGrade = store.get('t-grade') || store.get('grade') || '';
     const grade = src.grade || lastGrade;
     let start = src.starts_at ? new Date(src.starts_at) : null;
@@ -917,7 +923,7 @@
       $('#lbl-time').textContent = rec ? 'وقت النشر' : 'وقت البدء';
       $('#lbl-dur').textContent = rec ? 'طول الفيديو تقريباً' : 'المدة';
       $('#lbl-url').textContent = rec ? 'رابط الفيديو على يوتيوب' : 'رابط البث على يوتيوب';
-      $('#hint-url').innerHTML = rec ? 'ارفع الفيديو إلى قناتك (عام أو غير مدرج) ثم الصق رابطه هنا.' : 'يمكنك إضافته لاحقاً. أنشئ بثاً مجدولاً في YouTube Studio وضع رابطه هنا، وسيصبح نفس الرابط هو التسجيل بعد الحصة. <a href="#/guide" target="_blank">كيف؟</a>';
+      $('#hint-url').innerHTML = rec ? 'ارفع الفيديو إلى قناتك (عام أو غير مدرج) ثم الصق رابطه هنا. لم تسجّله بعد؟ <a href="#/studio">سجّله في استوديو مدرار</a>.' : 'يمكنك إضافته لاحقاً. أنشئ بثاً مجدولاً في YouTube Studio وضع رابطه هنا، وسيصبح نفس الرابط هو التسجيل بعد الحصة. <a href="#/guide" target="_blank">كيف؟</a>';
       const rf = $('#rep-field'); if (rf) rf.hidden = rec;
       if (rec && !editing && !src.starts_at) {
         const n = new Date(); $('#sf-date').value = `${n.getFullYear()}-${pad(n.getMonth() + 1)}-${pad(n.getDate())}`; $('#sf-time').value = `${pad(n.getHours())}:${pad(n.getMinutes())}`;
@@ -959,8 +965,8 @@
       const bad = (sel, msg) => { const el = $(sel); el.setAttribute('aria-invalid', 'true'); el.focus(); toast(msg, true); return false; };
       const k = kindNow();
       const title = $('#sf-title').value.trim();
-      const url = $('#sf-url').value.trim();
-      const recUrl = $('#sf-rec') ? $('#sf-rec').value.trim() : '';
+      const url = normYt($('#sf-url').value.trim());
+      const recUrl = $('#sf-rec') ? normYt($('#sf-rec').value.trim()) : '';
       const tm = readTimes();
       if (!gSel.value) return bad('#sf-grade', 'اختر الصف.');
       if (!sSel.value) return bad('#sf-subj', 'اختر المادة.');
@@ -1078,6 +1084,309 @@
   }
 
   // ------------------------------------------------------------------
+  //  استوديو التسجيل: الشاشة والصوت فقط، ثم الرفع إلى يوتيوب
+  // ------------------------------------------------------------------
+  const clock = (ms) => {
+    const t = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(t / 3600);
+    const m = Math.floor(t / 60) % 60;
+    return (h ? `${h}:${pad(m)}` : String(m)) + ':' + pad(t % 60);
+  };
+  const mbs = (b) => `${fNum(Math.max(1, Math.round(b / 1048576)))} ميغابايت`;
+  const onStudio = () => /^#\/studio(\/|$)/.test(location.hash);
+  const recActive = () => !!ST && (ST.state === 'recording' || ST.state === 'paused');
+  const studio = { sid: null, sess: null, mine: [], peak: 0, silent: 0, quiet: false, prev: 'idle', timer: null };
+  let micTest = null;
+
+  function studioErr(e) {
+    const n = e && e.name;
+    if (e && e.where === 'mic') {
+      if (n === 'NotAllowedError' || n === 'SecurityError') return 'لم يسمح المتصفح بالمايكروفون. اضغط رمز القفل بجانب عنوان الموقع واسمح بالمايكروفون، ثم أعد المحاولة.';
+      if (n === 'NotFoundError' || n === 'OverconstrainedError') return 'لم نجد مايكروفوناً. صِل سماعة بمايكروفون ثم أعد المحاولة.';
+      if (n === 'NotReadableError') return 'المايكروفون مشغول ببرنامج آخر مثل زوم أو تيمز. أغلقه ثم أعد المحاولة.';
+      return 'تعذّر تشغيل المايكروفون.';
+    }
+    if (e && e.where === 'display') {
+      if (n === 'NotAllowedError') return 'لم يبدأ التسجيل: اختر الشاشة ثم اضغط «مشاركة». إن لم تظهر نافذة الاختيار، اسمح للمتصفح بتسجيل الشاشة من إعدادات الجهاز.';
+      return 'تعذّر بدء مشاركة الشاشة.';
+    }
+    return 'حدث خطأ أثناء التسجيل' + (e && e.message ? ': ' + e.message : '.');
+  }
+  // مؤشر مستوى الصوت يتحرك ما دام ظاهراً
+  function meterLoop(el, fn) {
+    if (!el) return;
+    const step = () => {
+      if (!el.isConnected) return;
+      el.style.width = Math.round(fn() * 100) + '%';
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  // شريط «التسجيل مستمر» في بقية الصفحات، ووقت التسجيل في عنوان التبويب
+  function studioTick() {
+    const on = recActive();
+    let bar = document.getElementById('recbar');
+    if (on && !onStudio()) {
+      if (!bar) { bar = document.createElement('a'); bar.id = 'recbar'; bar.className = 'recbar'; bar.href = '#/studio'; document.body.appendChild(bar); }
+      bar.textContent = `${ST.state === 'paused' ? 'التسجيل متوقف مؤقتاً' : '● التسجيل مستمر'} ${clock(ST.elapsed())} — العودة إلى الاستوديو`;
+    } else if (bar) bar.remove();
+    if (!on) return;
+    document.title = `${ST.state === 'paused' ? 'متوقف' : '●'} ${clock(ST.elapsed())} تسجيل — ${C.SITE_NAME}`;
+    if (ST.state === 'recording') {
+      const pk = ST.peak();
+      studio.peak = Math.max(studio.peak, pk);
+      studio.silent = ST.metered && pk < 0.01 ? studio.silent + 1 : 0;
+    }
+    const t = $('#st-time'); if (t) t.textContent = clock(ST.elapsed());
+    const z = $('#st-size'); if (z) z.textContent = mbs(ST.bytes);
+    const w = $('#st-silent'); if (w) w.hidden = studio.silent < 45;
+  }
+  function syncStudio() {
+    if (!ST) return;
+    const on = recActive();
+    if (on && !studio.timer) studio.timer = setInterval(studioTick, 1000);
+    if (!on && studio.timer) { clearInterval(studio.timer); studio.timer = null; }
+    studioTick();
+  }
+  if (ST) {
+    ST.on((state) => {
+      if (state === 'recording' && studio.prev === 'idle') { studio.peak = 0; studio.silent = 0; }
+      if (state === 'done') studio.quiet = studio.prev === 'saving' && ST.metered && studio.peak < 0.02;
+      const ended = state === 'done' && studio.prev === 'saving';
+      studio.prev = state;
+      syncStudio();
+      if (!onStudio()) {
+        if (!recActive() && / تسجيل — /.test(document.title)) setTitle('');
+        if (ended) toast('انتهى التسجيل. افتح «استوديو التسجيل» لحفظ الفيديو.');
+        return;
+      }
+      if (!recActive()) setTitle('استوديو التسجيل');
+      renderStudio(app.token);
+    });
+    window.addEventListener('beforeunload', (e) => {
+      if (recActive() || ST.state === 'saving') { e.preventDefault(); e.returnValue = ''; }
+    });
+  }
+
+  async function pageStudio(tok, sid) {
+    setNav(''); setTitle('استوديو التسجيل');
+    const p = await requireTeacher(tok, location.hash);
+    if (!p) return;
+    if (sid) studio.sid = sid;
+    else if (ST && ST.state === 'idle') studio.sid = null;
+    view.innerHTML = '<p class="loading">جارٍ فتح الاستوديو…</p>';
+    let mine = [];
+    try { mine = await API.mySessions(); } catch (e) { /* القائمة اختيارية */ }
+    if (tok !== app.token) return;
+    studio.mine = mine;
+    studio.sess = studio.sid ? mine.find((x) => x.id === studio.sid) || null : null;
+    renderStudio(tok);
+  }
+
+  function renderStudio(tok) {
+    if (tok !== app.token) return;
+    const head = (h1, sub) => `<header class="page-head"><nav class="crumbs"><a href="#/dashboard">لوحتي</a><span>›</span><span>استوديو التسجيل</span></nav>
+      <h1>${h1}</h1>${sub ? `<p class="muted">${sub}</p>` : ''}</header>`;
+    if (!ST || !ST.supported()) {
+      view.innerHTML = head('استوديو التسجيل') + `<div class="studio">
+        <div class="note warn"><b>الاستوديو يعمل على الكمبيوتر فقط</b><span>افتح هذه الصفحة على حاسوب بمتصفح Chrome أو Edge.</span></div>
+        <div class="box"><h2>تشرح من الجوال أو الآيباد؟</h2>
+          <ol class="plain">
+            <li>شغّل <b>تسجيل الشاشة</b> المدمج في جهازك مع تفعيل <b>المايكروفون</b>: في الآيفون والآيباد من مركز التحكم (اضغط مطولاً على زر التسجيل وفعّل المايكروفون)، وفي أندرويد من الإعدادات السريعة ← «مسجّل الشاشة».</li>
+            <li>اشرح على الملف أو السبورة بقلمك، ثم أوقف التسجيل.</li>
+            <li>ارفع الفيديو من تطبيق يوتيوب، ثم أضفه في <a href="#/dashboard/new">حصة جديدة</a> كـ«درس مسجّل».</li>
+          </ol></div></div>`;
+      return;
+    }
+    const st = ST.state;
+    const sess = studio.sess;
+    const forSess = sess ? `<div class="note"><b>تسجيل لحصة: ${esc(sess.title)}</b><span>${esc(gradeName(sess.grade))} · ${esc(subjectName(sess.subject))} · ${esc(fDateShort.format(new Date(sess.starts_at)))} ${esc(time(sess.starts_at))}</span></div>` : '';
+
+    if (st === 'recording' || st === 'paused') {
+      const paused = st === 'paused';
+      view.innerHTML = head(paused ? 'التسجيل متوقف مؤقتاً' : 'جارٍ التسجيل') + `<div class="studio">
+        <div class="box rec-panel${paused ? ' paused' : ''}">
+          <div class="rec-top"><span class="rec-dot" aria-hidden="true"></span><b>${paused ? 'متوقف مؤقتاً' : 'يُسجَّل الآن: شاشتك وصوتك'}</b><span class="rec-time" id="st-time">${clock(ST.elapsed())}</span></div>
+          <div class="meter" aria-hidden="true"><span id="st-lvl"></span></div>
+          <div class="note warn" id="st-silent" hidden><b>لم نسمع صوتاً منذ قليل.</b><span>إن كنت تتكلم، تأكد أن المايكروفون موصول وغير مكتوم.</span></div>
+          ${ST.sysLost ? '<div class="note warn"><span>تعذّر تسجيل صوت الحاسوب، وصوتك يُسجَّل بشكل طبيعي.</span></div>' : ''}
+          <p>${paused ? 'اضغط «استئناف» لتكمل من حيث توقفت.' : 'انتقل الآن إلى العرض أو الملف واشرح براحتك. عند الانتهاء ارجع إلى هذه الصفحة واضغط «إنهاء التسجيل»، أو اضغط «إيقاف المشاركة» في شريط المتصفح.'}</p>
+          <div class="row">
+            <button type="button" class="btn btn-lg" id="st-pause">${paused ? 'استئناف' : 'إيقاف مؤقت'}</button>
+            <button type="button" class="btn btn-primary btn-lg" id="st-stop">إنهاء التسجيل</button>
+          </div>
+          <span class="muted small">${ST.persistent ? 'يُحفظ التسجيل أولاً بأول في متصفحك، فلا يضيع إن أُغلقت الصفحة.' : 'لا تغلق هذه الصفحة حتى تنهي التسجيل وتحفظه.'} الحجم الآن: <b id="st-size">${mbs(ST.bytes)}</b></span>
+        </div></div>`;
+      $('#st-pause').addEventListener('click', () => (ST.state === 'paused' ? ST.resume() : ST.pause()));
+      $('#st-stop').addEventListener('click', () => ST.stop());
+      meterLoop($('#st-lvl'), () => ST.level());
+      studioTick();
+      return;
+    }
+
+    if (st === 'saving') {
+      view.innerHTML = head('جارٍ تجهيز الفيديو…') + '<p class="loading">لحظات من فضلك، لا تغلق الصفحة.</p>';
+      return;
+    }
+
+    if (st === 'done') {
+      const r = ST.result;
+      const d0 = new Date(r.started);
+      const name = `midrar-${dayKey(d0)}-${pad(d0.getHours())}${pad(d0.getMinutes())}.${r.ext}`;
+      const opts = studio.mine.filter((x) => x.status !== 'cancelled' && x.kind !== 'recorded' && Math.abs(+new Date(x.starts_at) - Date.now()) < 45 * DAY)
+        .sort((a, b) => +new Date(b.starts_at) - +new Date(a.starts_at));
+      if (sess && !opts.includes(sess)) opts.unshift(sess);
+      view.innerHTML = head('اكتمل التسجيل', `المدة ${esc(clock(r.ms))} · الحجم ${esc(mbs(r.bytes))}`) + `<div class="studio">
+        ${forSess}
+        ${r.partial ? '<div class="note warn"><b>هذا تسجيل توقف قبل أن يكتمل.</b><span>حفظنا ما سُجّل حتى لحظة التوقف.</span></div>' : ''}
+        ${studio.quiet ? '<div class="note warn"><b>تنبيه: لم نلتقط صوتاً تقريباً.</b><span>شاهد الفيديو أولاً؛ إن كان بلا صوت فجرّب المايكروفون وأعد التسجيل.</span></div>' : ''}
+        <video class="st-video" controls preload="metadata" src="${esc(r.url)}"></video>
+        <ol class="steps">
+          <li class="box"><h2>١. احفظ الفيديو على جهازك</h2>
+            <div><a class="btn btn-primary btn-lg" id="st-dl" href="${esc(r.url)}" download="${esc(name)}">حفظ الفيديو</a></div>
+            <span class="hint">يُحفظ في مجلد «التنزيلات» باسم <span class="path">${esc(name)}</span></span></li>
+          <li class="box"><h2>٢. ارفعه إلى قناتك في يوتيوب</h2>
+            <div><a class="btn" href="https://www.youtube.com/upload" target="_blank" rel="noopener">افتح صفحة الرفع في يوتيوب</a></div>
+            <ol class="plain">
+              <li>اسحب الملف الذي حفظته إلى صفحة يوتيوب.</li>
+              <li>اكتب عنوان الدرس، وأجب عن سؤال «هل الفيديو مخصص للأطفال؟» بصدق.</li>
+              <li>في «مستوى الظهور» اختر <b>غير مدرج</b> أو <b>عام</b>، وليس «خاص».</li>
+              <li>انسخ <b>رابط الفيديو</b> الذي يظهر لك.</li>
+            </ol></li>
+          <li class="box"><h2>٣. أضفه إلى المنصة</h2>
+            <form id="st-add" class="stack" novalidate>
+              <div class="field"><label for="st-url">رابط الفيديو على يوتيوب</label>
+                <input class="input" id="st-url" type="url" inputmode="url" maxlength="300" placeholder="https://youtu.be/..."></div>
+              <div class="field"><label for="st-target">أين يظهر للطلاب؟</label>
+                <select class="input" id="st-target"><option value="">درس مسجّل جديد</option>
+                  ${opts.map((x) => `<option value="${esc(x.id)}"${sess && x.id === sess.id ? ' selected' : ''}>${esc(`${x.title} — ${gradeName(x.grade)} · ${fDateShort.format(new Date(x.starts_at))} ${time(x.starts_at)}`)}</option>`).join('')}
+                </select>
+                <span class="hint">اختر حصة من حصصك ليصبح الفيديو تسجيلها، أو انشره درساً مسجّلاً جديداً.</span></div>
+              <div><button class="btn btn-primary" type="submit">أضف إلى المنصة</button></div>
+            </form></li>
+        </ol>
+        <div class="row"><button type="button" class="btn" id="st-new">تسجيل جديد</button><span class="spacer"></span>
+          ${r.saved ? '<button type="button" class="btn btn-ghost btn-danger" id="st-del">احذف النسخة من المتصفح</button>' : ''}</div>
+      </div>`;
+      let saved = false;
+      $('#st-dl').addEventListener('click', () => { saved = true; toast('بدأ حفظ الفيديو في مجلد التنزيلات'); });
+      const nb = $('#st-new');
+      if (r.saved) nb.addEventListener('click', () => ST.discard());
+      else {
+        // التسجيل في الذاكرة فقط: نطلب تأكيداً إن لم يُحفظ بعد
+        nb.addEventListener('click', (ev) => { if (saved) { ev.stopImmediatePropagation(); ST.discard(); } }, true);
+        armed(nb, async () => ST.discard());
+      }
+      const del = $('#st-del');
+      if (del) armed(del, async () => { try { await ST.remove(r.id); toast('حُذفت النسخة من المتصفح'); } catch (e) { toast(errMsg(e), true); } });
+      $('#st-add').addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const inp = $('#st-url');
+        const url = normYt(inp.value.trim());
+        inp.removeAttribute('aria-invalid');
+        if (!isYouTube(url) || !ytId(url)) { inp.setAttribute('aria-invalid', 'true'); inp.focus(); toast('الصق رابط الفيديو من يوتيوب، مثل https://youtu.be/...', true); return; }
+        const target = $('#st-target').value;
+        if (!target) { app.prefill = { kind: 'recorded', video_url: url, title: r.label || '' }; location.hash = '#/dashboard/new'; return; }
+        const s = studio.mine.find((x) => x.id === target);
+        const btn = $('#st-add button'); btn.disabled = true;
+        try {
+          await API.updateSession(target, s && +new Date(s.ends_at) <= Date.now() ? { recording_url: url } : { video_url: url });
+          toast('أُضيف الفيديو إلى الحصة');
+          location.hash = '#/s/' + target;
+        } catch (e) { toast(errMsg(e), true); btn.disabled = false; }
+      });
+      return;
+    }
+
+    // الإعداد قبل التسجيل
+    const err = ST.error;
+    view.innerHTML = head('استوديو مدرار: سجّل درسك بشاشتك وصوتك', 'بلا برامج وبلا كاميرا. سجّل الدرس، ثم ارفعه إلى قناتك في يوتيوب، فيظهر للطلاب في المنصة.') + `<div class="studio">
+      <div class="note"><b>الكاميرا لا تعمل هنا أبداً</b><span>المنصة ممنوعة من تشغيل الكاميرا أصلاً. يُسجَّل فقط ما تختاره من شاشتك، وصوتك.</span></div>
+      ${forSess}
+      ${err ? `<div class="note bad"><b>توقف التسجيل.</b><span>${esc(studioErr(err))}</span></div>` : ''}
+      <ol class="steps">
+        <li class="box"><h2>١. جرّب المايكروفون</h2>
+          <div class="field"><label for="st-mic">المايكروفون</label><select class="input" id="st-mic"><option value="">المايكروفون الافتراضي</option></select></div>
+          <div class="meter" aria-hidden="true"><span id="st-lvl"></span></div>
+          <div class="row"><button type="button" class="btn" id="st-test">تجربة المايكروفون</button><span class="hint" id="st-mic-hint">اضغط ثم تكلّم: يجب أن يتحرك الشريط الأخضر.</span></div></li>
+        <li class="box"><h2>٢. جهّز شاشتك</h2>
+          <ul class="plain">
+            <li>افتح ما ستشرحه: العرض، أو ملف PDF، أو السبورة.</li>
+            <li>أغلق واتساب ويب والبريد، وفعّل «عدم الإزعاج». كل ما يظهر على الشاشة يُسجَّل.</li>
+            <li>صِل الحاسوب بالشاحن، واستخدم سماعة بمايكروفون إن وُجدت.</li>
+          </ul>
+          ${ST.canSystemAudio ? `<label class="check"><input type="checkbox" id="st-sys" checked><span>سجّل صوت الحاسوب أيضاً، إن كنت ستشغّل فيديو للطلاب.<br><span class="muted small">عند اختيار الشاشة فعّل خيار «مشاركة الصوت» في نافذة المتصفح.</span></span></label>` : ''}</li>
+        <li class="box"><h2>٣. ابدأ التسجيل</h2>
+          <p>سيسألك المتصفح ماذا تشارك: اختر <b>الشاشة بالكامل</b> (الأسهل)، أو <b>نافذة</b> برنامج واحد مثل العرض، ثم اضغط «مشاركة».</p>
+          <div><button type="button" class="btn btn-live btn-lg" id="st-start"><span class="rec-dot" aria-hidden="true"></span>ابدأ التسجيل</button></div>
+          <span class="hint" id="st-space"></span></li>
+      </ol>
+      <section class="section" id="st-saved" hidden></section>
+    </div>`;
+
+    const sel = $('#st-mic');
+    const fillMics = async () => {
+      const list = (await ST.mics()).filter((d) => d.deviceId !== 'default' && d.deviceId !== 'communications');
+      const cur = sel.value || store.get('mic') || '';
+      sel.innerHTML = '<option value="">المايكروفون الافتراضي</option>' + list.map((d, i) => `<option value="${esc(d.deviceId)}"${d.deviceId === cur ? ' selected' : ''}>${esc(d.label || 'مايكروفون ' + fNum(i + 1))}</option>`).join('');
+    };
+    fillMics();
+    const tb = $('#st-test');
+    const hint = $('#st-mic-hint');
+    const stopTest = () => { if (micTest) { micTest.stop(); micTest = null; } tb.textContent = 'تجربة المايكروفون'; $('#st-lvl').style.width = '0'; };
+    const runTest = async () => {
+      tb.disabled = true;
+      try {
+        micTest = await ST.testMic(sel.value);
+        if (!tb.isConnected) { stopTest(); return; }
+        tb.textContent = 'إيقاف التجربة';
+        hint.textContent = 'تكلّم الآن: يجب أن يتحرك الشريط الأخضر مع صوتك.';
+        const t = micTest;
+        meterLoop($('#st-lvl'), () => (micTest === t ? t.level() : 0));
+        fillMics();
+      } catch (e) { hint.textContent = studioErr(e); }
+      tb.disabled = false;
+    };
+    tb.addEventListener('click', () => (micTest ? stopTest() : runTest()));
+    sel.addEventListener('change', () => { store.set('mic', sel.value); if (micTest) { stopTest(); runTest(); } });
+    $('#st-start').addEventListener('click', async () => {
+      if (micTest) stopTest();
+      const btn = $('#st-start');
+      btn.disabled = true;
+      try {
+        // يجب أن يُستدعى مباشرة داخل الضغطة: أول ما يفعله نافذة اختيار الشاشة
+        await ST.start({ micId: sel.value, systemAudio: !!($('#st-sys') && $('#st-sys').checked), label: sess ? sess.title : '' });
+      } catch (e) {
+        if (btn.isConnected) btn.disabled = false;
+        toast(studioErr(e), true);
+      }
+    });
+    ST.freeSpace().then((f) => {
+      const el = $('#st-space');
+      if (el && f != null && f < 1.5 * 1073741824) el.textContent = 'تنبيه: المساحة المتاحة للتسجيل قليلة. احذف تسجيلات قديمة أو وفّر مساحة على القرص.';
+    });
+    ST.list().then((items) => {
+      const box = $('#st-saved');
+      if (!box || !items.length || tok !== app.token) return;
+      const total = items.reduce((n, x) => n + (x.bytes || 0), 0);
+      box.hidden = false;
+      box.innerHTML = `<div class="section-head"><h2>تسجيلات محفوظة في هذا المتصفح</h2><span class="muted">${esc(mbs(total))}</span></div>
+        <div class="list">${items.map((x) => `<div class="item">
+          <div class="when"><b>${esc(time(x.started))}</b><span>${esc(fDateShort.format(new Date(x.started)))}</span></div>
+          <div class="what"><b>${esc(x.label || 'تسجيل درس')}</b><div class="row"><span>${esc(clock(x.ms || 0))}</span><span>·</span><span>${esc(mbs(x.bytes || 0))}</span>${x.done ? '' : '<span class="pill pill-warn">توقف قبل أن يكتمل</span>'}</div></div>
+          <div class="tools"><button type="button" class="btn btn-sm" data-open="${esc(x.id)}">فتح</button><button type="button" class="btn btn-sm btn-ghost btn-danger" data-rm="${esc(x.id)}">حذف</button></div></div>`).join('')}</div>
+        <p class="muted small">تبقى هنا حتى تحذفها. احفظ الفيديو على جهازك قبل الحذف.</p>`;
+      $$('[data-open]', box).forEach((b) => b.addEventListener('click', async () => {
+        b.disabled = true;
+        try { await ST.open(b.getAttribute('data-open')); } catch (e) { toast(errMsg(e), true); b.disabled = false; }
+      }));
+      $$('[data-rm]', box).forEach((b) => armed(b, async () => {
+        try { await ST.remove(b.getAttribute('data-rm')); toast('حُذف التسجيل من المتصفح'); renderStudio(app.token); } catch (e) { toast(errMsg(e), true); }
+      }));
+    }).catch(() => { /* التخزين غير متاح */ });
+  }
+
+  // ------------------------------------------------------------------
   //  صفحات ثابتة
   // ------------------------------------------------------------------
   function pageGuide() {
@@ -1101,34 +1410,45 @@
         <h2>ثالثاً: احصل على رابط البث</h2>
         <p><b>الطريقة المفضّلة — رابط مسبق:</b> في YouTube Studio اختر <b>إنشاء ← بث مباشر ← إدارة ← جدولة بث</b> <span class="path">(Manage → Schedule stream)</span>، واكتب عنوان الحصة وموعدها. انسخ رابط المشاهدة وضعه في حصتك على المنصة. هكذا يرى الطلاب الرابط قبل الحصة.</p>
         <p><b>الطريقة السريعة:</b> ابدأ البث في وقت الحصة، ثم انسخ رابطه وضعه في الحصة فوراً. صفحة الحصة عند الطلاب تتحدّث تلقائياً خلال أقل من دقيقة.</p>
-        <h2>رابعاً: ابدأ البث — شاشتك وصوتك فقط، بدون إظهار الوجه</h2>
-        <p>الطلاب يرون ما على شاشتك (عرض، ملف PDF، فيديو، سبورة) ويسمعون صوتك فقط. لا تحتاج كاميرا إطلاقاً. نستخدم برنامج <a href="https://obsproject.com" target="_blank" rel="noopener">OBS Studio</a> المجاني (يدعم اللغة العربية)، ويبث إلى قناتك في يوتيوب مباشرة.</p>
-        <p><b>التجهيز (مرة واحدة):</b></p>
+        <h2>رابعاً: اشرح بشاشتك وصوتك، دون إظهار الوجه</h2>
+        <p>في كل الطرق التالية يرى الطلاب ما على شاشتك (عرض، ملف PDF، فيديو، سبورة) ويسمعون صوتك فقط. اختر الأسهل لك.</p>
+        <h3>قبل أن تبدأ (لأي طريقة)</h3>
+        <ul>
+          <li>أغلق واتساب ويب والبريد، وفعّل <b>عدم الإزعاج</b>؛ الطلاب يرون <b>كل</b> ما يظهر على شاشتك، بما فيه الإشعارات.</li>
+          <li>افتح ملفاتك قبل البدء، وصِل الحاسوب بالشاحن.</li>
+        </ul>
+        <h3>الطريقة الأسهل: استوديو مدرار (درس مسجّل)</h3>
         <ol>
-          <li>حمّل OBS Studio من <a href="https://obsproject.com" target="_blank" rel="noopener">obsproject.com</a> وثبّته. عند أول تشغيل اختر <b>التحسين للبث</b> <span class="path">(Optimize for streaming)</span>.</li>
-          <li>في مربع <b>المصادر</b> <span class="path">(Sources)</span> اضغط <b>+</b> ← <b>التقاط الشاشة</b> <span class="path">(Display Capture)</span> ← موافق. ستظهر شاشتك كاملة.</li>
-          <li><b>لا تضف أي كاميرا</b> <span class="path">(Video Capture Device)</span>؛ هكذا لا يظهر وجهك أبداً.</li>
-          <li>في <b>خلّاط الصوت</b> <span class="path">(Audio Mixer)</span> تأكد أن شريط <span class="path">Mic/Aux</span> يتحرك عندما تتكلم. شريط <span class="path">Desktop Audio</span> ينقل صوت أي فيديو تشغّله للطلاب.</li>
-          <li>من <b>الإعدادات ← البث</b> <span class="path">(Settings → Stream)</span> اختر <span class="path">YouTube - RTMPS</span> واضغط <span class="path">Connect Account</span> وسجّل الدخول بحساب قناتك.</li>
+          <li>من <a href="#/dashboard">لوحتي</a> اضغط <b>استوديو التسجيل</b>، على الكمبيوتر بمتصفح Chrome أو Edge.</li>
+          <li>جرّب المايكروفون، ثم اضغط <b>ابدأ التسجيل</b> واختر <b>الشاشة بالكامل</b> أو نافذة العرض.</li>
+          <li>اشرح براحتك، ويمكنك الإيقاف المؤقت متى شئت. عند الانتهاء اضغط <b>إنهاء التسجيل</b>.</li>
+          <li>احفظ الفيديو، وارفعه إلى قناتك في يوتيوب، ثم الصق رابطه في الاستوديو ليظهر للطلاب.</li>
         </ol>
-        <p><b>في وقت الحصة:</b></p>
+        <p class="muted">لا يحتاج أي برنامج، والمنصة ممنوعة من تشغيل الكاميرا أصلاً. ويحفظ المتصفح التسجيل أولاً بأول، فلا يضيع إن أُغلقت الصفحة.</p>
+        <h3>بث مباشر بلا برامج: من يوتيوب نفسه</h3>
         <ol>
-          <li>افتح ملفاتك قبل البدء (العرض، الـPDF، السبورة) وأغلق كل ما هو شخصي.</li>
-          <li>فعّل <b>عدم الإزعاج</b> في الحاسوب وأغلق واتساب ويب والبريد، لأن الطلاب يرون <b>كل</b> ما يظهر على شاشتك، بما فيه الإشعارات.</li>
-          <li>في OBS اضغط <b>إدارة البث</b> <span class="path">(Manage Broadcast)</span> واختر البث الذي جدولته، ثم <b>بدء البث</b> <span class="path">(Start Streaming)</span>.</li>
-          <li>اضغط أيضاً <b>بدء التسجيل</b> <span class="path">(Start Recording)</span> لتحفظ نسخة على حاسوبك، تفيدك إن انقطع الإنترنت.</li>
-          <li>في نهاية الحصة اضغط <b>إيقاف البث</b> <span class="path">(Stop Streaming)</span>.</li>
+          <li>افتح YouTube Studio بمتصفح Chrome، ثم <b>إنشاء ← بث مباشر ← كاميرا الويب</b> <span class="path">(Create → Go live → Webcam)</span>.</li>
+          <li>هذه الطريقة تشترط كاميرا موصولة بالحاسوب. لتبقى غير ظاهر: غطِّ عدسة الكاميرا بملصق صغير.</li>
+          <li>بعد بدء البث اضغط <b>مشاركة الشاشة</b> <span class="path">(Share screen)</span> واختر الشاشة أو نافذة العرض.</li>
+          <li>جرّب أول مرة ببث <b>خاص</b> لترى بنفسك ما سيظهر للطلاب.</li>
         </ol>
-        <p><b>تريد إظهار برنامج واحد فقط وإخفاء بقية الشاشة؟</b> استخدم <b>التقاط النافذة</b> <span class="path">(Window Capture)</span> بدلاً من التقاط الشاشة، واختر نافذة العرض أو السبورة.</p>
+        <details class="more"><summary>للمتقدمين: البث المباشر ببرنامج OBS Studio</summary>
+          <p>برنامج <a href="https://obsproject.com" target="_blank" rel="noopener">OBS Studio</a> مجاني ويدعم العربية، ويبث شاشتك وصوتك دون أي كاميرا.</p>
+          <ol>
+            <li>ثبّته من <a href="https://obsproject.com" target="_blank" rel="noopener">obsproject.com</a>، وعند أول تشغيل اختر <b>التحسين للبث</b> <span class="path">(Optimize for streaming)</span>.</li>
+            <li>في مربع <b>المصادر</b> <span class="path">(Sources)</span> اضغط <b>+</b> ← <b>التقاط الشاشة</b> <span class="path">(Display Capture)</span>. أو <b>التقاط النافذة</b> <span class="path">(Window Capture)</span> لإظهار برنامج واحد فقط. لا تضف أي كاميرا.</li>
+            <li>من <b>الإعدادات ← البث</b> <span class="path">(Settings → Stream)</span> اختر <span class="path">YouTube - RTMPS</span> واضغط <span class="path">Connect Account</span>.</li>
+            <li>في وقت الحصة اضغط <b>إدارة البث</b> <span class="path">(Manage Broadcast)</span> واختر البث الذي جدولته، ثم <b>بدء البث</b> <span class="path">(Start Streaming)</span>.</li>
+          </ol>
+        </details>
         <h2>أدوات الشرح على الشاشة (كلها مجانية)</h2>
         <ul>
           <li><b>عرض بوربوينت:</b> أثناء العرض اضغط <span class="path">Ctrl + P</span> لتحويل المؤشر إلى قلم تكتب به على الشريحة، و<span class="path">Ctrl + A</span> للرجوع إلى السهم. شريحة بيضاء فارغة تصلح سبورة.</li>
           <li><b>ملف PDF أو صفحة من الكتاب:</b> افتحه في متصفح <b>Microsoft Edge</b> واضغط زر <b>رسم</b> <span class="path">(Draw)</span> لتكتب وتظلّل عليه.</li>
           <li><b>سبورة بيضاء:</b> تطبيق <a href="https://apps.microsoft.com/detail/9mspc6mp8fm4" target="_blank" rel="noopener">Microsoft Whiteboard</a> على ويندوز، أو موقع <a href="https://excalidraw.com" target="_blank" rel="noopener">excalidraw.com</a> من المتصفح دون تثبيت.</li>
-          <li><b>مقطع فيديو:</b> شغّله على حاسوبك، وOBS ينقل صورته وصوته للطلاب تلقائياً. تجنّب المقاطع المحمية بحقوق النشر.</li>
+          <li><b>مقطع فيديو:</b> شغّله على حاسوبك. ليُسمع صوته في استوديو مدرار فعّل خيار «سجّل صوت الحاسوب» ثم «مشاركة الصوت» عند اختيار الشاشة. تجنّب المقاطع المحمية بحقوق النشر.</li>
           <li><b>للكتابة المريحة:</b> لوح رسم بقلم يوصل بالحاسوب (سعره بسيط)، أو حاسوب بشاشة لمس، يجعل الكتابة مثل السبورة تماماً.</li>
         </ul>
-        <p class="muted">طريقة بديلة دون تثبيت برامج: <b>إنشاء ← بث مباشر ← كاميرا الويب</b> في YouTube Studio ثم زر <b>مشاركة الشاشة</b>. لكنها تشترط وجود كاميرا موصولة بالحاسوب، لذلك نوصي بـ OBS لمن لا يريد إظهار وجهه.</p>
         <h2>خامساً: بعد الحصة</h2>
         <ul>
           <li>يحفظ يوتيوب البث تلقائياً على <b>نفس الرابط</b> (للبث الأقصر من 12 ساعة)، وقد يحتاج بعض الوقت للمعالجة.</li>
@@ -1193,6 +1513,7 @@
     [/^#\/t\/([\w-]+)$/, (t, m) => pageTeacher(t, m[1])],
     [/^#\/teachers$/, (t) => pageTeachers(t)],
     [/^#\/guide$/, () => pageGuide()],
+    [/^#\/studio(?:\/([\w-]+))?$/, (t, m) => pageStudio(t, m[1])],
     [/^#\/about$/, () => pageAbout()],
     [/^#\/dashboard$/, (t) => pageDashboard(t)],
     [/^#\/dashboard\/new$/, (t) => pageSessionForm(t, 'new')],
@@ -1207,6 +1528,8 @@
     if (location.hash === '#view') { history.replaceState(null, '', lastHash || '#/'); view.focus(); if (lastHash) return; }
     const tok = ++app.token;
     pageTick = null;
+    if (micTest && !onStudio()) { micTest.stop(); micTest = null; }
+    syncStudio();
     const h = location.hash || '#/';
     const changed = h !== lastHash;
     lastHash = h;
