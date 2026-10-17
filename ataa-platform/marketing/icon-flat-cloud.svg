@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <title>مدرار العلم — أيقونة السحابة</title>
+  <rect width="1024" height="1024" rx="224" fill="#12395E"/>
+  <!-- السحابة -->
+  <path d="M452 520H352A90 90 0 0 1 352 340A160 160 0 0 1 512 180" fill="none" stroke="#4FB3E8" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M572 520H672A90 90 0 0 0 672 340A160 160 0 0 0 512 180" fill="none" stroke="#22C1B2" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- القطرة -->
+  <path d="M512 400C566 474 610 538 610 600A98 98 0 0 1 414 600C414 538 458 474 512 400Z" fill="#9BE3DC"/>
+  <path d="M470 566Q456 626 494 664" fill="none" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round"/>
+  <!-- الكتاب -->
+  <path d="M170 700C300 672 420 700 512 774L512 824C420 752 300 728 170 752Z" fill="#FFFFFF"/>
+  <path d="M854 700C724 672 604 700 512 774L512 824C604 752 724 728 854 752Z" fill="#DDF1F2"/>
+  <path d="M146 772C296 748 430 784 512 860C594 784 728 748 878 772L878 806C728 784 600 816 512 894C424 816 296 784 146 806Z" fill="#22C1B2"/>
+</svg>
