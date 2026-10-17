@@ -12,7 +12,14 @@ window.APP_CONFIG = {
   SUPABASE_ANON_KEY: 'sb_publishable_EPrkQNEHKH0NODXgyIrvGQ_zGuARgKM',
 
   // بريد أو رقم للتواصل مع إدارة المنصة (اختياري، يظهر في صفحة "عن المنصة")
-  CONTACT: '',
+  CONTACT: 'midrarelm@gmail.com',
+
+  // حسابات المنصة في وسائل التواصل (اتركها فارغة لإخفائها)
+  SOCIAL: {
+    youtube: 'https://www.youtube.com/@midrarelm',
+    instagram: 'https://www.instagram.com/midrarelm',
+    x: 'https://x.com/midrarelm',
+  },
 
   // طريقة عرض الأرقام والتواريخ (latn = أرقام 1 2 3، احذفها لأرقام ١ ٢ ٣)
   LOCALE: 'ar-OM-u-nu-latn',

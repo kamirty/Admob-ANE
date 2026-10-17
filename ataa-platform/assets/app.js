@@ -1217,6 +1217,11 @@
   async function boot() {
     document.getElementById('brand-name').textContent = C.SITE_NAME;
     document.getElementById('foot-name').textContent = C.SITE_NAME;
+    const soc = C.SOCIAL || {};
+    const socLabels = { youtube: 'يوتيوب', instagram: 'إنستغرام', x: 'إكس (تويتر)' };
+    const socLinks = Object.keys(socLabels).filter((k) => /^https:\/\//.test(soc[k] || ''))
+      .map((k) => `<a href="${esc(soc[k])}" target="_blank" rel="noopener">${socLabels[k]}</a>`);
+    document.getElementById('foot-social').innerHTML = socLinks.length ? 'تابعنا: ' + socLinks.join(' · ') : '';
     API.onAuth(async (u) => {
       app.user = u;
       app.profile = undefined;

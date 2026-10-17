@@ -1,0 +1,37 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Cairo:wght@600;800;900&display=swap">
+<style>
+*{margin:0;box-sizing:border-box}
+body{background:#0F2A22;color:#F4F6F1;font-family:Cairo,sans-serif;overflow:hidden;
+background-image:radial-gradient(60% 60% at 50% 40%,rgba(91,195,154,.20),transparent 70%)}
+.mark{background:#5BC39A;border-radius:22%;display:grid;place-items:center}
+.drops{position:absolute;inset:0;pointer-events:none}
+/* avatar */
+.av{width:1080px;height:1080px;display:grid;place-items:center;align-content:center;gap:34px}
+.av .mark{width:420px;height:420px}
+.av .name{font-size:120px;font-weight:900;line-height:1}
+.av .sub{font:700 54px/1 Amiri,serif;color:#E7B456}
+/* banners */
+.bn{display:grid;place-items:center;align-content:center;text-align:center}
+.bn .row{display:flex;align-items:center;gap:40px}
+.bn .name{font-weight:900;line-height:1.1}
+.bn .slogan{font-family:Amiri,serif;font-weight:700;color:#E7B456}
+.bn .desc{color:#B9CCC4;font-weight:600}
+.bn .url{color:#5BC39A;font-weight:800;direction:ltr}
+</style></head><body>
+<div id="root"></div>
+<script>
+const mode=location.hash.slice(1);
+const svg=s=>`<svg width="${s}" height="${s}" viewBox="0 0 32 32"><rect x="3" y="6" width="26" height="20" rx="3" fill="#0F2A22"/><path d="M9 13h14M9 18h9" stroke="#5BC39A" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+const r=document.getElementById('root');
+if(mode==='avatar'){document.body.style.width='1080px';document.body.style.height='1080px';
+ r.innerHTML=`<div class="av"><div class="mark">${svg(300)}</div><div class="name">مِدْرار العلم</div><div class="sub">علمٌ يُنشر… وأجرٌ يبقى</div></div>`;}
+else{const [w,h,big]=mode==='youtube'?[2560,1440,1]:[1500,500,0];
+ document.body.style.width=w+'px';document.body.style.height=h+'px';
+ const k=big?1:0.62;
+ r.innerHTML=`<div class="bn" style="width:${w}px;height:${h}px;gap:${24*k}px">
+  <div class="row"><div class="mark" style="width:${150*k}px;height:${150*k}px">${svg(110*k)}</div><div class="name" style="font-size:${130*k}px">منصة مِدْرار العلم</div></div>
+  <div class="slogan" style="font-size:${72*k}px">علمٌ يُنشر… وأجرٌ يبقى</div>
+  <div class="desc" style="font-size:${40*k}px">حصص مجانية مباشرة يقدّمها معلمون متطوعون · من الصف 1 إلى 12</div>
+  <div class="url" style="font-size:${40*k}px">www.midrarelm.com</div></div>`;}
+</script></body></html>
