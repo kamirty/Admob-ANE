@@ -305,7 +305,7 @@
           <figcaption>قال رسول الله ﷺ</figcaption>
           <blockquote>«إذا مات ابنُ آدمَ انقطع عملُه إلا من ثلاث: صدقةٍ جارية، أو <mark>علمٍ يُنتفَعُ به</mark>، أو ولدٍ صالحٍ يدعو له»</blockquote>
           <figcaption>رواه مسلم</figcaption>
-          <p class="hadith-note">عطاءٌ مِدْرار لا ينقطع</p>
+          <p class="hadith-note">كل حصة تشرحها هنا… أثرٌ لا ينقطع</p>
           <a class="btn btn-primary btn-sm" href="#/dashboard">اجعل علمك صدقة جارية</a>
         </figure>
       </section>
