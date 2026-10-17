@@ -6,7 +6,7 @@
   'use strict';
   const C = window.APP_CONFIG;
   const LIVE = !!(C.SUPABASE_URL && C.SUPABASE_ANON_KEY);
-  const AUTH_KEY = 'ataa-auth';
+  const AUTH_KEY = 'midrar-auth';
   const LIST_COLS = 'id,grade,subject,title,kind,starts_at,ends_at,video_url,recording_url,status,hidden,teacher_id,teacher:teachers(id,display_name,avatar_url)';
   const FULL_COLS = LIST_COLS + ',description';
   const iso = (d) => new Date(d).toISOString();
@@ -134,7 +134,7 @@
         }
         if (returning) {
           let after = '#/dashboard';
-          try { const a = sessionStorage.getItem('ataa-after-login'); if (a && /^#\/[\w\/-]*$/.test(a)) after = a; sessionStorage.removeItem('ataa-after-login'); } catch (e) { /* ignore */ }
+          try { const a = sessionStorage.getItem('midrar-after-login'); if (a && /^#\/[\w\/-]*$/.test(a)) after = a; sessionStorage.removeItem('midrar-after-login'); } catch (e) { /* ignore */ }
           history.replaceState(null, '', location.pathname + after);
         }
         return user;
@@ -142,7 +142,7 @@
       onAuth(fn) { listeners.push(fn); },
       currentUser() { return user; },
       async signIn(after) {
-        try { sessionStorage.setItem('ataa-after-login', after || '#/dashboard'); } catch (e) { /* ignore */ }
+        try { sessionStorage.setItem('midrar-after-login', after || '#/dashboard'); } catch (e) { /* ignore */ }
         const c = await client();
         const r = await c.auth.signInWithOAuth({
           provider: 'google',
@@ -270,7 +270,7 @@
   //  الوضع التجريبي: بيانات أمثلة محفوظة في هذا المتصفح فقط
   // ===================================================================
   function demoApi() {
-    const KEY = 'ataa-demo-v3';
+    const KEY = 'midrar-demo-v1';
     const DEMO_UID = 'demo-teacher-you';
     let db = null;
     let user = null;

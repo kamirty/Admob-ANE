@@ -34,7 +34,7 @@
 - زر «دخول المعلمين» يُدخلك فوراً كمعلم تجريبي له صلاحية مشرف، فتجرّب كل شيء.
 - التغييرات تُحفظ في متصفحك فقط.
 
-لتجربتها: انشر المجلد كما هو (الخطوة 1)، أو شغّل على حاسوبك `npx serve ataa-platform` وافتح الرابط الذي يظهر.
+لتجربتها: انشر المجلد كما هو (الخطوة 1)، أو شغّل على حاسوبك `npx serve midrar-platform` وافتح الرابط الذي يظهر.
 
 ---
 
@@ -44,8 +44,8 @@
 
 1. أنشئ حساباً مجانياً في [Cloudflare](https://dash.cloudflare.com/sign-up).
 2. افتح **Workers & Pages ← Create application ← Pages ← Drag and drop your files** (رفع مباشر).
-3. اكتب اسم المشروع، مثلاً `ataa`، ثم اسحب **مجلد `ataa-platform` نفسه** (أو ملف zip له) إلى مربع الرفع، ثم اضغط **Save and Deploy**.
-4. انسخ العنوان الذي يظهره Cloudflare، مثل `https://ataa.pages.dev`. قد يضيف لاحقة إن كان الاسم مأخوذاً. **استخدم هذا العنوان نفسه في كل الخطوات التالية.**
+3. اكتب اسم المشروع، مثلاً `midrarelm`، ثم اسحب **مجلد `midrar-platform` نفسه** (أو ملف zip له) إلى مربع الرفع، ثم اضغط **Save and Deploy**.
+4. انسخ العنوان الذي يظهره Cloudflare، مثل `https://midrarelm.pages.dev`. قد يضيف لاحقة إن كان الاسم مأخوذاً. **استخدم هذا العنوان نفسه في كل الخطوات التالية.**
 
 > بدائل مجانية أخرى: Netlify (اسحب المجلد إلى app.netlify.com/drop)، أو GitHub Pages.
 
@@ -75,7 +75,7 @@
    - **Contact information**: بريدك. ثم وافق واحفظ.
 3. افتح **Clients** (أو **Credentials ← Create credentials ← OAuth client ID**):
    - **Application type**: اختر **Web application**.
-   - **Authorized JavaScript origins**: أضف عنوان موقعك، مثل `https://ataa.pages.dev`.
+   - **Authorized JavaScript origins**: أضف عنوان موقعك، مثل `https://midrarelm.pages.dev`.
    - **Authorized redirect URIs**: أضف رابط الاستدعاء الخاص بمشروعك. تجده في Supabase في الخطوة (ب)، وشكله: `https://<رمز-مشروعك>.supabase.co/auth/v1/callback`.
    - اضغط **Create** وانسخ **Client ID** و**Client secret**.
 4. من **Audience** (أو شاشة الموافقة) اضغط **Publish app** لتصبح الحالة **In production**. إن بقيت في وضع Testing فلن يستطيع الدخول إلا من تضيفهم يدوياً. المنصة تطلب الاسم والبريد والصورة فقط، فلا تحتاج مراجعة من Google.
@@ -84,8 +84,8 @@
 
 1. افتح **Authentication ← Sign In / Providers ← Google**. فعّله (Enable)، والصق **Client ID** و**Client Secret**، ثم احفظ. في هذه الصفحة يظهر **Callback URL**؛ هو الذي تضعه في Google في الخطوة 3 من (أ).
 2. افتح **Authentication ← URL Configuration**:
-   - **Site URL**: عنوان موقعك، مثل `https://ataa.pages.dev`.
-   - **Redirect URLs**: أضف `https://ataa.pages.dev/**`، وأضف أيضاً `https://*.ataa.pages.dev/**` (لروابط النسخ الفرعية). لكن افتح الموقع دائماً من عنوانه الرئيسي.
+   - **Site URL**: عنوان موقعك، مثل `https://midrarelm.pages.dev`.
+   - **Redirect URLs**: أضف `https://midrarelm.pages.dev/**`، وأضف أيضاً `https://*.midrarelm.pages.dev/**` (لروابط النسخ الفرعية). لكن افتح الموقع دائماً من عنوانه الرئيسي.
 
 ### الخطوة 5: اربط الموقع بقاعدة البيانات
 

@@ -16,8 +16,8 @@
   const $ = (sel, root) => (root || document).querySelector(sel);
   const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
   const store = {
-    get(k) { try { return localStorage.getItem('ataa-' + k); } catch (e) { return null; } },
-    set(k, v) { try { localStorage.setItem('ataa-' + k, v); } catch (e) { /* ignore */ } },
+    get(k) { try { return localStorage.getItem('midrar-' + k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem('midrar-' + k, v); } catch (e) { /* ignore */ } },
   };
   const MIN = 60000;
   const DAY = 864e5;
