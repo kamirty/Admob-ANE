@@ -125,7 +125,16 @@
   const progressOf = (w) => (w && !w.done && w.d > 0 && w.p >= 30 ? Math.min(98, Math.round((100 * w.p) / w.d)) : 0);
 
   const countShort = (n) => (n === 1 ? 'حصة' : n === 2 ? 'حصتان' : `${fNum(n)} ${n <= 10 ? 'حصص' : 'حصة'}`);
-  const plural = (n, one, two, few, many) => (n === 1 ? one : n === 2 ? two : n <= 10 ? `${fNum(n)} ${few}` : `${fNum(n)} ${many}`);
+  // العدد والمعدود: 3–10 جمع، 11–99 مفرد منصوب، 100 و101 و102 مفرد مجرور
+  const plural = (n, one, two, few, many) => {
+    const r = n % 100;
+    if (n === 1) return one;
+    if (n === 2) return two;
+    if (n >= 100 && r <= 2) return `${fNum(n)} ${many.replace(/اً$/, '')}`;
+    return r >= 3 && r <= 10 ? `${fNum(n)} ${few}` : `${fNum(n)} ${many}`;
+  };
+  const lessonsN = (n) => plural(n, 'درس واحد', 'درسان', 'دروس', 'درساً');
+  const minsTxt = (m) => plural(m, 'دقيقة واحدة', 'دقيقتان', 'دقائق', 'دقيقة');
 
   // ------------------------------------------------------------------
   //  يوتيوب
@@ -271,7 +280,7 @@
       <div class="card-top"><span class="subj">${esc(subjectName(s.subject))}${opts.showGrade ? ' · ' + esc(gradeName(s.grade)) : ''}</span><span data-badge>${badgeHtml(s)}</span></div>
       <h3><a href="#/s/${esc(s.id)}">${esc(s.title)}</a></h3>
       ${teacherLink(s.teacher)}
-      <div class="meta">${opts.showDay ? esc(fDateShort.format(new Date(s.starts_at))) + ' · ' : ''}${s.kind === 'recorded' ? '' : `${esc(time(s.starts_at))} – ${esc(time(s.ends_at))} · `}${fNum(minutes(s))} دقيقة</div>
+      <div class="meta">${opts.showDay ? esc(fDateShort.format(new Date(s.starts_at))) + ' · ' : ''}${s.kind === 'recorded' ? '' : `${esc(time(s.starts_at))} – ${esc(time(s.ends_at))} · `}${esc(minsTxt(minutes(s)))}</div>
       <div class="act" data-act>${actionHtml(s, true)}</div>
     </article>`;
   }
@@ -566,20 +575,23 @@
   }
 
   // البحث في دروس الصف (أو المادة)
-  const searchHtml = (gradeId, subject) => `<form class="search" role="search" id="sform">
+  const searchHtml = (gradeId, subject) => (app.settings.legacy ? '' : `<form class="search" role="search" id="sform">
       <input class="input" type="search" id="sq" enterkeyhint="search" maxlength="60" autocomplete="off" aria-label="ابحث في الدروس"
         placeholder="ابحث في دروس ${esc(subject ? subjectName(subject) : gradeName(gradeId))}: الكسور، نيوتن، Unit 3…"></form>
-    <div id="sres"></div>`;
+    <p class="sr-only" role="status" id="scount"></p><div id="sres"></div>`);
   function bindSearch(tok, gradeId, subject, onActive) {
     const inp = $('#sq');
     const res = $('#sres');
     if (!inp) return;
     let timer;
     let seq = 0;
+    const say = (t) => { const st = $('#scount'); if (st) st.textContent = t; };
     const run = async () => {
+      // مؤقت من صفحة أُعيد رسمها أو غادرها الطالب
+      if (tok !== app.token || !inp.isConnected) return;
       const q = inp.value.trim();
       const my = ++seq;
-      if (q.length < 2) { res.innerHTML = ''; onActive(false); return; }
+      if (q.length < 2) { res.innerHTML = ''; say(''); onActive(false); return; }
       onActive(true);
       res.innerHTML = '<p class="loading">جارٍ البحث…</p>';
       try {
@@ -587,7 +599,8 @@
         if (my !== seq || tok !== app.token) return;
         res.innerHTML = rows.length
           ? `<p class="muted small">${plural(rows.length, 'نتيجة واحدة', 'نتيجتان', 'نتائج', 'نتيجة')} عن «${esc(q)}»</p><div class="vids">${rows.map((s) => vidHtml(s)).join('')}</div>`
-          : `<div class="empty"><b>لم نجد درساً عن «${esc(q)}» بعد.</b>${requestsOn() ? '<span>اطلبه، وسيصل طلبك إلى معلمي الصف.</span><button type="button" class="btn btn-primary" data-askq>اطلب هذا الدرس من المعلمين</button>' : ''}</div>`;
+          : `<div class="empty"><b>لم نجد درساً عن «${esc(q)}» بعد.</b>${requestsOn() ? '<span>اطلبه من معلمي الصف.</span><button type="button" class="btn btn-primary" data-askq>اطلب هذا الدرس من المعلمين</button>' : ''}</div>`;
+        say(rows.length ? `${plural(rows.length, 'نتيجة واحدة', 'نتيجتان', 'نتائج', 'نتيجة')}` : `لم نجد درساً عن ${q}`);
         const b = $('[data-askq]', res);
         if (b) b.addEventListener('click', () => openRequest(q));
       } catch (e) { if (my === seq && tok === app.token) res.innerHTML = errorBox(e); }
@@ -604,13 +617,13 @@
     return `<details class="box req" id="req"><summary><b>لم تجد الدرس الذي تحتاجه؟ اطلبه من المعلمين</b></summary>
       <form id="req-form" class="stack" novalidate>
         <div class="grid3">
-          <div class="field"><label for="rq-subj">المادة</label><select class="input" id="rq-subj">${subjectsOf(gradeId).map((x) => `<option value="${esc(x)}"${x === subject ? ' selected' : ''}>${esc(subjectName(x))}</option>`).join('')}</select></div>
+          <div class="field"><label for="rq-subj">المادة</label><select class="input" id="rq-subj">${subject ? '' : '<option value="" selected>اختر المادة</option>'}${subjectsOf(gradeId).map((x) => `<option value="${esc(x)}"${x === subject ? ' selected' : ''}>${esc(subjectName(x))}</option>`).join('')}</select></div>
           <div class="field"><label for="rq-term">الفصل الدراسي</label><select class="input" id="rq-term">${[1, 2].map((t) => `<option value="${t}"${t === term ? ' selected' : ''}>${esc(TERMS[t])}</option>`).join('')}</select></div>
           <div class="field"><label for="rq-unit">الوحدة</label><select class="input" id="rq-unit"><option value="">لا أعرف</option>${Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">الوحدة ${fNum(i + 1)}</option>`).join('')}</select></div>
         </div>
         <div class="field"><label for="rq-topic">اسم الدرس أو الموضوع</label>
-          <input class="input" id="rq-topic" maxlength="80" placeholder="مثال: قانون نيوتن الثاني">
-          <span class="hint">اكتب اسم الدرس فقط، ولا تكتب اسمك أو رقمك أو أي حساب.</span></div>
+          <input class="input" id="rq-topic" maxlength="80" placeholder="مثال: قانون نيوتن الثاني" aria-describedby="rq-hint">
+          <span class="hint" id="rq-hint">اكتب اسم الدرس فقط، ولا تكتب اسمك أو رقمك أو أي حساب.</span></div>
         <div><button class="btn btn-primary" type="submit">أرسل الطلب</button></div>
       </form></details>`;
   }
@@ -619,15 +632,23 @@
     if (!f) return;
     f.addEventListener('submit', async (ev) => {
       ev.preventDefault();
+      $$('#req-form [aria-invalid]').forEach((x) => x.removeAttribute('aria-invalid'));
+      const subj = $('#rq-subj').value;
       const topic = $('#rq-topic').value.trim();
       const unit = Number($('#rq-unit').value) || null;
+      if (!subj) { $('#rq-subj').setAttribute('aria-invalid', 'true'); $('#rq-subj').focus(); return toast('اختر المادة.', true); }
       if (!topic && !unit) { $('#rq-topic').setAttribute('aria-invalid', 'true'); $('#rq-topic').focus(); return toast('اكتب اسم الدرس، أو اختر الوحدة.', true); }
       if (topic && topic.length < 3) { $('#rq-topic').setAttribute('aria-invalid', 'true'); $('#rq-topic').focus(); return toast('اكتب اسم الدرس (3 أحرف على الأقل).', true); }
       const btn = $('button[type=submit]', f); btn.disabled = true;
       try {
-        const r = await API.requestLesson({ grade: gradeId, subject: $('#rq-subj').value, term: Number($('#rq-term').value) || null, unit, topic });
+        const r = await API.requestLesson({ grade: gradeId, subject: subj, term: Number($('#rq-term').value) || null, unit, topic });
         const votes = (r && r.votes) || 1;
-        f.outerHTML = `<div class="note"><b>وصل طلبك ✓</b><span>${votes > 1 ? `طلب هذا الدرس ${plural(votes, 'طالب واحد', 'طالبان', 'طلاب', 'طالباً')} حتى الآن.` : 'سيظهر لمعلمي الصف عندما يطلبه طلاب آخرون أيضاً.'} شارك الطلب مع زملائك ليصل أسرع.</span></div>`;
+        const min = app.settings.request_min_votes || 2;
+        const who = (n) => plural(n, 'طالب واحد', 'طالبان', 'طلاب', 'طالباً');
+        f.outerHTML = `<div class="note" id="req-done" tabindex="-1"><b>وصل طلبك ✓</b><span>${votes >= min ? `وصل الطلب إلى معلمي ${esc(subjectName(subj))}${votes > 1 ? `، وطلبه ${who(votes)} حتى الآن` : ''}.`
+          : `يظهر لمعلمي ${esc(subjectName(subj))} عندما يطلبه ${who(min)}${votes > 1 ? ` (طلبه ${who(votes)} حتى الآن)` : ''}. اطلب من زملائك أن يطلبوه أيضاً.`}</span></div>`;
+        const done = $('#req-done'); if (done) done.focus();
+        toast('وصل طلبك ✓');
       } catch (e) { toast(errMsg(e), true); btn.disabled = false; }
     });
   }
@@ -636,7 +657,9 @@
     if (!d) return;
     d.open = true;
     const inp = $('#rq-topic');
-    if (inp) { inp.value = topic || ''; inp.focus(); }
+    if (inp) inp.value = topic || '';
+    const sel = $('#rq-subj');
+    if (sel && !sel.value) sel.focus(); else if (inp) inp.focus();
     d.scrollIntoView({ block: 'center' });
   }
 
@@ -666,8 +689,10 @@
       try {
         const rows = remember(await API.listRecordings(gradeId, '', offset, PAGE));
         if (tok !== app.token || req !== seq) return;
-        items = more ? items.concat(rows) : rows;
-        offset = items.length;
+        // درس نُشر بين صفحتين يزيح القائمة: لا نكرر بطاقة ظهرت من قبل
+        const seen = new Set(more ? items.map((x) => x.id) : []);
+        items = more ? items.concat(rows.filter((x) => !seen.has(x.id))) : rows;
+        offset = more ? offset + rows.length : rows.length;
         draw(rows.length === PAGE);
       } catch (e) {
         if (tok !== app.token || req !== seq) return;
@@ -693,7 +718,7 @@
   function lessonRow(s, withUnit) {
     const w = watch.get(s.id);
     const pr = progressOf(w);
-    const bits = [withUnit ? unitLabel(s) : '', (s.teacher && s.teacher.display_name) || '', `${fNum(minutes(s))} دقيقة`];
+    const bits = [withUnit ? unitLabel(s) : '', (s.teacher && s.teacher.display_name) || '', minsTxt(minutes(s))];
     if (s.lesson_type && s.lesson_type !== 'lesson') bits.push(typeName(s.lesson_type, s.grade));
     if (s.exam_year) bits.push(examLine(s));
     return `<a class="lrow${w && w.done ? ' seen' : ''}" href="#/s/${esc(s.id)}">
@@ -710,13 +735,14 @@
     catch (e) {
       if (tok !== app.token) return;
       body.innerHTML = subjChips(gradeId, subject) + errorBox(e, true);
+      chipIntoView(body);
       $('[data-retry]', body).addEventListener('click', route);
       return;
     }
     if (tok !== app.token) return;
     const key = gradeId + '|' + subject;
-    const ui = subjUi[key] || (subjUi[key] = { term: -1, type: '' });
-    if (examOnly) { ui.type = 'exam'; ui.term = 0; }
+    // رابط «أسئلة الدبلوم» يعرض الامتحانات فقط دون أن يغيّر اختيار الطالب في صفحة المادة
+    const ui = examOnly ? { term: 0, type: 'exam' } : (subjUi[key] || (subjUi[key] = { term: -1, type: '' }));
     const termCount = { 1: rows.filter((r) => r.term === 1).length, 2: rows.filter((r) => r.term === 2).length };
     if (ui.term === -1) { const ct = currentTerm(); ui.term = termCount[ct] ? ct : termCount[1] ? 1 : termCount[2] ? 2 : 0; }
     const typeOf = (r) => r.lesson_type || 'lesson';
@@ -743,13 +769,17 @@
         const years = Array.from(new Set(list.map((r) => r.exam_year || 0))).sort((a, b) => b - a);
         groups = years.map((y) => ({ title: y ? `امتحانات ${y}` : 'امتحانات أخرى', items: list.filter((r) => (r.exam_year || 0) === y) }));
       } else {
-        const units = Array.from(new Set(list.filter((r) => r.unit).map((r) => r.unit))).sort((a, b) => a - b);
-        groups = units.map((u) => {
-          const items = list.filter((r) => r.unit === u);
+        // مع «الفصلان» تبقى وحدات كل فصل منفصلة (الوحدة 1 في الفصل الأول غير الوحدة 1 في الثاني)
+        const both = !ui.term;
+        const gk = (r) => (both ? (r.term || 0) * 100 + r.unit : r.unit);
+        const keys = Array.from(new Set(list.filter((r) => r.unit).map(gk))).sort((a, b) => a - b);
+        groups = keys.map((k) => {
+          const items = list.filter((r) => r.unit && gk(r) === k);
+          const t = both && items[0].term;
           const names = {};
           items.forEach((r) => { if (r.unit_title) names[r.unit_title] = (names[r.unit_title] || 0) + 1; });
           const name = Object.keys(names).sort((a, b) => names[b] - names[a])[0];
-          return { title: `الوحدة ${fNum(u)}${name ? ': ' + name : ''}`, items };
+          return { title: `${t && termCount[1] && termCount[2] ? TERMS[t] + ' · ' : ''}الوحدة ${fNum(items[0].unit)}${name ? ': ' + name : ''}`, items };
         });
         const rev = list.filter((r) => !r.unit && (typeOf(r) === 'review' || typeOf(r) === 'exam'));
         const other = list.filter((r) => !r.unit && typeOf(r) !== 'review' && typeOf(r) !== 'exam');
@@ -757,7 +787,9 @@
         if (other.length) groups.push({ title: groups.length ? 'دروس أخرى' : 'الدروس', items: other });
       }
       const sparse = list.length <= 5;
+      const flat = ui.type === 'exam' ? list.slice().sort((a, b) => (b.exam_year || 0) - (a.exam_year || 0)) : list;
       const openGroup = cont ? groups.findIndex((g) => g.items.includes(cont.s)) : 0;
+      const scrolls = $$('.filters', body).map((x) => x.scrollLeft);
       body.innerHTML = `${subjChips(gradeId, subject)}${searchHtml(gradeId, subject)}
         <div id="main-list">
         ${termCount[1] && termCount[2] ? `<div class="filters" role="group" aria-label="الفصل الدراسي">
@@ -768,8 +800,9 @@
           ${types.map((t) => `<button type="button" class="chip" data-type="${t}" aria-pressed="${ui.type === t}">${esc(typeName(t, gradeId))}</button>`).join('')}</div>` : ''}
         ${cont ? `<a class="cont" href="#/s/${esc(cont.s.id)}"><b>${esc(cont.label)}</b>${cont.sub ? `<span>${esc(cont.sub)}</span>` : ''}</a>` : ''}
         ${doneCount ? `<p class="muted small">شاهدتَ ${plural(doneCount, 'درساً واحداً', 'درسين', 'دروس', 'درساً')} من ${fNum(list.length)} في هذه القائمة.</p>` : ''}
-        ${!list.length ? `<div class="empty"><b>لا توجد دروس ${ui.term || ui.type ? 'بهذا الاختيار ' : ''}بعد</b><span>تظهر هنا دروس ${esc(subjectName(subject))} فور نشرها.</span></div>`
-          : sparse ? `<div class="lrows">${list.map((r) => lessonRow(r, true)).join('')}</div>`
+        ${!list.length ? `<div class="empty"><b>لا توجد دروس ${ui.term || ui.type ? 'بهذا الاختيار ' : ''}بعد</b><span>تظهر هنا دروس ${esc(subjectName(subject))} فور نشرها.</span>
+            ${(ui.term || ui.type) && rows.length ? '<button type="button" class="btn" data-all>عرض كل دروس المادة</button>' : ''}</div>`
+          : sparse ? `<div class="lrows">${flat.map((r) => lessonRow(r, true)).join('')}</div>`
           : groups.map((g, i) => {
             const seen = g.items.filter((r) => (watch.get(r.id) || {}).done).length;
             return `<details class="unit"${i === openGroup || groups.length <= 2 ? ' open' : ''}>
@@ -780,10 +813,16 @@
         ${requestHtml(gradeId, subject)}`;
       bindSearch(tok, gradeId, subject, (on) => { const m = $('#main-list'); if (m) m.hidden = on; });
       bindRequest(gradeId);
-      $$('[data-term]', body).forEach((b) => b.addEventListener('click', () => { ui.term = Number(b.getAttribute('data-term')); draw(); }));
-      $$('[data-type]', body).forEach((b) => b.addEventListener('click', () => { ui.type = b.getAttribute('data-type'); draw(); }));
+      // بعد إعادة الرسم: نفس موضع شرائح التمرير، والتركيز على الزر الذي ضغطه الطالب
+      $$('.filters', body).forEach((x, i) => { if (scrolls[i]) x.scrollLeft = scrolls[i]; });
+      const refocus = (sel) => { const c = $(sel, body); if (c) c.focus(); };
+      $$('[data-term]', body).forEach((b) => b.addEventListener('click', () => { ui.term = Number(b.getAttribute('data-term')); draw(); refocus(`[data-term="${ui.term}"]`); }));
+      $$('[data-type]', body).forEach((b) => b.addEventListener('click', () => { ui.type = b.getAttribute('data-type'); draw(); refocus(`[data-type="${ui.type}"]`); }));
+      const all = $('[data-all]', body);
+      if (all) all.addEventListener('click', () => { ui.term = 0; ui.type = ''; draw(); });
     }
     draw();
+    chipIntoView(body);
   }
 
   // ------------------------------------------------------------------
@@ -801,7 +840,7 @@
       }
       const id = ytId(url);
       if (id) {
-        return `<button type="button" class="facade" data-play aria-label="شغّل: ${esc(s.title)}">
+        return `<button type="button" class="facade" data-play aria-label="اضغط للتشغيل: ${esc(s.title)}">
           <img src="https://i.ytimg.com/vi/${esc(id)}/hqdefault.jpg" alt="" loading="lazy" data-ph="">
           <span class="play-disc" aria-hidden="true"></span><span class="play-hint">اضغط للتشغيل</span></button>`;
       }
@@ -906,7 +945,7 @@
 
   async function pageSession(tok, id) {
     setNav('home');
-    view.innerHTML = '<p class="loading">جارٍ تحميل الحصة…</p>';
+    view.innerHTML = '<p class="loading">جارٍ تحميل الدرس…</p>';
     let s;
     try { s = await API.getSession(id); }
     catch (e) {
@@ -928,7 +967,7 @@
       <header class="page-head">
         <nav class="crumbs" aria-label="مسار التنقل"><a href="#/">الصفوف</a><span>›</span><a href="#/g/${esc(s.grade)}">${esc(gradeName(s.grade))}</a><span>›</span><a href="#/g/${esc(s.grade)}/${esc(s.subject)}">${esc(subjectName(s.subject))}</a>${s.unit ? `<span>›</span><span>${esc('الوحدة ' + fNum(s.unit))}</span>` : ''}</nav>
         <div class="title-row"><h1>${esc(s.title)}</h1><span data-sid="${esc(s.id)}"><span data-badge>${badgeHtml(s)}</span></span></div>
-        ${notPublic ? `<div class="note warn">${s.hidden ? 'هذه الحصة مخفية عن الطلاب بقرار من إدارة المنصة.' : 'هذه الحصة لا تظهر للطلاب حتى تعتمد إدارة المنصة حسابك.'}</div>` : ''}
+        ${notPublic ? `<div class="note warn">${s.hidden ? `${s.kind === 'recorded' ? 'هذا الدرس مخفي' : 'هذه الحصة مخفية'} عن الطلاب بقرار من إدارة المنصة.` : `${s.kind === 'recorded' ? 'هذا الدرس لا يظهر' : 'هذه الحصة لا تظهر'} للطلاب حتى تعتمد إدارة المنصة حسابك.`}</div>` : ''}
       </header>
       <div class="sess">
         <div class="stack">
@@ -952,14 +991,14 @@
               <dt>المادة</dt><dd>${esc(subjectName(s.subject))}</dd>
               <dt>${s.kind === 'recorded' ? 'نُشر' : 'الموعد'}</dt><dd>${esc(fFull.format(new Date(s.starts_at)))}</dd>
               ${s.kind === 'recorded' ? '' : `<dt>الوقت</dt><dd>${esc(time(s.starts_at))} – ${esc(time(s.ends_at))}</dd>`}
-              <dt>المدة</dt><dd>${fNum(minutes(s))} دقيقة</dd>
+              <dt>المدة</dt><dd>${esc(minsTxt(minutes(s)))}</dd>
               <dt>النوع</dt><dd>${s.kind === 'recorded' ? (s.lesson_type && s.lesson_type !== 'lesson' ? esc(typeName(s.lesson_type, s.grade)) : 'درس مسجّل') : 'بث مباشر'}</dd>
               ${s.term ? `<dt>الفصل</dt><dd>${esc(TERMS[s.term])}</dd>` : ''}
               ${s.unit ? `<dt>الوحدة</dt><dd>${esc(unitLabel(s).replace(/^الوحدة /, ''))}</dd>` : ''}
               ${s.exam_year ? `<dt>الامتحان</dt><dd>${esc(examLine(s))}</dd>` : ''}
             </dl>
           </div>
-          <a class="box tcard" href="#/t/${esc(t.id || s.teacher_id)}">${avatar(t.display_name, t.avatar_url, 'av-md')}<div><b>${esc(t.display_name || 'المعلم')}</b><span>كل حصص المعلم وتسجيلاته</span></div></a>
+          <a class="box tcard" href="#/t/${esc(t.id || s.teacher_id)}">${avatar(t.display_name, t.avatar_url, 'av-md')}<div><b>${esc(t.display_name || 'المعلم')}</b><span>كل دروس المعلم</span></div></a>
           ${mine || admin ? `<div class="box"><h2>${mine ? (s.kind === 'recorded' ? 'درسك' : 'حصتك') : 'إدارة'}</h2><div class="row">
             ${mine ? `<a class="btn btn-sm" href="#/dashboard/edit/${esc(s.id)}">${s.kind === 'recorded' ? 'تعديل الدرس' : 'تعديل الحصة'}</a>` : ''}
             ${admin ? `<button type="button" class="btn btn-sm${s.hidden ? '' : ' btn-danger'}" id="hide">${s.hidden ? 'إظهار للطلاب' : 'إخفاء عن الطلاب'}</button>` : ''}
@@ -995,7 +1034,12 @@
       const go = (start) => { mountPlayer(s, start); player.onSave = () => drawWatchRow(); drawWatchRow(); };
       const r1 = $('[data-resume]', box); if (r1) r1.addEventListener('click', () => go(w.p));
       const r2 = $('[data-restart]', box); if (r2) r2.addEventListener('click', () => go(0));
-      $('[data-seen]', box).addEventListener('click', () => { const cur = watch.get(s.id) || {}; watch.put(s, { done: !cur.done, p: cur.p || 0, d: cur.d || 0 }); drawWatchRow(); });
+      $('[data-seen]', box).addEventListener('click', () => {
+        const cur = watch.get(s.id) || {};
+        watch.put(s, { done: !cur.done, p: cur.p || 0, d: cur.d || 0 });
+        drawWatchRow();
+        const again = $('#watchrow [data-seen]'); if (again) again.focus();
+      });
     }
     function bindFacade() {
       const fac = $('#player [data-play]');
@@ -1005,6 +1049,7 @@
         mountPlayer(s, w.p >= 30 && !w.done ? w.p : 0);
         player.onSave = () => drawWatchRow();
         drawWatchRow();
+        const fr = $('#player iframe'); if (fr) fr.focus();
       });
     }
     bindFacade();
@@ -1016,16 +1061,18 @@
     if (canThank) {
       const done = thanked[s.id] || '';
       $('#thanks').innerHTML = `<div class="thanks"><b>هل أفادك الدرس؟</b>
-        <button type="button" class="btn btn-sm" data-thank="thanks"${done.includes('t') ? ' disabled aria-pressed="true"' : ''}>${done.includes('t') ? 'وصل شكرك ✓' : 'جزاك الله خيراً'}</button>
-        <button type="button" class="btn btn-sm" data-thank="understood"${done.includes('u') ? ' disabled aria-pressed="true"' : ''}>${done.includes('u') ? 'وصل ✓' : 'فهمتُ الدرس'}</button>
+        <button type="button" class="btn btn-sm" data-thank="thanks" aria-pressed="${done.includes('t')}">${done.includes('t') ? 'جزاك الله خيراً ✓' : 'جزاك الله خيراً'}</button>
+        <button type="button" class="btn btn-sm" data-thank="understood" aria-pressed="${done.includes('u')}">${done.includes('u') ? 'فهمتُ الدرس ✓' : 'فهمتُ الدرس'}</button>
         <span class="muted small">يصل شكرك إلى المعلم دون اسمك.</span></div>`;
       $$('[data-thank]', $('#thanks')).forEach((b) => b.addEventListener('click', () => {
+        if (b.getAttribute('aria-pressed') === 'true') return;
         const kind = b.getAttribute('data-thank');
         const all = store.json('thanked', {});
         all[s.id] = (all[s.id] || '') + (kind === 'thanks' ? 't' : 'u');
         const keys = Object.keys(all); if (keys.length > 500) delete all[keys[0]];
         store.set('thanked', JSON.stringify(all));
-        b.disabled = true; b.setAttribute('aria-pressed', 'true'); b.textContent = kind === 'thanks' ? 'وصل شكرك ✓' : 'وصل ✓';
+        b.setAttribute('aria-pressed', 'true'); b.textContent = (kind === 'thanks' ? 'جزاك الله خيراً' : 'فهمتُ الدرس') + ' ✓';
+        toast('شكراً لك، يصل شكرك إلى المعلم');
         API.thankLesson(s.id, kind).catch(() => { /* الشكر اختياري */ });
       }));
     }
@@ -1292,6 +1339,9 @@
     let autoTitle = '';
     let loadedFor = '';
     let usedSrc = false;
+    // تعديل درس موجود: نعرض قيمه هو كما هي، ولا نقترح شيئاً من الذاكرة
+    const editing = !!(src && src.id);
+    if (editing) el('term').insertAdjacentHTML('afterbegin', '<option value="">غير محدد</option>');
     const key = () => `t-place:${gSel.value}:${sSel.value}`;
     const isDipl = () => el('type').value === 'exam' && isExamGrade(gSel.value);
     function fillTypes() {
@@ -1300,7 +1350,7 @@
     }
     function put(p) {
       el('type').value = p.lesson_type || 'lesson';
-      el('term').value = String(p.term || currentTerm());
+      el('term').value = p.term ? String(p.term) : editing ? '' : String(currentTerm());
       el('unit').value = p.unit ? String(p.unit) : '';
       el('ut').value = p.unit_title || '';
       el('year').value = p.exam_year ? String(p.exam_year) : '';
@@ -1327,7 +1377,7 @@
       const k = key();
       if (k !== loadedFor) {
         loadedFor = k;
-        if (!usedSrc && src && (src.term || src.unit || (src.lesson_type && src.lesson_type !== 'lesson'))) { usedSrc = true; put(src); }
+        if (!usedSrc && src && (editing || src.term || src.unit || (src.lesson_type && src.lesson_type !== 'lesson'))) { usedSrc = true; put(src); }
         else {
           const m = store.json(k, {});
           const unit = src && src.unit && !usedSrc ? src.unit : m.unit;
@@ -1378,11 +1428,12 @@
   // ------------------------------------------------------------------
   //  لوحة المعلم: أثر دروسه، وشهادة الشكر، وطلبات طلاب صفوفه
   // ------------------------------------------------------------------
-  // الدروس التي تُحسب للشهادة (نفس شروط الخادم): منشورة منذ 3 أيام، 5 دقائق فأكثر، فيديوهات مختلفة
+  // الدروس التي تُحسب للشهادة (نفس شروط الخادم): منشورة ومُضافة منذ 3 أيام، 5 دقائق فأكثر، فيديوهات مختلفة
   function certCount(list) {
-    const ok = list.filter((s) => s.status === 'scheduled' && !s.hidden && s.video_url
-      && +new Date(s.starts_at) <= Date.now() - 3 * DAY && +new Date(s.ends_at) - +new Date(s.starts_at) >= 5 * MIN);
-    return new Set(ok.map((s) => ytId(s.video_url) || s.video_url)).size;
+    const ago = Date.now() - 3 * DAY;
+    const ok = list.filter((s) => s.status === 'scheduled' && !s.hidden && ytId(s.video_url)
+      && +new Date(s.starts_at) <= ago && +new Date(s.created_at || s.starts_at) <= ago && +new Date(s.ends_at) - +new Date(s.starts_at) >= 5 * MIN);
+    return new Set(ok.map((s) => ytId(s.video_url))).size;
   }
   async function dashImpact(tok, p, list) {
     const box = $('#impact');
@@ -1395,19 +1446,21 @@
     ]);
     if (tok !== app.token || !$('#impact')) return;
     const sum = (k) => (stats || []).reduce((a, x) => a + (Number(x[k]) || 0), 0);
-    const top = (certs || []).filter((c) => !c.revoked).reduce((a, c) => Math.max(a, c.level), 0);
+    // المستوى الملغى لا يُمنح مرة أخرى (كما في الخادم)، فنبدأ من المستوى الذي بعده
+    const top = (certs || []).reduce((a, c) => Math.max(a, c.level), 0);
     const next = CERT_LEVELS.find((l) => l > top);
-    const canClaim = p.status === 'approved' && next && n >= next;
+    const claimLvl = CERT_LEVELS.slice().reverse().find((l) => l <= n && l > top);
+    const canClaim = p.status === 'approved' && !!claimLvl;
     const tile = (num, label) => `<div class="tile"><b class="num">${fNum(num)}</b><span>${label}</span></div>`;
     box.innerHTML = `<section class="section"><div class="section-head"><h2>أثر دروسك</h2>${stats ? '<span class="muted small">تُحسب المشاهدة بعد دقيقة من التشغيل، دون معرفة الطالب.</span>' : ''}</div>
       <div class="tiles">${tile(published, 'درس منشور')}${stats ? tile(sum('views'), 'مشاهدة') + tile(sum('views7'), 'مشاهدة هذا الأسبوع') + tile(sum('thanks'), '«جزاك الله خيراً»') + tile(sum('understood'), '«فهمتُ الدرس»') : ''}</div>
       <div class="box cert-box">
-        <div class="row"><h2>شهادة شكر وتقدير</h2><span class="spacer"></span>${(certs || []).map((c) => `<a class="btn btn-sm${c.revoked ? ' btn-ghost' : ''}" href="#/c/${esc(c.code)}">${c.revoked ? 'ملغاة: ' : ''}شهادة ${fNum(c.level)} ${c.level <= 10 ? 'دروس' : 'درساً'}</a>`).join('')}</div>
-        ${canClaim ? `<p>أتممتَ ${plural(n, 'درساً واحداً', 'درسين', 'دروس', 'درساً')}. جزاك الله خيراً! شهادتك جاهزة.</p><div><button type="button" class="btn btn-primary" id="claim">استلم شهادة ${fNum(next)} ${next <= 10 ? 'دروس' : 'درساً'}</button></div>`
-          : next ? `<p class="muted">تصدر المنصة شهادة شكر موقّعة برمز تحقق عند ${CERT_LEVELS.map((l) => fNum(l)).join(' و')} درساً. ${n < next ? `باقٍ لك ${plural(next - n, 'درس واحد', 'درسان', 'دروس', 'درساً')} للشهادة التالية.` : ''}</p>
+        <div class="row"><h2>شهادة شكر وتقدير</h2><span class="spacer"></span>${(certs || []).map((c) => `<a class="btn btn-sm${c.revoked ? ' btn-ghost' : ''}" href="#/c/${esc(c.code)}">${c.revoked ? 'ملغاة: ' : ''}شهادة ${lessonsN(c.level)}</a>`).join('')}</div>
+        ${canClaim ? `<p>لديك ${lessonsN(n)} تُحسب للشهادة. جزاك الله خيراً! شهادتك جاهزة.</p><div><button type="button" class="btn btn-primary" id="claim">استلم شهادة ${lessonsN(claimLvl)}</button></div>`
+          : next ? `<p class="muted">تصدر المنصة شهادة شكر برمز تحقق عند بلوغ ${CERT_LEVELS.map((l) => fNum(l)).join(' و')} من الدروس. ${n < next ? `باقٍ ${lessonsN(next - n)} للشهادة التالية.` : ''}</p>
             <div class="meter cert-meter" role="progressbar" aria-valuemin="0" aria-valuemax="${next}" aria-valuenow="${Math.min(n, next)}" aria-label="التقدم نحو الشهادة التالية"><span style="width:${Math.round(Math.min(1, n / next) * 100)}%"></span></div>
             <span class="hint">يُحسب الدرس بعد 3 أيام من نشره إن كان 5 دقائق فأكثر.${p.status !== 'approved' ? ' وتصدر الشهادة بعد اعتماد حسابك.' : ''}</span>`
-          : '<p>بلغتَ أعلى مستوى من الشهادات. جزاك الله عن طلابك خير الجزاء.</p>'}
+          : '<p>هذا أعلى مستوى من الشهادات. جزاك الله عن طلابك خير الجزاء.</p>'}
       </div></section>`;
     // أرقام كل درس بجانبه
     (stats || []).forEach((x) => {
@@ -1423,9 +1476,9 @@
       cb.disabled = true;
       try {
         const got = await API.claimCertificate();
-        const best = (got || []).filter((c) => !c.revoked).sort((a, b) => b.level - a.level)[0];
-        toast('صدرت شهادتك. مبارك!');
-        if (best) location.hash = '#/c/' + best.code; else route();
+        const had = new Set((certs || []).map((c) => c.code));
+        const fresh = (got || []).filter((c) => !c.revoked && !had.has(c.code)).sort((a, b) => b.level - a.level)[0];
+        if (fresh) { toast('صدرت شهادتك. مبارك!'); location.hash = '#/c/' + fresh.code; } else { toast('لم تصدر شهادة جديدة بعد.'); route(); }
       } catch (e) { toast(errMsg(e), true); cb.disabled = false; }
     });
   }
@@ -1476,7 +1529,7 @@
   //  شهادة الشكر: صفحة عامة يتحقق منها أي شخص برمزها، وتُطبع أو تُحفظ PDF
   // ------------------------------------------------------------------
   const certCode = (c) => `${c.slice(0, 4)}-${c.slice(4, 8)}-${c.slice(8)}`;
-  async function pageCertificate(tok, code) {
+  async function pageCertificate(tok, code, form) {
     setNav(''); setTitle('شهادة شكر وتقدير');
     view.innerHTML = '<p class="loading">جارٍ التحقق من الشهادة…</p>';
     let c;
@@ -1485,48 +1538,58 @@
     if (tok !== app.token) return;
     if (!c) return pageNotFound('لم نجد شهادة بهذا الرمز. تأكد من كتابته كما هو في الشهادة.');
     const mine = app.user && c.teacher_id === app.user.id;
+    // صيغة المخاطبة جزء من الرابط (/m أو /f) فيراها كل من يفتحه كما اختارها صاحب الشهادة؛ وبدونها صيغة محايدة
     const gk = 'cert-g:' + c.code;
-    let g = store.get(gk) || 'm';
+    let g = form || (mine && store.get(gk)) || '';
     const issued = new Date(c.issued_at);
     let hijri = '';
     try { hijri = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }).format(issued); } catch (e) { /* التقويم الهجري غير متاح */ }
     const greg = new Intl.DateTimeFormat('ar-OM-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }).format(issued);
     const subs = Array.from(new Set((c.subjects || []).map((x) => subjectName(String(x).split(':')[1] || x)))).slice(0, 8);
     const grades = Array.from(new Set((c.subjects || []).map((x) => String(x).split(':')[0]).filter((x) => GRADES[x])));
-    const url = pageUrl('#/c/' + c.code);
-    const lessonsWord = (n) => (n <= 10 && n > 2 ? `${fNum(n)} دروس` : n === 1 ? 'درساً واحداً' : n === 2 ? 'درسين' : `${fNum(n)} درساً`);
+    const W = {
+      '': { to: '', vol: 'تقديراً للتطوّع', end: 'سائلين الله أن يجعل ذلك في ميزان الحسنات، وأن يكون من العلم الذي يُنتفع به.' },
+      m: { to: ' المعلم الفاضل', vol: 'تقديراً لتطوّعه', end: 'سائلين الله أن يجعلها في ميزان حسناته، وأن تكون من العلم الذي يُنتفع به.' },
+      f: { to: ' المعلمة الفاضلة', vol: 'تقديراً لتطوّعها', end: 'سائلين الله أن يجعلها في ميزان حسناتها، وأن تكون من العلم الذي يُنتفع به.' },
+    };
     function draw() {
-      const f = g === 'f';
+      const w = W[g] || W[''];
+      const url = pageUrl('#/c/' + c.code + (g ? '/' + g : ''));
       view.innerHTML = `
         <div class="cert-tools no-print">
           ${c.valid ? '<span class="pill pill-ok">شهادة صحيحة صادرة من المنصة ✓</span>' : '<span class="pill pill-bad">هذه الشهادة ملغاة</span>'}
           <span class="spacer"></span>
-          ${mine ? `<div class="seg seg-sm" role="group" aria-label="صيغة المخاطبة">
-            <label><input type="radio" name="cg" value="m"${f ? '' : ' checked'}>المعلم</label>
-            <label><input type="radio" name="cg" value="f"${f ? ' checked' : ''}>المعلمة</label></div>` : ''}
+          ${mine ? `<div class="seg seg-sm" role="radiogroup" aria-label="صيغة المخاطبة في الشهادة">
+            ${[['', 'بلا تحديد'], ['m', 'المعلم'], ['f', 'المعلمة']].map(([v, n]) => `<label><input type="radio" name="cg" value="${v}"${g === v ? ' checked' : ''}>${n}</label>`).join('')}</div>` : ''}
           ${c.valid ? '<button type="button" class="btn btn-primary" id="print">طباعة أو حفظ PDF</button>' : ''}
           <button type="button" class="btn" id="cp">نسخ رابط التحقق</button>
         </div>
         <article class="cert${c.valid ? '' : ' void'}" aria-label="شهادة شكر وتقدير">
+          ${c.valid ? '' : '<div class="cert-stamp">ملغاة</div>'}
           <div class="cert-in">
             <header class="cert-head"><img src="assets/logo-mark.svg" alt="" width="64" height="50"><div><b>${esc(C.SITE_NAME)}</b><span>${esc(C.SITE_TAGLINE || '')}</span></div></header>
             <h1>شهادة شكر وتقدير</h1>
-            <p class="cert-lead">تتقدّم ${esc(C.SITE_NAME)} بخالص الشكر والتقدير إلى ${f ? 'المعلمة الفاضلة' : 'المعلم الفاضل'}</p>
+            <p class="cert-lead">تتقدّم ${esc(C.SITE_NAME)} بخالص الشكر والتقدير إلى${w.to}</p>
             <p class="cert-name">${esc(c.display_name)}</p>
-            <p class="cert-body">${f ? 'تقديراً لتطوّعها' : 'تقديراً لتطوّعه'} بتقديم <b>${lessonsWord(c.lessons)}</b> مجاناً لطلاب سلطنة عُمان${subs.length ? ` في ${esc(subs.join('، '))}` : ''}${grades.length ? ` (${esc(grades.map(gradeName).join('، '))})` : ''}،
-              سائلين الله أن يجعلها في ميزان ${f ? 'حسناتها' : 'حسناته'}، وأن تكون من العلم الذي يُنتفع به.</p>
+            <p class="cert-body">${w.vol} بتقديم <b>${lessonsN(c.lessons)}</b> مجاناً لطلاب سلطنة عُمان${subs.length ? ` في ${esc(subs.join('، '))}` : ''}${grades.length ? ` (${esc(grades.map(gradeName).join('، '))})` : ''}، ${w.end}</p>
             <p class="cert-motto">«علمٌ مِدْرار… وأجرٌ يبقى»</p>
             <footer class="cert-foot">
               <div><span>تاريخ الإصدار</span><b>${esc(greg)}</b>${hijri ? `<b>${esc(hijri)}</b>` : ''}</div>
-              <div class="cert-level"><b>${fNum(c.level)}</b><span>${c.level <= 10 ? 'دروس' : 'درساً'}</span></div>
+              <div class="cert-level"><b>${fNum(c.level)}</b><span>${c.level >= 100 ? 'درس' : c.level <= 10 ? 'دروس' : 'درساً'}</span></div>
               <div><span>رمز التحقق</span><b class="cert-code">${esc(certCode(c.code))}</b><span class="cert-url">${esc(url)}</span></div>
             </footer>
           </div>
         </article>
-        <p class="muted small no-print" style="padding-block:12px 24px">يتحقق أي شخص من صحة الشهادة بفتح رابطها. ${mine ? 'اختر «حفظ بتنسيق PDF» في نافذة الطباعة لحفظها على جهازك.' : ''}</p>`;
+        <p class="muted small no-print" style="padding-block:12px 24px">يتحقق أي شخص من صحة الشهادة بفتح رابطها. ${mine ? 'اختر صيغة المخاطبة قبل نسخ الرابط أو الطباعة، ثم اختر «حفظ بتنسيق PDF» في نافذة الطباعة لحفظها على جهازك.' : ''}</p>`;
       const pr = $('#print'); if (pr) pr.addEventListener('click', () => window.print());
       $('#cp').addEventListener('click', () => copyText(url));
-      $$('input[name=cg]').forEach((r) => r.addEventListener('change', () => { g = r.value; store.set(gk, g); draw(); }));
+      $$('input[name=cg]').forEach((r) => r.addEventListener('change', () => {
+        g = r.value;
+        if (g) store.set(gk, g); else store.del(gk);
+        try { history.replaceState(null, '', '#/c/' + c.code + (g ? '/' + g : '')); } catch (e) { /* ignore */ }
+        draw();
+        const again = $(`input[name=cg][value="${g}"]`); if (again) again.focus();
+      }));
     }
     draw();
   }
@@ -1604,7 +1667,7 @@
     if (ST && ST.supported()) ST.list().then((items) => {
       const box = $('#unpub');
       if (tok !== app.token || !box || !items.length) return;
-      box.innerHTML = `<div class="note warn" style="margin-top:10px"><b>لديك ${plural(items.length, 'تسجيل واحد', 'تسجيلان', 'تسجيلات', 'تسجيلاً')} في هذا المتصفح لم ${items.length === 1 ? 'يُنشر' : 'تُنشر'} بعد.</b>
+      box.innerHTML = `<div class="note warn" style="margin-top:10px"><b>لديك ${plural(items.length, 'تسجيل واحد', 'تسجيلان', 'تسجيلات', 'تسجيلاً')} في هذا المتصفح لم ${items.length === 1 ? 'يُنشر' : items.length === 2 ? 'يُنشرا' : 'تُنشر'} بعد.</b>
         <span>احفظه على جهازك وارفعه إلى يوتيوب ثم انشره، حتى لا يضيع إن مُسحت بيانات المتصفح. <a href="#/studio">افتح الاستوديو</a></span></div>`;
     }).catch(() => { /* التخزين غير متاح */ });
     dashImpact(tok, p, list).catch(() => { /* اختياري */ });
@@ -1627,7 +1690,10 @@
     const editing = mode === 'edit';
     const pre = mode === 'new' ? app.prefill : null;
     app.prefill = null;
-    const src = s || pre || {};
+    // درس طلبه الطلاب واختار المعلم أن يسجّله (من الجوال أو بفيديو موجود على يوتيوب)
+    const req = mode === 'new' && !(pre && pre.request_id) ? pendingReq() : null;
+    let useReq = !!req;
+    const src = s || pre || (req ? { grade: req.grade, subject: req.subject, title: req.topic || '', term: req.term, unit: req.unit } : {});
     const lastGrade = store.get('t-grade') || store.get('grade') || '';
     const grade = src.grade || lastGrade;
     let start = src.starts_at ? new Date(src.starts_at) : null;
@@ -1648,7 +1714,9 @@
       <header class="page-head"><nav class="crumbs"><a href="#/dashboard">لوحتي</a><span>›</span><span>${editing ? 'تعديل' : mode === 'copy' ? 'نسخ حصة' : 'درس جديد'}</span></nav>
         <h1>${editing ? 'تعديل ' + noun : mode === 'copy' ? 'نسخ الحصة إلى موعد جديد' : 'نشر درس من يوتيوب'}</h1>
         ${mode === 'new' ? (pre && pre.video_url ? '<p class="note">رابط الفيديو جاهز من الاستوديو. راجع بيانات الدرس ثم انشره.</p>'
-          : '<p class="muted">لفيديو موجود على قناتك في يوتيوب. لم تسجّله بعد؟ <a href="#/studio">سجّل درساً في الاستوديو</a>، فهو أسهل.</p>') : ''}</header>
+          : '<p class="muted">لفيديو موجود على قناتك في يوتيوب. لم تسجّله بعد؟ <a href="#/studio">سجّل درساً في الاستوديو</a>، فهو أسهل.</p>') : ''}
+        ${req ? `<div class="note" id="sf-req"><b>تنشر درساً طلبه الطلاب</b><span>${esc([req.topic, req.unit ? 'الوحدة ' + fNum(req.unit) : ''].filter(Boolean).join(' · '))} — ${esc(gradeName(req.grade))} · ${esc(subjectName(req.subject))}</span>
+          <span class="small">عند نشره يرى الطلاب أن طلبهم صار متاحاً. <button type="button" class="btn btn-ghost btn-sm" id="sf-req-x">إلغاء الربط بالطلب</button></span></div>` : ''}</header>
       <form class="form" id="sf" novalidate>
         <div class="grid2">
           <div class="field"><label for="sf-grade">الصف</label>
@@ -1736,6 +1804,8 @@
     $$('input[name=kind]').forEach((r) => r.addEventListener('change', applyKind));
     applyKind();
     const place = rec0 ? bindPlace(gSel, sSel, $('#sf-title'), src) : null;
+    const rx = $('#sf-req-x');
+    if (rx) rx.addEventListener('click', () => { useReq = false; store.del('st-req'); $('#sf-req').remove(); });
 
     $('#sf').addEventListener('submit', async (ev) => {
       ev.preventDefault();
@@ -1761,9 +1831,10 @@
       if (editing) base.recording_url = recUrl || null;
       if (place) Object.assign(base, place.read());
       if (!editing && pre && pre.request_id) base.request_id = pre.request_id;
+      else if (!editing && useReq && req.grade === base.grade && req.subject === base.subject) base.request_id = req.id;
       const btn = $('#sf button[type=submit]'); btn.disabled = true;
       store.set('t-grade', gSel.value); store.set('t-subject', sSel.value);
-      if (place) place.remember();
+      if (place && !editing) place.remember();
       try {
         if (editing) {
           await API.updateSession(id, base);
@@ -1776,6 +1847,9 @@
             video_url: i === 0 ? base.video_url : null,
           }));
           const made = await API.createSessions(rows);
+          if (base.request_id && req) store.del('st-req');
+          // التسجيل نُشر: لا حاجة لنسخته في المتصفح، ولا لتنبيه «تسجيل لم يُنشر»
+          if (pre && pre._rec && ST) { if (pre._rec.saved) ST.remove(pre._rec.id).catch(() => {}); else ST.discard(); }
           toast(n > 1 ? 'نُشرت ' + plural(n, 'حصة واحدة', 'حصتان أسبوعيتان', 'حصص أسبوعية', 'حصة أسبوعية') : k === 'recorded' ? 'نُشر الدرس. شكراً لعطائك!' : 'نُشرت الحصة');
           location.hash = made && made[0] && n === 1 ? '#/s/' + made[0].id : '#/dashboard';
         }
@@ -1812,7 +1886,7 @@
           <section class="section"><h2>شهادات الشكر</h2>
           ${certs.length ? `<div class="list">${certs.map((c) => `<div class="item" style="grid-template-columns:minmax(0,1fr) auto">
             <div class="what"><b><a href="#/c/${esc(c.code)}">${esc(c.display_name)}</a></b>
-              <div class="row"><span>شهادة ${fNum(c.level)} ${c.level <= 10 ? 'دروس' : 'درساً'}</span><span>·</span><span class="cert-code">${esc(certCode(c.code))}</span><span>·</span><span>${esc(fDateShort.format(new Date(c.issued_at)))}</span>${c.revoked ? '<span class="pill pill-bad">ملغاة</span>' : ''}</div></div>
+              <div class="row"><span>شهادة ${lessonsN(c.level)}</span><span>·</span><span class="cert-code">${esc(certCode(c.code))}</span><span>·</span><span>${esc(fDateShort.format(new Date(c.issued_at)))}</span>${c.revoked ? '<span class="pill pill-bad">ملغاة</span>' : ''}</div></div>
             <div class="tools"><button type="button" class="btn btn-sm${c.revoked ? '' : ' btn-danger'}" data-cert="${esc(c.code)}" data-r="${c.revoked ? '0' : '1'}">${c.revoked ? 'إعادة الشهادة' : 'إلغاء الشهادة'}</button></div></div>`).join('')}</div>`
             : '<p class="muted">لم تصدر شهادات بعد. تصدر تلقائياً عندما يطلبها المعلم بعد 5 دروس.</p>'}</section>`;
         $$('[data-cert]', box).forEach((b) => {
@@ -1834,7 +1908,7 @@
                 <span class="pill ${(stName[q.status] || stName.open)[1]}">${(stName[q.status] || stName.open)[0]}</span>${q.flags ? `<span class="muted small">${plural(q.flags, 'بلاغ واحد', 'بلاغان', 'بلاغات', 'بلاغاً')} من المعلمين</span>` : ''}
                 ${q.session_id ? `<a href="#/s/${esc(q.session_id)}">الدرس</a>` : ''}</div></div>
             <div class="tools">
-              ${q.status === 'open' ? `<button type="button" class="btn btn-sm" data-rq="${esc(q.id)}" data-v="hidden">إخفاء</button>` : q.status === 'hidden' ? `<button type="button" class="btn btn-sm" data-rq="${esc(q.id)}" data-v="open">إعادة فتح</button>` : ''}
+              ${q.status === 'open' ? `<button type="button" class="btn btn-sm" data-rq="${esc(q.id)}" data-v="hidden">إخفاء</button>` : `<button type="button" class="btn btn-sm" data-rq="${esc(q.id)}" data-v="open">إعادة فتح</button>`}
               <button type="button" class="btn btn-sm btn-ghost btn-danger" data-rq="${esc(q.id)}" data-v="delete">حذف</button></div></div>`).join('')}</div>`
             : '<div class="empty"><b>لا توجد طلبات بعد</b><span>يطلب الطلاب الدروس من صفحة كل صف.</span></div>'}`;
         $$('[data-rq]', box).forEach((b) => {
@@ -1894,19 +1968,21 @@
         const st = await API.settings();
         if (tok !== app.token) return;
         box.innerHTML = `<form class="form" id="setf">
-          <label class="check"><input type="checkbox" id="set-auto"${st.auto_approve ? ' checked' : ''}><span><b>اعتماد المعلمين الجدد تلقائياً</b><br><span class="muted small">إذا أُطفئ هذا الخيار، لا تظهر حصص المعلم الجديد للطلاب حتى تعتمده من تبويب «المعلمون». يُنصح بإطفائه.</span></span></label>
+          <label class="check"><input type="checkbox" id="set-auto"${st.auto_approve ? ' checked' : ''}><span><b>اعتماد المعلمين الجدد تلقائياً</b><br><span class="muted small">إذا أُطفئ هذا الخيار، لا تظهر دروس المعلم الجديد للطلاب حتى تعتمده من تبويب «المعلمون». يُنصح بإطفائه.</span></span></label>
+          ${st.legacy ? '<div class="note warn"><b>قاعدة البيانات تحتاج تحديثاً.</b><span>شغّل ملف supabase/schema.sql من جديد في Supabase لتظهر إعدادات «اطلب درساً» وعدّاد المشاهدات.</span></div>' : `
           <label class="check"><input type="checkbox" id="set-req"${st.requests_on !== false ? ' checked' : ''}><span><b>«اطلب درساً»</b><br><span class="muted small">يطلب الطلاب الدروس التي يحتاجونها دون أسماء، وتظهر للمعلمين المعتمدين في موادهم.</span></span></label>
           <div class="field" style="max-width:320px"><label for="set-min">يظهر الطلب للمعلمين بعد أن يطلبه</label>
             <select class="input" id="set-min">${[1, 2, 3, 5, 10].map((n) => `<option value="${n}"${n === (st.request_min_votes || 2) ? ' selected' : ''}>${n === 1 ? 'طالب واحد' : n === 2 ? 'طالبان' : `${fNum(n)} ${n <= 10 ? 'طلاب' : 'طالباً'}`}</option>`).join('')}</select></div>
-          <label class="check"><input type="checkbox" id="set-views"${st.views_on !== false ? ' checked' : ''}><span><b>عدّاد المشاهدات وشكر الطلاب</b><br><span class="muted small">يرى المعلم عدد مشاهدات دروسه وشكر الطلاب، دون أي معلومة عن الطالب.</span></span></label>
+          <label class="check"><input type="checkbox" id="set-views"${st.views_on !== false ? ' checked' : ''}><span><b>عدّاد المشاهدات وشكر الطلاب</b><br><span class="muted small">يرى المعلم عدد مشاهدات دروسه وشكر الطلاب، دون أي معلومة عن الطالب.</span></span></label>`}
           <div class="field"><label for="set-notice">إعلان أعلى المنصة (اختياري)</label><textarea class="input" id="set-notice" maxlength="300" rows="2" placeholder="مثال: تبدأ مراجعات امتحانات الدبلوم يوم الأحد">${esc(st.site_notice || '')}</textarea></div>
           <div class="form-actions"><button class="btn btn-primary" type="submit">حفظ الإعدادات</button></div></form>`;
         $('#setf').addEventListener('submit', async (ev) => {
           ev.preventDefault();
           const b = $('#setf button'); b.disabled = true;
           try {
-            await API.adminSaveSettings({ auto_approve: $('#set-auto').checked, site_notice: $('#set-notice').value.trim() || null,
-              requests_on: $('#set-req').checked, views_on: $('#set-views').checked, request_min_votes: Number($('#set-min').value) || 2 });
+            const patch = { auto_approve: $('#set-auto').checked, site_notice: $('#set-notice').value.trim() || null };
+            if (!st.legacy) Object.assign(patch, { requests_on: $('#set-req').checked, views_on: $('#set-views').checked, request_min_votes: Number($('#set-min').value) || 2 });
+            await API.adminSaveSettings(patch);
             app.settings = await API.settings(); renderBanners(); toast('حُفظت الإعدادات');
           } catch (e) { toast(errMsg(e), true); }
           b.disabled = false;
@@ -2116,7 +2192,7 @@
         return null;
       };
       const toForm = (url) => {
-        app.prefill = Object.assign({ kind: 'recorded', video_url: url, minutes: minutesOf }, info || {});
+        app.prefill = Object.assign({ kind: 'recorded', video_url: url, minutes: minutesOf, _rec: { id: r.id, saved: r.saved } }, info || {});
         location.hash = '#/dashboard/new';
       };
       const more = $('#st-more');
@@ -2314,7 +2390,7 @@
         <ul>
           <li><b>طلبات الطلاب:</b> بعد اعتماد حسابك تظهر في <a href="#/dashboard">لوحتي</a> الدروس التي طلبها طلاب صفوفك. اضغط <b>سجّل هذا الدرس</b> فيُفتح الاستوديو والصف والمادة والعنوان جاهزة، وعند النشر يرى الطلاب أن طلبهم صار متاحاً. وإن رأيت طلباً غير مناسب اضغط «غير مناسب».</li>
           <li><b>أثر دروسك:</b> عدد المشاهدات، وكم طالباً قال «جزاك الله خيراً» أو «فهمتُ الدرس». أرقام فقط، بلا أي معلومة عن الطالب.</li>
-          <li><b>شهادة شكر وتقدير:</b> عند ${CERT_LEVELS.map((l) => fNum(l)).join(' و')} درساً، برمز تحقق يفتحه أي شخص، وتُطبع أو تُحفظ PDF. يُحسب الدرس بعد 3 أيام من نشره إن كان 5 دقائق فأكثر.</li>
+          <li><b>شهادة شكر وتقدير:</b> عند بلوغ ${CERT_LEVELS.map((l) => fNum(l)).join(' و')} من الدروس، برمز تحقق يفتحه أي شخص، وتُطبع أو تُحفظ PDF. يُحسب الدرس بعد 3 أيام من نشره إن كان 5 دقائق فأكثر.</li>
         </ul>
         <h2>أدوات الشرح على الشاشة (كلها مجانية)</h2>
         <ul>
@@ -2373,7 +2449,7 @@
         <p>لا تجمع المنصة أي بيانات شخصية عن الطلاب، ولا تطلب منهم حساباً.</p>
         <ul>
           <li><b>سجل المشاهدة</b> («تابع من حيث توقفت» و«شاهدتُه») يُحفظ في متصفح الطالب فقط، ولا يصل إلينا أبداً.</li>
-          <li><b>عدّاد المشاهدات والشكر وطلبات الدروس</b> أرقام مجمّعة بلا أسماء. ولمنع العبث بها نستخدم بصمة مشفّرة من عنوان الشبكة، تتغير كل يوم، ولا يمكن الرجوع منها إلى العنوان.</li>
+          <li><b>عدّاد المشاهدات والشكر وطلبات الدروس</b> أرقام مجمّعة بلا أسماء. ولمنع العبث بها نستخدم بصمة مشفّرة من عنوان الشبكة بدل العنوان نفسه، وتُحذف البصمات ومفتاح تشفيرها خلال يوم.</li>
           <li><b>للمعلمين</b> نحفظ: الاسم الظاهر، التخصص، النبذة، رابط القناة، والصورة من حساب Google. البريد الإلكتروني يراه المشرفون فقط ولا يظهر للعامة.</li>
           <li>الفيديوهات تُعرض من يوتيوب بوضع الخصوصية المحسّنة <span class="path">(youtube-nocookie)</span> وتخضع لسياسات يوتيوب.</li>
         </ul>
@@ -2398,7 +2474,7 @@
     [/^#\/s\/([\w-]+)$/, (t, m) => pageSession(t, m[1])],
     [/^#\/t\/([\w-]+)$/, (t, m) => pageTeacher(t, m[1])],
     [/^#\/teachers$/, (t) => pageTeachers(t)],
-    [/^#\/c\/([A-Za-z0-9-]{10,16})$/, (t, m) => pageCertificate(t, m[1])],
+    [/^#\/c\/([A-Za-z0-9-]{10,16})(?:\/([mf]))?$/, (t, m) => pageCertificate(t, m[1], m[2])],
     [/^#\/guide$/, () => pageGuide()],
     [/^#\/studio(?:\/[\w-]+)?$/, (t) => pageStudio(t)],
     [/^#\/about$/, () => pageAbout()],

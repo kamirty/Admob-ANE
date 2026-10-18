@@ -6,7 +6,6 @@
 
 create extension if not exists btree_gist with schema extensions;
 create extension if not exists pgcrypto   with schema extensions;
-create extension if not exists pg_trgm    with schema extensions;
 
 -- ---------------------------------------------------------------------
 -- 1) إعدادات المنصة (صف واحد فقط)
@@ -108,9 +107,8 @@ create unique index if not exists lesson_requests_key
   on public.lesson_requests (grade, subject, (coalesce(term, 0)), (coalesce(unit, 0)), topic_key);
 create index if not exists lesson_requests_top on public.lesson_requests (grade, subject, status, votes desc);
 alter table public.sessions add column if not exists request_id uuid;
+-- مرجع مرن بلا قيد: حذف الطلب لا يمنع نشر الدرس الذي سُجّل له
 alter table public.sessions drop constraint if exists sessions_request_id_fkey;
-alter table public.sessions add constraint sessions_request_id_fkey
-  foreign key (request_id) references public.lesson_requests (id) on delete set null;
 
 create index if not exists sessions_grade_start_idx   on public.sessions (grade, starts_at);
 create index if not exists sessions_curriculum_idx    on public.sessions (grade, subject, term, unit, starts_at);
@@ -447,11 +445,13 @@ create table if not exists private.blocked_terms (
 insert into private.blocked_terms (term, action) values
   ('واتس', 'reject'), ('واتساب', 'reject'), ('whatsapp', 'reject'), ('wa.me', 'reject'),
   ('انستا', 'reject'), ('انستقرام', 'reject'), ('انستغرام', 'reject'), ('instagram', 'reject'),
-  ('سناب', 'reject'), ('snap', 'reject'), ('تيك توك', 'reject'), ('تيكتوك', 'reject'), ('tiktok', 'reject'),
+  ('سناب شات', 'reject'), ('سنابشات', 'reject'), ('snap', 'reject'), ('تيك توك', 'reject'), ('تيكتوك', 'reject'), ('tiktok', 'reject'),
   ('تلجرام', 'reject'), ('تليجرام', 'reject'), ('telegram', 'reject'),
-  ('رقمي', 'reject'), ('رقم هاتف', 'reject'), ('تواصل معي', 'reject'), ('كلموني', 'reject'),
+  ('رقم هاتف', 'reject'), ('رقم الهاتف', 'reject'), ('تواصل معي', 'reject'), ('كلموني', 'reject'),
   ('دروس خصوصي', 'reject'), ('درس خصوصي', 'reject'), ('مدرس خصوصي', 'reject')
 on conflict (term) do nothing;
+-- كلمات أوقعت دروساً حقيقية («المواطنة الرقمية»، «سبع سنابل») في نسخة سابقة
+delete from private.blocked_terms where term in ('رقمي', 'سناب');
 
 -- توحيد النص العربي للبحث والمقارنة: الهمزات، التاء المربوطة، الياء، الأرقام، التشكيل
 create or replace function public.ar_norm(t text) returns text
@@ -462,6 +462,16 @@ language sql immutable parallel safe as $$
       'ااااهيوي01234567890123456789'),
     '[ً-ْـ​-‏‪-‮⁦-⁩[:cntrl:]]', '', 'g'),
     '\s+', ' ', 'g'));
+$$;
+
+-- هل في النص كلمة من القائمة؟ تُطابق بداية الكلمة (مع «و» و«ال» و«بال»…) لا وسطها
+create or replace function private.has_term(k text, p_action text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from private.blocked_terms b
+     where b.action = p_action
+       and k ~ ('(^|[^a-z0-9ء-ي])(و|ف|ب|ل|ال|وال|بال|فال|لل)?'
+                || replace(regexp_replace(public.ar_norm(b.term), '[^a-z0-9ء-ي .]', '', 'g'), '.', '\.')));
 $$;
 
 create or replace function private.client_hash(p_scope text) returns text
@@ -491,7 +501,10 @@ begin
   if s is null then
     insert into private.daily_salt (day, salt) values (d, extensions.gen_random_bytes(32)) on conflict (day) do nothing;
     select x.salt into s from private.daily_salt x where x.day = d;
-    delete from private.daily_salt where day < d - 2;
+    -- مرة في اليوم: يُحذف ملح الأمس وبصماته، فلا يمكن الرجوع منها إلى أي عنوان
+    delete from private.daily_salt where day < d;
+    delete from private.rate_hits where bucket < (now() at time zone 'Asia/Muscat') - interval '1 day';
+    delete from private.request_votes where at < now() - interval '1 day';
   end if;
   return encode(extensions.digest(convert_to(ip || '|' || p_scope, 'UTF8') || s, 'sha256'), 'hex');
 end $$;
@@ -506,9 +519,6 @@ begin
   values (p_client, p_scope, date_trunc(p_window, now() at time zone 'Asia/Muscat'), 1)
   on conflict (client, scope, bucket) do update set n = r.n + 1
   returning r.n into v;
-  if random() < 0.01 then
-    delete from private.rate_hits where bucket < (now() at time zone 'Asia/Muscat') - interval '2 days';
-  end if;
   return v <= p_limit;
 end $$;
 
@@ -571,14 +581,16 @@ begin
       raise exception 'اكتب اسم الدرس (3 أحرف على الأقل)' using errcode = '22023';
     end if;
     k := public.ar_norm(t);
-    if regexp_replace(k, '[\s\-]', '', 'g') ~ '[0-9]{5,}' or k ~ '(@|https?:|www\.|\.com|\.net|\.org|\.om\M)'
-       or exists (select 1 from private.blocked_terms b where b.action = 'reject' and position(public.ar_norm(b.term) in k) > 0) then
+    -- رقم هاتف: 8 أرقام فأكثر ولو فُصلت بنقاط أو شرطات أو مسافات (بعد استبعاد السنوات مثل 2023-2024)
+    if regexp_replace(k, '(^|[^0-9])(19|20)[0-9]{2}(?=[^0-9]|$)', '\1', 'g') ~ '[0-9]([^a-z0-9ء-ي]{0,3}[0-9]){7,}'
+       or k ~ '(@|https?:|www\.|\.com|\.net|\.org|\.om\M)' or private.has_term(k, 'reject') then
       raise exception 'اكتب اسم الدرس فقط، بلا أرقام هواتف أو حسابات أو روابط' using errcode = '22023';
     end if;
-    hide := exists (select 1 from private.blocked_terms b where b.action = 'hide' and position(public.ar_norm(b.term) in k) > 0);
+    hide := private.has_term(k, 'hide');
   end if;
   client := private.client_hash('req');
-  if not private.hit(client, 'req', 6, 'hour') or not private.hit(client, 'req-day', 20, 'day') then
+  -- حدود تتسع لفصل كامل يطلب من شبكة مدرسة واحدة
+  if not private.hit(client, 'req', 40, 'hour') or not private.hit(client, 'req-day', 120, 'day') then
     raise exception 'أرسلت طلبات كثيرة، حاول لاحقاً' using errcode = '54000';
   end if;
   if (select count(*) from public.lesson_requests q where q.last_at > now() - interval '1 hour') >= 600 then
@@ -598,7 +610,10 @@ begin
     insert into public.lesson_requests as q (grade, subject, term, unit, topic, topic_key, status)
     values (p_grade, p_subject, p_term, p_unit, t, k, case when hide then 'hidden' else 'open' end)
     on conflict (grade, subject, (coalesce(term, 0)), (coalesce(unit, 0)), topic_key)
-    do update set last_at = now()
+    -- طلب سُجّل من قبل ثم حُذف درسه أو أُخفي: يعود مفتوحاً
+    do update set last_at = now(),
+      status = case when q.status = 'done' and not private.watchable(q.session_id) then 'open' else q.status end,
+      session_id = case when q.status = 'done' and not private.watchable(q.session_id) then null else q.session_id end
     returning q.id, q.votes, (q.xmax = 0) as inserted into r;
   end if;
   -- صوت واحد لكل زائر يومياً لكل طلب
@@ -664,6 +679,18 @@ drop trigger if exists sessions_fulfil_request on public.sessions;
 create trigger sessions_fulfil_request after insert on public.sessions
   for each row execute function public.sessions_fulfil_request();
 
+-- حذف الدرس يعيد طلبه مفتوحاً ليراه المعلمون من جديد
+create or replace function public.sessions_unfulfil_request() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  update public.lesson_requests q set status = 'open', session_id = null
+   where q.session_id = old.id and q.status = 'done';
+  return old;
+end $$;
+drop trigger if exists sessions_unfulfil_request on public.sessions;
+create trigger sessions_unfulfil_request before delete on public.sessions
+  for each row execute function public.sessions_unfulfil_request();
+
 -- ---------------------------------------------------------------------
 -- 9.3) المشاهدات والشكر: أرقام إجمالية يراها المعلم وحده
 -- ---------------------------------------------------------------------
@@ -690,7 +717,7 @@ begin
   end if;
   client := private.client_hash('views');
   -- فصل دراسي كامل على شبكة واحدة: حتى 20 مشاهدة للدرس في الساعة، و300 لكل الدروس
-  if not private.hit(client, 'view:' || p_session, 20, 'hour') or not private.hit(client, 'views', 300, 'hour') then
+  if not private.hit(client, 'view:' || p_session, 40, 'hour') or not private.hit(client, 'views', 300, 'hour') then
     return;
   end if;
   insert into public.lesson_stats as l (session_id, day, views)
@@ -709,7 +736,7 @@ begin
   if not coalesce((select s.views_on from public.settings s where s.id = 1), true) then return; end if;
   if not private.watchable(p_session) then return; end if;
   client := private.client_hash('thanks');
-  if not private.hit(client, p_kind || ':' || p_session, 5, 'day') or not private.hit(client, 'thanks', 40, 'hour') then
+  if not private.hit(client, p_kind || ':' || p_session, 40, 'day') or not private.hit(client, 'thanks', 80, 'hour') then
     return;
   end if;
   insert into public.lesson_stats as l (session_id, day, thanks, understood)
@@ -763,12 +790,15 @@ begin
     raise exception 'تُمنح الشهادة بعد اعتماد حسابك' using errcode = '42501';
   end if;
   select t.display_name, t.youtube_channel into me from public.teachers t where t.id = auth.uid();
-  select count(distinct coalesce(substring(s.video_url from '(?:youtu\.be/|[?&]v=|/(?:live|shorts|embed)/)([A-Za-z0-9_-]{11})'), s.video_url))::int,
+  select count(distinct substring(s.video_url from '(?:youtu\.be/|[?&]v=|/(?:live|shorts|embed)/)([A-Za-z0-9_-]{11})'))::int,
          coalesce(array_agg(distinct s.grade || ':' || s.subject), '{}')
     into n, subj
     from public.sessions s
    where s.teacher_id = auth.uid() and s.status = 'scheduled' and not s.hidden and s.video_url is not null
-     and s.starts_at <= now() - interval '3 days' and s.ends_at - s.starts_at >= interval '5 minutes';
+     -- تاريخ الإضافة يضعه الخادم، فلا يُحتسب درس أُضيف اليوم بتاريخ نشر قديم
+     and s.starts_at <= now() - interval '3 days' and s.created_at <= now() - interval '3 days'
+     and s.ends_at - s.starts_at >= interval '5 minutes'
+     and s.video_url ~ '(youtu\.be/|[?&]v=|/(live|shorts|embed)/)[A-Za-z0-9_-]{11}';
   select max(l) into lvl from unnest(array[5, 10, 25, 50, 100]) l where l <= n;
   if lvl is null then
     raise exception 'تحتاج 5 دروس منشورة منذ 3 أيام على الأقل (لديك %)', coalesce(n, 0) using errcode = '22023';
@@ -811,8 +841,7 @@ end $$;
 -- ---------------------------------------------------------------------
 -- 9.5) البحث في دروس الصف (يحترم سياسات القراءة لأنه بصلاحية المستدعي)
 -- ---------------------------------------------------------------------
-create index if not exists sessions_search_trgm on public.sessions
-  using gin (public.ar_norm(title || ' ' || coalesce(unit_title, '')) extensions.gin_trgm_ops);
+drop index if exists public.sessions_search_trgm;
 
 create or replace function public.search_lessons(p_grade text, p_q text, p_subject text default '')
 returns setof public.sessions
@@ -943,6 +972,7 @@ grant  execute on function public.admin_set_request(uuid, text)     to authentic
 grant  execute on function public.admin_list_certificates()         to authenticated;
 grant  execute on function public.admin_set_certificate(text, boolean) to authenticated;
 revoke execute on function public.sessions_fulfil_request() from public, anon, authenticated;
+revoke execute on function public.sessions_unfulfil_request() from public, anon, authenticated;
 
 -- =====================================================================
 --  بعد أول دخول لك كمعلم من الموقع، اجعل نفسك مشرفاً بتشغيل هذا السطر

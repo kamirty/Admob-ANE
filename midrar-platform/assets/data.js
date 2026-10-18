@@ -13,11 +13,11 @@
   const noPlace = (o) => { const x = Object.assign({}, o); PLACE_KEYS.forEach((k) => delete x[k]); return x; };
   const oldDb = (e) => !!e && (e.code === 'PGRST204' || e.code === '42703');
   let LIST_COLS = BASE_COLS + PLACE_COLS;
-  let FULL_COLS = LIST_COLS + ',description';
+  let FULL_COLS = LIST_COLS + ',description,created_at';
   // إن رُفع الموقع قبل تحديث قاعدة البيانات: نعمل بالأعمدة القديمة بدل أن تتعطل الصفحات
   function legacyCols() {
     if (LIST_COLS === BASE_COLS) return false;
-    LIST_COLS = BASE_COLS; FULL_COLS = BASE_COLS + ',description';
+    LIST_COLS = BASE_COLS; FULL_COLS = BASE_COLS + ',description,created_at';
     return true;
   }
   const iso = (d) => new Date(d).toISOString();
@@ -68,7 +68,8 @@
     async function rest(table, pairs) {
       try { return await restRaw(table, pairs); }
       catch (e) {
-        if (e.code === '42703' && pairs.some((p) => p[0] === 'select' && p[1].includes(PLACE_COLS)) && legacyCols()) {
+        if (e.code === '42703' && pairs.some((p) => p[0] === 'select' && p[1].includes(PLACE_COLS))) {
+          legacyCols();
           return restRaw(table, pairs.map((p) => (p[0] === 'select' ? ['select', p[1].replace(PLACE_COLS, '')]
             : p[0] === 'order' ? ['order', p[1].replace('term.asc.nullslast,unit.asc.nullslast,', '')] : p)));
         }
@@ -197,7 +198,12 @@
       async settings() {
         let rows;
         try { rows = await restRaw('settings', [['select', 'site_notice,auto_approve,requests_on,views_on,request_min_votes'], ['id', 'eq.1']]); }
-        catch (e) { if (e.code !== '42703') throw e; rows = await restRaw('settings', [['select', 'site_notice,auto_approve'], ['id', 'eq.1']]); }
+        catch (e) {
+          if (e.code !== '42703') throw e;
+          // قاعدة بيانات قديمة: الميزات الجديدة متوقفة حتى يُشغَّل schema.sql
+          rows = (await restRaw('settings', [['select', 'site_notice,auto_approve'], ['id', 'eq.1']]))
+            .map((r) => Object.assign(r, { requests_on: false, views_on: false, legacy: true }));
+        }
         return rows[0] || {};
       },
       listSchedule(grade, from, to) {
@@ -292,8 +298,9 @@
       },
       async mySessions() {
         const c = await authed();
-        let r = await c.from('sessions').select(FULL_COLS).eq('teacher_id', user.id).order('starts_at', { ascending: false }).limit(1000);
-        if (r.error && r.error.code === '42703' && legacyCols()) r = null;
+        const cols = FULL_COLS;
+        let r = await c.from('sessions').select(cols).eq('teacher_id', user.id).order('starts_at', { ascending: false }).limit(1000);
+        if (r.error && r.error.code === '42703' && cols.includes(PLACE_COLS)) { legacyCols(); r = null; }
         if (r) return check(r);
         return check(await c.from('sessions').select(FULL_COLS).eq('teacher_id', user.id)
           .order('starts_at', { ascending: false }).limit(1000));
@@ -342,7 +349,9 @@
       async adminHideSession(id, hidden) { return this.updateSession(id, { hidden }); },
       async adminSaveSettings(patch) {
         const c = await authed();
-        const r = check(await c.from('settings').update(patch).eq('id', 1).select('id'));
+        let q = await c.from('settings').update(patch).eq('id', 1).select('id');
+        if (oldDb(q.error)) q = await c.from('settings').update({ auto_approve: patch.auto_approve, site_notice: patch.site_notice }).eq('id', 1).select('id');
+        const r = check(q);
         if (!r || !r.length) throw new ApiError({ code: '42501' });
       },
     };
@@ -416,7 +425,8 @@
       plan.forEach(([t, g, s, titles], pi) => {
         titles.forEach((title, ti) => {
           // كل درس مرة واحدة: معظمها منشور، وآخرها مجدول للنشر عند بعض المعلمين
-          const d = ti * 3 - 9 + (pi % 4);
+          // (المراجعة الأخيرة منشورة عند نصف المعلمين، ومجدولة عند النصف الآخر)
+          const d = ti * 3 - 9 + (pi % 4) - (ti === titles.length - 1 && pi % 2 === 0 ? 2 : 0);
           const start = at(d, hours[(pi + ti) % hours.length], (pi % 2) * 30);
           // الدرس الأخير في كل قائمة مراجعة، والبقية دروس في وحدات الفصل الأول
           const place = /مراجعة|حل أسئلة/.test(title) ? { term: 1, lesson_type: 'review' } : { term: 1, unit: ti + 1, unit_title: null };
@@ -533,7 +543,11 @@
         load();
         const topic = (r.topic || '').replace(/\s+/g, ' ').trim() || null;
         if (!topic && !r.unit) throw new ApiError({ message: 'اختر الوحدة أو اكتب اسم الدرس' });
-        if (topic && (/[0-9٠-٩]{5,}|@|https?:|www\.|\.com/.test(topic.replace(/[\s-]/g, '')) || /واتس|انستا|سناب|تيك ?توك|تلجرام|رقمي|خصوصي/.test(arNorm(topic)))) {
+        // نفس قواعد request_lesson في قاعدة البيانات
+        const norm = arNorm(topic || '');
+        const digits = norm.replace(/(^|[^0-9])(19|20)\d{2}(?=[^0-9]|$)/g, '$1');
+        if (topic && (/[0-9]([^a-z0-9ء-ي]{0,3}[0-9]){7,}/.test(digits) || /@|https?:|www\.|\.com|\.net|\.org/.test(norm)
+          || /(^|[^a-z0-9ء-ي])(و|ف|ب|ل|ال|وال|بال|فال|لل)?(واتس|whatsapp|wa\.me|انستا|انستقرام|انستغرام|instagram|سناب شات|سنابشات|snap|تيك توك|تيكتوك|tiktok|تلجرام|تليجرام|telegram|رقم هاتف|رقم الهاتف|تواصل معي|كلموني|دروس خصوصي|درس خصوصي|مدرس خصوصي)/.test(norm))) {
           throw new ApiError({ message: 'اكتب اسم الدرس فقط، بلا أرقام هواتف أو حسابات أو روابط' });
         }
         const key = arNorm(topic || '');
@@ -541,6 +555,7 @@
         let q = (topic && db.requests.filter((x) => x.grade === r.grade && x.subject === r.subject && x.topic_key === key && (x.status === 'open' || x.status === 'hidden')
           && (!r.term || !x.term || x.term === r.term)).sort((a, b) => b.votes - a.votes)[0])
           || db.requests.find((x) => x.grade === r.grade && x.subject === r.subject && (x.term || 0) === (r.term || 0) && (x.unit || 0) === (r.unit || 0) && x.topic_key === key);
+        if (q && q.status === 'done' && !db.sessions.some((x) => x.id === q.session_id && x.status === 'scheduled' && visible(x) && +new Date(x.starts_at) <= Date.now())) { q.status = 'open'; q.session_id = null; }
         if (q) { q.votes += 1; q.last_at = iso(Date.now()); }
         else { q = { id: uid(), grade: r.grade, subject: r.subject, term: r.term || null, unit: r.unit || null, topic, topic_key: key, votes: 1, status: 'open', flags: 0, session_id: null, created_at: iso(Date.now()), last_at: iso(Date.now()) }; db.requests.push(q); }
         save();
@@ -658,6 +673,8 @@
         if (!s || (s.teacher_id !== user.id && !isAdmin())) throw new ApiError({ code: '42501' });
         db.sessions = db.sessions.filter((x) => x.id !== id);
         db.reports = db.reports.filter((r) => r.session_id !== id);
+        // الطلب الذي سُجّل بهذا الدرس يعود مفتوحاً
+        db.requests.forEach((q) => { if (q.session_id === id && q.status === 'done') { q.status = 'open'; q.session_id = null; } });
         save();
         return delay();
       },
@@ -687,7 +704,8 @@
         const me = teacherOf(user.id);
         if (!me || me.status !== 'approved') throw new ApiError({ code: '42501', message: 'تُمنح الشهادة بعد اعتماد حسابك' });
         const ok = db.sessions.filter((s) => s.teacher_id === user.id && s.status === 'scheduled' && !s.hidden && s.video_url
-          && +new Date(s.starts_at) <= Date.now() - 3 * 864e5 && +new Date(s.ends_at) - +new Date(s.starts_at) >= 5 * 60000);
+          && +new Date(s.starts_at) <= Date.now() - 3 * 864e5 && +new Date(s.created_at || s.starts_at) <= Date.now() - 3 * 864e5
+          && +new Date(s.ends_at) - +new Date(s.starts_at) >= 5 * 60000 && ytKey(s.video_url) !== s.video_url);
         const n = new Set(ok.map((s) => ytKey(s.video_url))).size;
         const lvl = [100, 50, 25, 10, 5].find((l) => l <= n);
         if (!lvl) throw new ApiError({ message: `تحتاج 5 دروس منشورة منذ 3 أيام على الأقل (لديك ${n})` });
@@ -718,7 +736,7 @@
       async adminSetRequest(id, status) {
         need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' });
         if (status === 'delete') db.requests = db.requests.filter((q) => q.id !== id);
-        else { const q = db.requests.find((x) => x.id === id); if (q) { q.status = status; if (status === 'open') { q.flags = 0; q.flaggedBy = []; } } }
+        else { const q = db.requests.find((x) => x.id === id); if (q) { q.status = status; if (status === 'open') q.flags = 0; } }
         save(); return delay();
       },
       async adminCertificates() { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); return delay(db.certificates.map(clone)); },
