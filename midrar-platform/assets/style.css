@@ -590,3 +590,82 @@ a.tile:hover { border-color: var(--board); }
   .cert-url { font-size: .72rem; overflow-wrap: anywhere; }
   .cert-stamp { font-size: 3.2rem; border-width: 4px; padding: 4px 18px; }
 }
+
+/* ---------- المهارات ---------- */
+.skill-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); }
+.skill-chip { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); text-decoration: none; font-weight: 600; line-height: 1.35; }
+.skill-chip:hover, .skill-card:hover, .pcard:hover { border-color: var(--board); background: var(--board-soft); }
+.sk-ic { font-size: 1.35rem; line-height: 1; flex: none; }
+.skill-cards { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); padding-block: 12px 8px; }
+.skill-card { display: grid; gap: 4px; align-content: start; padding: 14px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface);
+  color: var(--ink); text-decoration: none; min-width: 0; }
+.skill-card .sk-ic { font-size: 1.8rem; }
+.skill-card .pill { justify-self: start; }
+.note.safety { margin-block: 10px 4px; border-inline-start: 4px solid var(--board); }
+
+/* ---------- المسارات ودرس الأسبوع ---------- */
+.pcards { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); }
+.pcard { display: grid; gap: 4px; align-content: start; padding: 14px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface);
+  color: var(--ink); text-decoration: none; min-width: 0; }
+.pcard .pill { justify-self: start; background: var(--board-soft); color: var(--board); }
+.pcard b { overflow-wrap: anywhere; }
+.pcard .prog { margin-top: 4px; }
+.path-progress .meter { max-width: none; }
+.feat { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px; border-radius: var(--r);
+  background: var(--chalk-soft); border: 1px solid color-mix(in srgb, var(--chalk) 45%, var(--line)); color: var(--ink); text-decoration: none; }
+.feat:hover h2 { text-decoration: underline; }
+.feat-text { display: grid; gap: 6px; justify-items: start; min-width: 0; }
+.feat-text h2 { font-size: 1.15rem; overflow-wrap: anywhere; }
+@media (max-width: 560px) { .feat { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- الثقة: شارة موثّق، الدعوة، الترشيح ---------- */
+.verified { display: inline-flex; align-items: center; gap: 3px; font-size: .74rem; font-weight: 700; padding: 1px 8px; border-radius: 999px;
+  background: var(--ok-soft); color: var(--ok); vertical-align: middle; white-space: nowrap; }
+h1 .verified { font-size: .8rem; }
+.vouch { font-size: .86rem; color: var(--board); font-weight: 600; }
+.prof-tiles { padding-bottom: 8px; }
+.tile-wide { grid-column: span 2; }
+.tile-wide .areas { font: 600 .95rem/1.6 var(--font-body); color: var(--ink); }
+@media (max-width: 480px) { .tile-wide { grid-column: auto; } }
+.badge-n { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--live);
+  color: var(--live-ink); font-size: .72rem; font-weight: 800; line-height: 1; }
+.month-note { padding: 10px 14px; border-radius: 10px; background: var(--ok-soft); color: var(--ink); }
+.reject-note { color: var(--live-text); }
+.nominate .row .input { min-width: 0; }
+.join { max-width: 600px; }
+.join .pill { justify-self: center; }
+
+/* ---------- اختبر نفسك والملفات ---------- */
+.quiz { gap: 12px; }
+.qz { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 8px; margin: 0; display: grid; gap: 6px; min-width: 0; }
+.qz legend { font-weight: 700; padding-inline: 4px; overflow-wrap: anywhere; }
+.qz-o { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; }
+.qz-o input { accent-color: var(--board); width: 18px; height: 18px; flex: none; }
+.qz-o:has(input:focus-visible) { outline: 3px solid var(--board); outline-offset: 1px; }
+.qz-o.right { border-color: var(--ok); background: var(--ok-soft); }
+.qz-o.wrong { border-color: var(--live); background: var(--live-soft); }
+.qz-r { font-size: .88rem; font-weight: 700; min-height: 1.2em; }
+.qz-score { font-weight: 700; color: var(--board); }
+.files { margin: 0; padding-inline-start: 1.2em; display: grid; gap: 6px; }
+.files a { font-weight: 600; overflow-wrap: anywhere; }
+.qz-ed { border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; display: grid; gap: 8px; min-width: 0; }
+.qz-ed legend { font-weight: 700; padding-inline: 4px; }
+.qz-opts { display: grid; gap: 6px; }
+.qz-opt { display: flex; align-items: center; gap: 8px; }
+.qz-opt input[type=radio] { accent-color: var(--ok); width: 20px; height: 20px; flex: none; }
+.fl-row { margin-bottom: 8px; }
+.fl-row .fl-u { direction: ltr; text-align: right; }
+
+/* ---------- قوائم مرقّمة ومحرر المسار ---------- */
+.lr-num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--board-soft); color: var(--board); display: grid; place-items: center;
+  font: 800 .95rem/1 var(--font-display); }
+.lrow.seen .lr-num { background: var(--ok-soft); color: var(--ok); }
+.pick-row { cursor: default; }
+.pick-row:hover { background: transparent; }
+.pick-row .row { flex-wrap: nowrap; }
+.pick-list { display: grid; gap: 6px; margin-top: 8px; }
+.pick { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.pick > span { display: grid; min-width: 0; }
+.pick b { overflow-wrap: anywhere; }
+@media (max-width: 560px) { .nav a { font-size: .88rem; padding-inline: 2px; } }

@@ -20,6 +20,7 @@ insert into public.settings (id) values (1) on conflict (id) do nothing;
 alter table public.settings add column if not exists requests_on       boolean  not null default true; -- «اطلب درساً»
 alter table public.settings add column if not exists views_on          boolean  not null default true; -- عدّاد المشاهدات والشكر
 alter table public.settings add column if not exists request_min_votes smallint not null default 2;    -- أقل عدد طلاب ليظهر الطلب للمعلمين
+alter table public.settings add column if not exists featured_session  uuid;                           -- «درس الأسبوع»
 alter table public.settings drop constraint if exists settings_request_min_votes_check;
 alter table public.settings add constraint settings_request_min_votes_check check (request_min_votes between 1 and 50);
 
@@ -38,6 +39,25 @@ create table if not exists public.teachers (
   is_admin        boolean not null default false,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
+);
+
+-- الثقة: دروس المعلم الموثوق تُنشر مباشرة، ودروس غيره تمر على مراجعة المشرف أولاً
+alter table public.teachers add column if not exists verified      boolean not null default false; -- شارة «موثّق» يمنحها المشرف
+alter table public.teachers add column if not exists trust_lock    boolean not null default false; -- سحب المشرف الثقة: لا تعود تلقائياً
+alter table public.teachers add column if not exists vouch         text;   -- «بدعوة من …» أو «رشّحه …»
+alter table public.teachers add column if not exists portfolio_url text;   -- رابط أعمال المتطوع (اختياري)
+do $$ begin
+  if not exists (select 1 from information_schema.columns
+                  where table_schema = 'public' and table_name = 'teachers' and column_name = 'trusted') then
+    alter table public.teachers add column trusted boolean not null default false;
+    -- المعلمون المعتمدون قبل هذا التحديث موثوقون، فلا تتوقف دروسهم
+    update public.teachers set trusted = true where status = 'approved';
+  end if;
+end $$;
+alter table public.teachers drop constraint if exists teachers_extra;
+alter table public.teachers add constraint teachers_extra check (
+  (vouch is null or char_length(vouch) <= 80)
+  and (portfolio_url is null or (char_length(portfolio_url) <= 200 and portfolio_url ~* '^https://[^\s<>"]+$'))
 );
 
 -- ---------------------------------------------------------------------
@@ -76,10 +96,21 @@ alter table public.sessions add column if not exists unit_title  text;          
 alter table public.sessions add column if not exists lesson_type text not null default 'lesson'; -- شرح/حل الكتاب/مراجعة/امتحانات
 alter table public.sessions add column if not exists exam_year   smallint;               -- سنة امتحان الدبلوم المحلول
 alter table public.sessions add column if not exists exam_round  smallint;               -- الدور الأول أو الثاني
+-- المراجعة: ok ظاهر للطلاب، pending بانتظار المشرف، rejected مرفوض مع سبب يراه المعلم
+alter table public.sessions add column if not exists review      text not null default 'ok';
+alter table public.sessions add column if not exists review_note text;
+-- المهارات (grade = 'skills'): اسم المهارة عند اختيار «أخرى»، المستوى 1–3، والعمر المناسب
+-- (اسم الدورة في unit_title ورقم الجزء في unit)
+alter table public.sessions add column if not exists skill_name  text;
+alter table public.sessions add column if not exists level       smallint;
+alter table public.sessions add column if not exists ages        text;
+-- اختبار قصير بعد الدرس، وروابط ملفات مرافقة (Drive وأمثاله)
+alter table public.sessions add column if not exists quiz        jsonb;
+alter table public.sessions add column if not exists attachments jsonb;
 alter table public.sessions drop constraint if exists sessions_curriculum;
 alter table public.sessions add constraint sessions_curriculum check (
   (term is null or term in (1, 2))
-  and (unit is null or unit between 1 and 20)
+  and (unit is null or unit between 1 and 60)
   and (unit_title is null or char_length(btrim(unit_title)) between 2 and 80)
   and lesson_type in ('lesson', 'book', 'review', 'exam')
   and (exam_year is null or (lesson_type = 'exam' and exam_year between 2000 and 2100))
@@ -163,6 +194,10 @@ begin
   if current_user in ('anon', 'authenticated') then
     if tg_op = 'INSERT' then
       new.is_admin   := false;
+      new.trusted    := false;
+      new.verified   := false;
+      new.trust_lock := false;
+      new.vouch      := null;
       new.created_at := now();
       new.status     := case when coalesce((select s.auto_approve from public.settings s where s.id = 1), false)
                              then 'approved' else 'pending' end;
@@ -172,7 +207,11 @@ begin
       -- صلاحية المشرف تُمنح من SQL Editor فقط، لا من الموقع
       new.is_admin   := old.is_admin;
       if not public.is_admin() then
-        new.status   := old.status;
+        new.status     := old.status;
+        new.trusted    := old.trusted;
+        new.verified   := old.verified;
+        new.trust_lock := old.trust_lock;
+        new.vouch      := old.vouch;
       end if;
     end if;
   end if;
@@ -194,7 +233,10 @@ declare
 begin
   new.updated_at := now();
   new.unit_title := nullif(btrim(new.unit_title), '');
-  if new.unit is null then new.unit_title := null; end if;
+  -- في المهارات قد تكون للدورة اسم بلا رقم جزء؛ في المنهج اسم الوحدة يتبع رقمها
+  if new.unit is null and new.grade <> 'skills' then new.unit_title := null; end if;
+  new.skill_name := case when new.grade = 'skills' and new.subject = 'sk_other' then nullif(btrim(new.skill_name), '') end;
+  if new.grade <> 'skills' then new.level := null; new.ages := null; end if;
   if current_user in ('anon', 'authenticated') then
     admin := public.is_admin();
     if tg_op = 'INSERT' then
@@ -202,6 +244,10 @@ begin
       new.hidden     := false;
       if not admin then
         new.teacher_id := auth.uid();
+        -- دروس المعلم غير الموثوق تنتظر مراجعة المشرف قبل أن يراها الطلاب
+        new.review := case when coalesce((select t.trusted from public.teachers t where t.id = new.teacher_id), false)
+                           then 'ok' else 'pending' end;
+        new.review_note := null;
       end if;
       if new.starts_at > now() + interval '200 days' then
         raise exception 'لا يمكن جدولة حصة بعد أكثر من 200 يوم' using errcode = '22023';
@@ -214,8 +260,17 @@ begin
       new.id         := old.id;
       new.created_at := old.created_at;
       if not admin then
-        new.teacher_id := old.teacher_id;
-        new.hidden     := old.hidden;
+        new.teacher_id  := old.teacher_id;
+        new.hidden      := old.hidden;
+        new.review      := old.review;
+        new.review_note := old.review_note;
+        -- تعديل محتوى درس لم يُعتمد بعد (أو لمعلم غير موثوق) يعيده إلى المراجعة
+        if not coalesce((select t.trusted from public.teachers t where t.id = old.teacher_id), false)
+           and (new.title, new.description, new.video_url, new.recording_url, new.skill_name, new.quiz, new.attachments)
+               is distinct from (old.title, old.description, old.video_url, old.recording_url, old.skill_name, old.quiz, old.attachments) then
+          new.review := 'pending';
+          new.review_note := null;
+        end if;
       end if;
     end if;
   end if;
@@ -271,7 +326,7 @@ drop policy if exists sessions_insert on public.sessions;
 drop policy if exists sessions_update on public.sessions;
 drop policy if exists sessions_delete on public.sessions;
 create policy sessions_read on public.sessions for select using (
-  (not hidden and exists (select 1 from public.teachers t
+  (not hidden and review = 'ok' and exists (select 1 from public.teachers t
                            where t.id = sessions.teacher_id and t.status = 'approved'))
   or teacher_id = auth.uid()
   or public.is_admin()
@@ -298,7 +353,7 @@ create policy reports_admin_delete on public.reports for delete to authenticated
 grant usage on schema public to anon, authenticated;
 revoke all on public.settings, public.teachers, public.sessions, public.reports from anon, authenticated;
 grant select on public.settings, public.teachers, public.sessions to anon, authenticated;
-grant update (auto_approve, site_notice, requests_on, views_on, request_min_votes) on public.settings to authenticated;
+grant update (auto_approve, site_notice, requests_on, views_on, request_min_votes, featured_session) on public.settings to authenticated;
 grant insert, update, delete on public.teachers to authenticated;
 grant insert, update, delete on public.sessions to authenticated;
 grant select, delete on public.reports to authenticated;
@@ -353,7 +408,8 @@ create or replace function public.admin_list_teachers()
 returns table (
   id uuid, display_name text, email text, specialty text, bio text, youtube_channel text,
   avatar_url text, status text, is_admin boolean, created_at timestamptz,
-  sessions_count bigint, last_session_at timestamptz
+  sessions_count bigint, last_session_at timestamptz,
+  trusted boolean, verified boolean, trust_lock boolean, vouch text, portfolio_url text, pending_reviews bigint
 )
 language plpgsql stable security definer set search_path = public as $$
 begin
@@ -364,10 +420,14 @@ begin
     select t.id, t.display_name, u.email::text, t.specialty, t.bio, t.youtube_channel,
            t.avatar_url, t.status, t.is_admin, t.created_at,
            (select count(*) from public.sessions s where s.teacher_id = t.id),
-           (select max(s.starts_at) from public.sessions s where s.teacher_id = t.id)
+           (select max(s.starts_at) from public.sessions s where s.teacher_id = t.id),
+           t.trusted, t.verified, t.trust_lock, t.vouch, t.portfolio_url,
+           (select count(*) from public.sessions s where s.teacher_id = t.id and s.review = 'pending')
       from public.teachers t
       left join auth.users u on u.id = t.id
-     order by (t.status = 'pending') desc, t.created_at desc;
+     order by (t.status = 'pending') desc,
+              ((select count(*) from public.sessions s where s.teacher_id = t.id and s.review = 'pending') > 0) desc,
+              t.created_at desc;
 end $$;
 
 -- البلاغات مع معلومات الحصة للمشرف
@@ -527,7 +587,7 @@ create or replace function private.watchable(p_session uuid) returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (
     select 1 from public.sessions s join public.teachers t on t.id = s.teacher_id
-     where s.id = p_session and s.status = 'scheduled' and not s.hidden and t.status = 'approved'
+     where s.id = p_session and s.status = 'scheduled' and not s.hidden and s.review = 'ok' and t.status = 'approved'
        and s.starts_at <= now() and (s.video_url is not null or s.recording_url is not null));
 $$;
 
@@ -747,10 +807,12 @@ end $$;
 
 drop function if exists public.my_lesson_stats();
 create or replace function public.my_lesson_stats()
-returns table (session_id uuid, views bigint, views7 bigint, thanks bigint, understood bigint)
+returns table (session_id uuid, views bigint, views7 bigint, thanks bigint, understood bigint, views30 bigint, thanks30 bigint)
 language sql stable security definer set search_path = public as $$
   select l.session_id, sum(l.views), sum(l.views) filter (where l.day > (now() at time zone 'Asia/Muscat')::date - 7),
-         sum(l.thanks), sum(l.understood)
+         sum(l.thanks), sum(l.understood),
+         coalesce(sum(l.views) filter (where l.day > (now() at time zone 'Asia/Muscat')::date - 30), 0),
+         coalesce(sum(l.thanks + l.understood) filter (where l.day > (now() at time zone 'Asia/Muscat')::date - 30), 0)
     from public.lesson_stats l
     join public.sessions s on s.id = l.session_id
    where s.teacher_id = auth.uid()
@@ -794,7 +856,7 @@ begin
          coalesce(array_agg(distinct s.grade || ':' || s.subject), '{}')
     into n, subj
     from public.sessions s
-   where s.teacher_id = auth.uid() and s.status = 'scheduled' and not s.hidden and s.video_url is not null
+   where s.teacher_id = auth.uid() and s.status = 'scheduled' and not s.hidden and s.review = 'ok' and s.video_url is not null
      -- تاريخ الإضافة يضعه الخادم، فلا يُحتسب درس أُضيف اليوم بتاريخ نشر قديم
      and s.starts_at <= now() - interval '3 days' and s.created_at <= now() - interval '3 days'
      and s.ends_at - s.starts_at >= interval '5 minutes'
@@ -854,7 +916,7 @@ language sql stable security invoker set search_path = public as $$
      -- كل كلمة من البحث يجب أن تظهر في العنوان أو اسم الوحدة (بأي ترتيب)
      and not exists (
        select 1 from unnest(string_to_array(public.ar_norm(p_q), ' ')) w
-        where w <> '' and position(w in public.ar_norm(s.title || ' ' || coalesce(s.unit_title, ''))) = 0)
+        where w <> '' and position(w in public.ar_norm(s.title || ' ' || coalesce(s.unit_title, '') || ' ' || coalesce(s.skill_name, ''))) = 0)
    order by s.starts_at desc
    limit 40;
 $$;
@@ -879,7 +941,11 @@ begin
     'requests_open',     (select count(*) from public.lesson_requests where status = 'open'),
     'requests_done',     (select count(*) from public.lesson_requests where status = 'done'),
     'certificates',      (select count(*) from public.certificates where not revoked),
-    'reports_week',      (select count(*) from public.reports where created_at > now() - interval '7 days')
+    'reports_week',      (select count(*) from public.reports where created_at > now() - interval '7 days'),
+    'review_pending',    (select count(*) from public.sessions where review = 'pending' and status = 'scheduled'),
+    'teachers_trusted',  (select count(*) from public.teachers where status = 'approved' and trusted),
+    'skills_lessons',    (select count(*) from public.sessions where grade = 'skills' and status = 'scheduled' and review = 'ok' and starts_at <= now()),
+    'paths',             (select count(*) from public.paths where published)
   );
 end $$;
 
@@ -973,6 +1039,311 @@ grant  execute on function public.admin_list_certificates()         to authentic
 grant  execute on function public.admin_set_certificate(text, boolean) to authenticated;
 revoke execute on function public.sessions_fulfil_request() from public, anon, authenticated;
 revoke execute on function public.sessions_unfulfil_request() from public, anon, authenticated;
+
+-- ---------------------------------------------------------------------
+-- 10) المهارات، الثقة والمراجعة، الدعوات والترشيح، المسارات، الاختبارات
+-- ---------------------------------------------------------------------
+
+-- 10.1) التحقق من الاختبار القصير والروابط المرافقة قبل الحفظ
+create or replace function public.quiz_ok(q jsonb) returns boolean
+language plpgsql immutable as $$
+declare
+  e jsonb;
+  o jsonb;
+  n int;
+begin
+  if q is null then return true; end if;
+  if jsonb_typeof(q) <> 'array' or jsonb_array_length(q) not between 1 and 5 then return false; end if;
+  for e in select x from jsonb_array_elements(q) x loop
+    if jsonb_typeof(e) <> 'object' or jsonb_typeof(e -> 'q') is distinct from 'string'
+       or jsonb_typeof(e -> 'o') is distinct from 'array' or jsonb_typeof(e -> 'a') is distinct from 'number' then
+      return false;
+    end if;
+    if (select count(*) from jsonb_object_keys(e)) <> 3 or char_length(btrim(e ->> 'q')) not between 3 and 200 then
+      return false;
+    end if;
+    n := jsonb_array_length(e -> 'o');
+    if n not between 2 and 4 or (e ->> 'a') !~ '^[0-3]$' or (e ->> 'a')::int >= n then return false; end if;
+    for o in select x from jsonb_array_elements(e -> 'o') x loop
+      if jsonb_typeof(o) <> 'string' or char_length(btrim(o #>> '{}')) not between 1 and 100 then return false; end if;
+    end loop;
+  end loop;
+  return true;
+end $$;
+
+-- روابط الملفات من خدمات التخزين المعروفة فقط (لا مواقع مجهولة أمام الطلاب)
+create or replace function public.links_ok(l jsonb) returns boolean
+language plpgsql immutable as $$
+declare
+  e jsonb;
+begin
+  if l is null then return true; end if;
+  if jsonb_typeof(l) <> 'array' or jsonb_array_length(l) not between 1 and 3 then return false; end if;
+  for e in select x from jsonb_array_elements(l) x loop
+    if jsonb_typeof(e) <> 'object' or jsonb_typeof(e -> 't') is distinct from 'string'
+       or jsonb_typeof(e -> 'u') is distinct from 'string' or (select count(*) from jsonb_object_keys(e)) <> 2 then
+      return false;
+    end if;
+    if char_length(btrim(e ->> 't')) not between 2 and 60 or char_length(e ->> 'u') > 300
+       or (e ->> 'u') !~* '^https://(drive\.google\.com|docs\.google\.com|1drv\.ms|onedrive\.live\.com|(www\.)?dropbox\.com)/'
+       or (e ->> 'u') ~ '[[:space:]<>"''`]' then
+      return false;
+    end if;
+  end loop;
+  return true;
+end $$;
+grant execute on function public.quiz_ok(jsonb)  to anon, authenticated;
+grant execute on function public.links_ok(jsonb) to anon, authenticated;
+
+alter table public.sessions drop constraint if exists sessions_extra;
+alter table public.sessions add constraint sessions_extra check (
+  review in ('ok', 'pending', 'rejected')
+  and (review_note is null or char_length(review_note) <= 200)
+  and (skill_name is null or char_length(skill_name) between 2 and 40)
+  and (level is null or level between 1 and 3)
+  and (ages is null or ages in ('c1', 'c2', 'all'))
+  and public.quiz_ok(quiz) and public.links_ok(attachments)
+);
+create index if not exists sessions_review_idx on public.sessions (review) where review <> 'ok';
+
+-- 10.2) بعد 3 دروس يعتمدها المشرف يصبح المعلم موثوقاً تلقائياً (ما لم يسحب المشرف ثقته)
+create or replace function public.sessions_review_trust() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.review = 'ok' and old.review is distinct from 'ok' then
+    update public.teachers t set trusted = true
+     where t.id = new.teacher_id and not t.trusted and not t.trust_lock and t.status = 'approved'
+       and (select count(*) from public.sessions s where s.teacher_id = new.teacher_id and s.review = 'ok') >= 3;
+  end if;
+  return null;
+end $$;
+drop trigger if exists sessions_review_trust on public.sessions;
+create trigger sessions_review_trust after update of review on public.sessions
+  for each row execute function public.sessions_review_trust();
+
+-- 10.3) روابط الدعوة (من المشرف) وروابط الترشيح (من المعلم الموثوق)
+create table if not exists public.invites (
+  code       text primary key check (code ~ '^[A-HJ-NP-Z2-9]{10}$'),
+  kind       text not null default 'invite' check (kind in ('invite', 'nominate')),
+  label      text not null check (char_length(btrim(label)) between 2 and 60),
+  created_by uuid references public.teachers (id) on delete cascade,
+  uses_left  int not null default 1 check (uses_left between 0 and 500),
+  active     boolean not null default true,
+  created_at timestamptz not null default now()
+);
+alter table public.invites enable row level security;  -- بلا سياسات: الوصول عبر الدوال فقط
+revoke all on public.invites from anon, authenticated;
+create table if not exists private.invite_uses (
+  code       text not null references public.invites (code) on delete cascade,
+  teacher_id uuid not null references public.teachers (id) on delete cascade,
+  at         timestamptz not null default now(),
+  primary key (code, teacher_id)
+);
+revoke all on private.invite_uses from public, anon, authenticated;
+
+-- صفحة الدعوة تعرض اسم الجهة الداعية قبل الدخول
+drop function if exists public.invite_info(text);
+create or replace function public.invite_info(p_code text)
+returns table (label text, kind text)
+language plpgsql security definer set search_path = public as $$
+declare
+  c text := upper(regexp_replace(coalesce(p_code, ''), '[\s-]', '', 'g'));
+begin
+  if c !~ '^[A-HJ-NP-Z2-9]{10}$' then return; end if;
+  if not private.hit(private.client_hash('invite'), 'invite', 30, 'hour') then
+    raise exception 'محاولات كثيرة، حاول بعد ساعة' using errcode = '54000';
+  end if;
+  return query select i.label, i.kind from public.invites i where i.code = c and i.active and i.uses_left > 0;
+end $$;
+
+-- استخدام الدعوة بعد إنشاء الملف: الدعوة تعتمد المعلم وتجعله موثوقاً، والترشيح يعتمده فقط
+create or replace function public.redeem_invite(p_code text) returns json
+language plpgsql security definer set search_path = public as $$
+declare
+  c   text := upper(regexp_replace(coalesce(p_code, ''), '[\s-]', '', 'g'));
+  st  text;
+  i   record;
+begin
+  select t.status into st from public.teachers t where t.id = auth.uid();
+  if not found then
+    raise exception 'أكمل ملفك أولاً' using errcode = '22023';
+  end if;
+  if st = 'suspended' then
+    raise exception 'حسابك موقوف' using errcode = '42501';
+  end if;
+  if not private.hit(private.client_hash('redeem'), 'redeem', 10, 'hour') then
+    raise exception 'محاولات كثيرة، حاول بعد ساعة' using errcode = '54000';
+  end if;
+  select x.code, x.kind, x.label, x.created_by, x.uses_left, x.active into i
+    from public.invites x where x.code = c for update;
+  if not found or not i.active or i.uses_left < 1 then
+    raise exception 'رابط الدعوة غير صالح أو انتهى' using errcode = '22023';
+  end if;
+  if i.created_by = auth.uid() then
+    raise exception 'لا يمكنك استخدام رابط الترشيح الخاص بك' using errcode = '22023';
+  end if;
+  if exists (select 1 from private.invite_uses u where u.teacher_id = auth.uid()) then
+    return json_build_object('kind', i.kind, 'label', i.label, 'already', true);
+  end if;
+  insert into private.invite_uses (code, teacher_id) values (c, auth.uid());
+  update public.invites x set uses_left = x.uses_left - 1 where x.code = c;
+  update public.teachers t
+     set status  = 'approved',
+         trusted = t.trusted or i.kind = 'invite',
+         vouch   = left(case when i.kind = 'invite' then 'بدعوة من ' else 'رشّحه ' end || i.label, 80)
+   where t.id = auth.uid();
+  return json_build_object('kind', i.kind, 'label', i.label);
+end $$;
+
+-- رابط ترشيح المعلم الموثوق (5 ترشيحات)
+drop function if exists public.my_nomination();
+create or replace function public.my_nomination()
+returns table (code text, uses_left int)
+language plpgsql security definer set search_path = public as $$
+#variable_conflict use_column
+declare
+  nm text;
+  ok boolean;
+  c  text;
+begin
+  select t.display_name, (t.status = 'approved' and t.trusted) into nm, ok from public.teachers t where t.id = auth.uid();
+  if not coalesce(ok, false) then
+    raise exception 'يصبح رابط الترشيح متاحاً بعد أن تصبح معلماً موثوقاً' using errcode = '42501';
+  end if;
+  select i.code into c from public.invites i
+   where i.created_by = auth.uid() and i.kind = 'nominate' and i.active order by i.created_at desc limit 1;
+  if c is null then
+    c := private.new_code();
+    insert into public.invites (code, kind, label, created_by, uses_left) values (c, 'nominate', left(nm, 60), auth.uid(), 5);
+  end if;
+  return query select i.code, i.uses_left from public.invites i where i.code = c;
+end $$;
+
+create or replace function public.admin_create_invite(p_label text, p_uses int) returns text
+language plpgsql security definer set search_path = public as $$
+declare
+  c text;
+begin
+  if not public.is_admin() then
+    raise exception 'هذه الصفحة للمشرفين فقط' using errcode = '42501';
+  end if;
+  if char_length(btrim(coalesce(p_label, ''))) not between 2 and 60 then
+    raise exception 'اكتب اسم الجهة أو الشخص المدعو' using errcode = '22023';
+  end if;
+  c := private.new_code();
+  insert into public.invites (code, kind, label, created_by, uses_left)
+  values (c, 'invite', btrim(p_label), auth.uid(), least(greatest(coalesce(p_uses, 1), 1), 500));
+  return c;
+end $$;
+
+drop function if exists public.admin_list_invites();
+create or replace function public.admin_list_invites()
+returns table (code text, kind text, label text, uses_left int, active boolean, created_at timestamptz, used bigint)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.is_admin() then
+    raise exception 'هذه الصفحة للمشرفين فقط' using errcode = '42501';
+  end if;
+  return query
+    select i.code, i.kind, i.label, i.uses_left, i.active, i.created_at,
+           (select count(*) from private.invite_uses u where u.code = i.code)
+      from public.invites i order by i.created_at desc limit 300;
+end $$;
+
+create or replace function public.admin_set_invite(p_code text, p_active boolean) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then
+    raise exception 'هذه الصفحة للمشرفين فقط' using errcode = '42501';
+  end if;
+  update public.invites set active = coalesce(p_active, false) where code = p_code;
+end $$;
+
+-- رقم صغير على زر «الإدارة»: معلمون ودروس بانتظار المراجعة، وبلاغات
+create or replace function public.admin_badge() returns int
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.is_admin() then return 0; end if;
+  return (select count(*) from public.teachers where status = 'pending')
+       + (select count(*) from public.sessions where review = 'pending' and status = 'scheduled')
+       + (select count(*) from public.reports);
+end $$;
+
+-- 10.4) المسارات: مجموعات دروس مرتبة يجهزها المشرف أو المعلم الموثوق
+create table if not exists public.paths (
+  id          uuid primary key default gen_random_uuid(),
+  owner       uuid not null references public.teachers (id) on delete cascade,
+  grade       text not null check (grade ~ '^[a-z0-9_-]{1,20}$'),
+  title       text not null check (char_length(btrim(title)) between 3 and 80),
+  description text check (char_length(description) <= 300),
+  items       uuid[] not null default '{}' check (cardinality(items) <= 40),
+  published   boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists paths_grade_idx on public.paths (grade) where published;
+alter table public.paths enable row level security;
+
+create or replace function public.paths_guard() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  new.updated_at  := now();
+  new.title       := btrim(new.title);
+  new.description := nullif(btrim(new.description), '');
+  if current_user in ('anon', 'authenticated') then
+    if tg_op = 'INSERT' then
+      if not public.is_admin() then new.owner := auth.uid(); end if;
+      new.created_at := now();
+      if (select count(*) from public.paths p where p.owner = new.owner) >= 30 then
+        raise exception 'وصلت إلى الحد الأقصى للمسارات (30)' using errcode = '54000';
+      end if;
+    else
+      new.id         := old.id;
+      new.owner      := old.owner;
+      new.created_at := old.created_at;
+    end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists paths_guard on public.paths;
+create trigger paths_guard before insert or update on public.paths
+  for each row execute function public.paths_guard();
+
+drop policy if exists paths_read   on public.paths;
+drop policy if exists paths_insert on public.paths;
+drop policy if exists paths_update on public.paths;
+drop policy if exists paths_delete on public.paths;
+create policy paths_read on public.paths for select using (
+  (published and exists (select 1 from public.teachers t
+                          where t.id = paths.owner and t.status = 'approved' and (t.trusted or t.is_admin)))
+  or owner = auth.uid() or public.is_admin());
+create policy paths_insert on public.paths for insert to authenticated with check (
+  (owner = auth.uid() and exists (select 1 from public.teachers t where t.id = auth.uid() and t.status = 'approved' and t.trusted))
+  or public.is_admin());
+create policy paths_update on public.paths for update to authenticated
+  using (owner = auth.uid() or public.is_admin()) with check (owner = auth.uid() or public.is_admin());
+create policy paths_delete on public.paths for delete to authenticated
+  using (owner = auth.uid() or public.is_admin());
+revoke all on public.paths from anon, authenticated;
+grant select on public.paths to anon, authenticated;
+grant insert, update, delete on public.paths to authenticated;
+
+-- 10.5) صلاحيات الدوال الجديدة
+revoke execute on function public.invite_info(text)                from public;
+revoke execute on function public.redeem_invite(text)              from public, anon;
+revoke execute on function public.my_nomination()                  from public, anon;
+revoke execute on function public.admin_create_invite(text, int)   from public, anon;
+revoke execute on function public.admin_list_invites()             from public, anon;
+revoke execute on function public.admin_set_invite(text, boolean)  from public, anon;
+revoke execute on function public.admin_badge()                    from public, anon;
+grant  execute on function public.invite_info(text)                to anon, authenticated;
+grant  execute on function public.redeem_invite(text)              to authenticated;
+grant  execute on function public.my_nomination()                  to authenticated;
+grant  execute on function public.admin_create_invite(text, int)   to authenticated;
+grant  execute on function public.admin_list_invites()             to authenticated;
+grant  execute on function public.admin_set_invite(text, boolean)  to authenticated;
+grant  execute on function public.admin_badge()                    to authenticated;
+revoke execute on function public.sessions_review_trust() from public, anon, authenticated;
 
 -- =====================================================================
 --  بعد أول دخول لك كمعلم من الموقع، اجعل نفسك مشرفاً بتشغيل هذا السطر

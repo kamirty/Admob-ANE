@@ -8,12 +8,13 @@
   const LIVE = !!(C.SUPABASE_URL && C.SUPABASE_ANON_KEY);
   const AUTH_KEY = 'midrar-auth';
   const BASE_COLS = 'id,grade,subject,title,kind,starts_at,ends_at,video_url,recording_url,status,hidden,teacher_id,teacher:teachers(id,display_name,avatar_url)';
-  const PLACE_COLS = ',term,unit,unit_title,lesson_type,exam_year,exam_round';
-  const PLACE_KEYS = ['term', 'unit', 'unit_title', 'lesson_type', 'exam_year', 'exam_round', 'request_id'];
+  const PLACE_COLS = ',term,unit,unit_title,lesson_type,exam_year,exam_round,skill_name,level,ages';
+  const EXTRA_COLS = ',quiz,attachments,review,review_note';
+  const PLACE_KEYS = ['term', 'unit', 'unit_title', 'lesson_type', 'exam_year', 'exam_round', 'request_id', 'skill_name', 'level', 'ages', 'quiz', 'attachments'];
   const noPlace = (o) => { const x = Object.assign({}, o); PLACE_KEYS.forEach((k) => delete x[k]); return x; };
   const oldDb = (e) => !!e && (e.code === 'PGRST204' || e.code === '42703');
   let LIST_COLS = BASE_COLS + PLACE_COLS;
-  let FULL_COLS = LIST_COLS + ',description,created_at';
+  let FULL_COLS = LIST_COLS + ',description,created_at' + EXTRA_COLS;
   // إن رُفع الموقع قبل تحديث قاعدة البيانات: نعمل بالأعمدة القديمة بدل أن تتعطل الصفحات
   function legacyCols() {
     if (LIST_COLS === BASE_COLS) return false;
@@ -70,7 +71,7 @@
       catch (e) {
         if (e.code === '42703' && pairs.some((p) => p[0] === 'select' && p[1].includes(PLACE_COLS))) {
           legacyCols();
-          return restRaw(table, pairs.map((p) => (p[0] === 'select' ? ['select', p[1].replace(PLACE_COLS, '')]
+          return restRaw(table, pairs.map((p) => (p[0] === 'select' ? ['select', p[1].replace(PLACE_COLS, '').replace(EXTRA_COLS, '')]
             : p[0] === 'order' ? ['order', p[1].replace('term.asc.nullslast,unit.asc.nullslast,', '')] : p)));
         }
         throw e;
@@ -197,9 +198,11 @@
       // ---------- قراءة عامة ----------
       async settings() {
         let rows;
-        try { rows = await restRaw('settings', [['select', 'site_notice,auto_approve,requests_on,views_on,request_min_votes'], ['id', 'eq.1']]); }
+        try { rows = await restRaw('settings', [['select', 'site_notice,auto_approve,requests_on,views_on,request_min_votes,featured_session'], ['id', 'eq.1']]); }
         catch (e) {
           if (e.code !== '42703') throw e;
+          try { rows = await restRaw('settings', [['select', 'site_notice,auto_approve,requests_on,views_on,request_min_votes'], ['id', 'eq.1']]); return rows[0] || {}; }
+          catch (e2) { if (e2.code !== '42703') throw e2; }
           // قاعدة بيانات قديمة: الميزات الجديدة متوقفة حتى يُشغَّل schema.sql
           rows = (await restRaw('settings', [['select', 'site_notice,auto_approve'], ['id', 'eq.1']]))
             .map((r) => Object.assign(r, { requests_on: false, views_on: false, legacy: true }));
@@ -267,17 +270,51 @@
         return rest('sessions', p);
       },
       async getTeacher(id) {
-        const rows = await rest('teachers', [['select', 'id,display_name,specialty,bio,youtube_channel,avatar_url'], ['id', 'eq.' + id]]);
+        const base = 'id,display_name,specialty,bio,youtube_channel,avatar_url';
+        let rows;
+        try { rows = await restRaw('teachers', [['select', base + ',verified,trusted,vouch,portfolio_url'], ['id', 'eq.' + id]]); }
+        catch (e) { if (e.code !== '42703') throw e; rows = await restRaw('teachers', [['select', base], ['id', 'eq.' + id]]); }
         return rows[0] || null;
       },
       listTeacherSessions(id) {
         return rest('sessions', [['select', LIST_COLS], ['teacher_id', 'eq.' + id], ['status', 'eq.scheduled'],
           ['order', 'starts_at.desc'], ['limit', '200']]);
       },
-      listTeachers() {
-        return rest('teachers', [['select', 'id,display_name,specialty,avatar_url'], ['status', 'eq.approved'],
-          ['order', 'display_name.asc'], ['limit', '1000']]);
+      async listTeachers() {
+        const q = (cols) => restRaw('teachers', [['select', cols], ['status', 'eq.approved'], ['order', 'display_name.asc'], ['limit', '1000']]);
+        try { return await q('id,display_name,specialty,avatar_url,verified'); }
+        catch (e) { if (e.code !== '42703') throw e; return q('id,display_name,specialty,avatar_url'); }
       },
+      // عدد دروس كل مهارة (لصفحة المهارات)
+      async skillCounts() {
+        try {
+          const rows = await restRaw('sessions', [['select', 'subject'], ['grade', 'eq.skills'], ['status', 'eq.scheduled'],
+            ['starts_at', 'lte.' + isoMin()], ['video_url', 'not.is.null'], ['limit', '3000']]);
+          const n = {}; rows.forEach((r) => { n[r.subject] = (n[r.subject] || 0) + 1; }); return n;
+        } catch (e) { return {}; }
+      },
+      // المسارات: مجموعات دروس مرتبة
+      listPaths(grade) {
+        const p = [['select', 'id,grade,title,description,items,owner,updated_at,teacher:teachers(id,display_name)'], ['published', 'is.true'],
+          ['order', 'updated_at.desc'], ['limit', '60']];
+        if (grade) p.push(['grade', 'eq.' + grade]);
+        return restRaw('paths', p).catch(() => []);
+      },
+      async getPath(id) {
+        let rows = [];
+        try { rows = await restRaw('paths', [['select', 'id,grade,title,description,items,owner,published,updated_at,teacher:teachers(id,display_name)'], ['id', 'eq.' + id]]); }
+        catch (e) { if (!user) throw e; }
+        if (rows[0]) return rows[0];
+        if (user) { const c = await client(); return check(await c.from('paths').select('*,teacher:teachers(id,display_name)').eq('id', id).maybeSingle()); }
+        return null;
+      },
+      async lessonsByIds(ids) {
+        const list = (ids || []).filter((x) => /^[0-9a-f-]{36}$/i.test(x));
+        if (!list.length) return [];
+        const rows = await rest('sessions', [['select', LIST_COLS], ['id', 'in.(' + list.join(',') + ')'], ['status', 'eq.scheduled'], ['starts_at', 'lte.' + isoMin()]]);
+        return list.map((id) => rows.find((r) => r.id === id)).filter(Boolean);
+      },
+      inviteInfo(code) { return rpcPublic('invite_info', { p_code: code }).then((r) => (r && r[0]) || null); },
       report(sessionId, reason) { return rpcPublic('report_session', { p_session: sessionId, p_reason: reason }); },
 
       // ---------- المعلم ----------
@@ -289,13 +326,26 @@
         const c = await authed();
         const row = {
           display_name: p.display_name, specialty: p.specialty || null, bio: p.bio || null,
-          youtube_channel: p.youtube_channel || null, avatar_url: p.avatar_url || null,
+          youtube_channel: p.youtube_channel || null, avatar_url: p.avatar_url || null, portfolio_url: p.portfolio_url || null,
         };
-        const r = exists
-          ? await c.from('teachers').update(row).eq('id', user.id).select().single()
-          : await c.from('teachers').insert(Object.assign({ id: user.id }, row)).select().single();
+        const go = (x) => (exists
+          ? c.from('teachers').update(x).eq('id', user.id).select().single()
+          : c.from('teachers').insert(Object.assign({ id: user.id }, x)).select().single());
+        let r = await go(row);
+        if (oldDb(r.error)) { delete row.portfolio_url; r = await go(row); }
         return check(r);
       },
+      async redeemInvite(code) { const c = await authed(); return check(await c.rpc('redeem_invite', { p_code: code })); },
+      async myNomination() { const c = await authed(); const r = check(await c.rpc('my_nomination')); return (r && r[0]) || null; },
+      async myPaths() { const c = await authed(); return check(await c.from('paths').select('*').eq('owner', user.id).order('updated_at', { ascending: false })); },
+      async savePath(pth) {
+        const c = await authed();
+        const row = { grade: pth.grade, title: pth.title, description: pth.description || null, items: pth.items || [], published: !!pth.published };
+        const r = pth.id ? await c.from('paths').update(row).eq('id', pth.id).select().single()
+          : await c.from('paths').insert(Object.assign({ owner: user.id }, row)).select().single();
+        return check(r);
+      },
+      async deletePath(id) { const c = await authed(); check(await c.from('paths').delete().eq('id', id)); },
       async mySessions() {
         const c = await authed();
         const cols = FULL_COLS;
@@ -337,6 +387,15 @@
       async adminRequests() { const c = await authed(); return check(await c.rpc('admin_list_requests')); },
       async adminSetRequest(id, status) { const c = await authed(); check(await c.rpc('admin_set_request', { p_id: id, p_status: status })); },
       async adminCertificates() { const c = await authed(); return check(await c.rpc('admin_list_certificates')); },
+      async adminBadge() { const c = await authed(); return check(await c.rpc('admin_badge')) || 0; },
+      async adminReviewQueue() {
+        const c = await authed();
+        return check(await c.from('sessions').select(FULL_COLS).eq('review', 'pending').eq('status', 'scheduled').order('created_at', { ascending: true }).limit(200));
+      },
+      async adminReview(id, ok, note) { return this.updateSession(id, { review: ok ? 'ok' : 'rejected', review_note: ok ? null : (note || null) }); },
+      async adminCreateInvite(label, uses) { const c = await authed(); return check(await c.rpc('admin_create_invite', { p_label: label, p_uses: uses })); },
+      async adminInvites() { const c = await authed(); return check(await c.rpc('admin_list_invites')); },
+      async adminSetInvite(code, active) { const c = await authed(); check(await c.rpc('admin_set_invite', { p_code: code, p_active: active })); },
       async adminSetCertificate(code, revoked) { const c = await authed(); check(await c.rpc('admin_set_certificate', { p_code: code, p_revoked: revoked })); },
       async adminTeachers() { const c = await authed(); return check(await c.rpc('admin_list_teachers')); },
       async adminSetTeacher(id, patch) {
@@ -352,6 +411,11 @@
         let q = await c.from('settings').update(patch).eq('id', 1).select('id');
         if (oldDb(q.error)) q = await c.from('settings').update({ auto_approve: patch.auto_approve, site_notice: patch.site_notice }).eq('id', 1).select('id');
         const r = check(q);
+        if (!r || !r.length) throw new ApiError({ code: '42501' });
+      },
+      async setFeatured(id) {
+        const c = await authed();
+        const r = check(await c.from('settings').update({ featured_session: id || null }).eq('id', 1).select('id'));
         if (!r || !r.length) throw new ApiError({ code: '42501' });
       },
     };
@@ -378,10 +442,15 @@
         ['t-noor', 'أ. عائشة الهنائية', 'لغة إنجليزية'],
         ['t-haider', 'أ. يوسف العبري', 'أحياء وعلوم'],
         ['t-maryam', 'أ. شيماء الكندية', 'رياضيات وعلوم للحلقة الأولى'],
+        ['t-eng', 'م. أحمد الحسني', 'مهندس برمجيات — ذكاء اصطناعي وبرمجة'],
+        ['t-new', 'أ. هند المعمرية', 'مصممة جرافيك'],
       ].map(([id, name, sp]) => ({
         id, display_name: name, specialty: sp, bio: 'معلم متطوع (مثال في الوضع التجريبي).',
         youtube_channel: 'https://www.youtube.com/@example', avatar_url: null, status: 'approved', is_admin: false,
         email: id + '@example.com', created_at: iso(Date.now() - 30 * 864e5),
+        trusted: id !== 't-new', verified: id === 't-ali' || id === 't-zainab' || id === 't-eng', trust_lock: false,
+        vouch: id === 't-ali' ? 'بدعوة من مدرسة الخوض' : id === 't-eng' ? 'بدعوة من جامعة السلطان قابوس' : id === 't-new' ? 'رشّحه أ. سالم البلوشي' : null,
+        portfolio_url: id === 't-eng' ? 'https://www.linkedin.com/in/example' : null,
       }));
       const day0 = new Date(); day0.setHours(0, 0, 0, 0);
       const at = (dayOff, h, m) => { const d = new Date(day0); d.setDate(d.getDate() + dayOff); d.setHours(h, m || 0, 0, 0); return d; };
@@ -434,6 +503,18 @@
         });
       });
       add('t-maryam', 'g4', 'math', 'جدول الضرب بطريقة سهلة', at(-1, 9), 20);
+      // المهارات: دورات مرتبة بالأجزاء
+      const sk = (t, subject, course, part, title, dayOff, extra) => add(t, 'skills', subject, title, at(dayOff, 18), 25,
+        Object.assign({ unit: part, unit_title: course, level: 1, ages: 'all' }, extra || {}));
+      sk('t-eng', 'sk_ai', 'أساسيات الذكاء الاصطناعي', 1, 'ما هو الذكاء الاصطناعي؟ أمثلة من حياتنا', -12);
+      sk('t-eng', 'sk_ai', 'أساسيات الذكاء الاصطناعي', 2, 'كيف تتعلم الآلة من البيانات', -9);
+      sk('t-eng', 'sk_ai', 'أساسيات الذكاء الاصطناعي', 3, 'استخدام أدوات الذكاء الاصطناعي في الدراسة بأمان', -6);
+      sk('t-eng', 'sk_code', 'البرمجة بلغة بايثون للمبتدئين', 1, 'أول برنامج لك بلغة بايثون', -10, { ages: 'c2' });
+      sk('t-eng', 'sk_code', 'البرمجة بلغة بايثون للمبتدئين', 2, 'المتغيرات والشروط', -4, { ages: 'c2' });
+      sk('t-new', 'sk_design', 'التصميم بأداة Canva', 1, 'أساسيات التصميم: الألوان والخطوط', -3, { review: 'ok' });
+      sk('t-new', 'sk_design', 'التصميم بأداة Canva', 2, 'تصميم ملصق لمشروع مدرسي', -1, { review: 'pending' });
+      sk('t-maryam', 'sk_other', 'التصوير بالجوال', 1, 'أسرار الصورة الجميلة بالجوال', -7, { skill_name: 'التصوير بالجوال', ages: 'c1' });
+      add('t-new', 'g10', 'arabic', 'كتابة التقرير بطريقة منظمة', at(-1, 20), 22, { review: 'pending' });
       // حصة ملغاة
       add('t-noor', 'g10', 'english', 'Listening practice', at(1, 21), 45, { status: 'cancelled' });
       // إزالة الحجوزات المزدوجة لنفس المعلم
@@ -445,14 +526,40 @@
       });
       const req = (grade, subject, unit, topic, votes) => ({ id: uid(), grade, subject, term: 1, unit, topic, topic_key: arNorm(topic || ''), votes, status: 'open', flags: 0, session_id: null, created_at: iso(Date.now() - 864e5), last_at: iso(Date.now() - 3600e3) });
       const requests = [req('g10', 'math', 4, 'الدوال الأسية واللوغاريتمية', 7), req('g10', 'math', null, 'حل أسئلة الكتاب الوحدة الثانية', 3), req('g10', 'science', 2, 'قانون نيوتن الثالث', 2), req('g12', 'physics', null, 'الحث الكهرومغناطيسي', 5)];
+      requests.push(req('skills', 'sk_ai', null, 'كيف أكتب طلباً جيداً لأداة الذكاء الاصطناعي', 4));
       const stats = {};
-      kept.forEach((s, i) => { if (+new Date(s.starts_at) <= Date.now()) stats[s.id] = { views: (i * 37) % 160 + 5, views7: (i * 13) % 40, thanks: (i * 7) % 30, understood: (i * 5) % 25 }; });
-      return { v: 4, teachers, sessions: kept, reports: [], requests, stats, certificates: [], settings: { auto_approve: true, site_notice: '', requests_on: true, views_on: true, request_min_votes: 2 }, me: null };
+      kept.forEach((s, i) => {
+        if (+new Date(s.starts_at) > Date.now() || s.review === 'pending') return;
+        const st = { views: (i * 37) % 160 + 5, views7: (i * 13) % 40, thanks: (i * 7) % 30, understood: (i * 5) % 25 };
+        st.views30 = Math.min(st.views, st.views7 * 3 + 4); st.thanks30 = Math.round((st.thanks + st.understood) / 2);
+        stats[s.id] = st;
+      });
+      // اختبار قصير وملف مرافق لدرس، ودرس الأسبوع، ومسار جاهز
+      const quad = kept.find((s) => s.title === 'المعادلات التربيعية — الحل بالقانون العام');
+      if (quad) {
+        quad.quiz = [
+          { q: 'كم عدد حلول المعادلة التربيعية إذا كان المميز موجباً؟', o: ['لا حلول', 'حل واحد', 'حلان مختلفان'], a: 2 },
+          { q: 'ما قيمة المميز للمعادلة س² − 4 = 0 ؟', o: ['0', '16', '−16', '4'], a: 1 },
+          { q: 'القانون العام يستخدم لحل المعادلات من الدرجة:', o: ['الأولى', 'الثانية', 'الثالثة'], a: 1 },
+        ];
+        quad.attachments = [{ t: 'ملخص القانون العام (PDF)', u: 'https://drive.google.com/file/d/demo/view' }];
+      }
+      const pub = (g, sub) => kept.filter((s) => s.grade === g && s.subject === sub && s.teacher_id === 't-ali' && s.review !== 'pending'
+        && +new Date(s.starts_at) <= Date.now()).sort((a, b) => a.starts_at.localeCompare(b.starts_at)).map((s) => s.id);
+      const paths = [
+        { id: uid(), owner: 't-ali', grade: 'g10', title: 'استعد لاختبار الرياضيات — الفصل الأول', description: 'دروس مختارة بالترتيب، من التحليل إلى المعادلات التربيعية.',
+          items: pub('g10', 'math').concat(quad ? [quad.id] : []), published: true, created_at: iso(Date.now() - 5 * 864e5), updated_at: iso(Date.now() - 864e5) },
+        { id: uid(), owner: 't-eng', grade: 'skills', title: 'ابدأ في الذكاء الاصطناعي من الصفر', description: 'ثلاثة دروس قصيرة تعرّفك بالذكاء الاصطناعي وكيف تستخدمه بأمان.',
+          items: kept.filter((s) => s.subject === 'sk_ai').map((s) => s.id), published: true, created_at: iso(Date.now() - 4 * 864e5), updated_at: iso(Date.now() - 2 * 864e5) },
+      ];
+      const invites = [{ code: 'KHWDSCHL26', kind: 'invite', label: 'مدرسة الخوض', created_by: null, uses_left: 8, active: true, created_at: iso(Date.now() - 10 * 864e5), used: 2 }];
+      return { v: 5, teachers, sessions: kept, reports: [], requests, stats, certificates: [], paths, invites, inviteUses: [],
+        settings: { auto_approve: true, site_notice: '', requests_on: true, views_on: true, request_min_votes: 2, featured_session: quad ? quad.id : null }, me: null };
     }
     function load() {
       if (db) return db;
       try { db = JSON.parse(storeGet(KEY) || 'null'); } catch (e) { db = null; }
-      if (!db || db.v !== 4) { db = seed(); save(); }
+      if (!db || db.v !== 5) { db = seed(); save(); }
       return db;
     }
     function save() { storeSet(KEY, JSON.stringify(db)); }
@@ -461,7 +568,20 @@
       const t = teacherOf(s.teacher_id);
       return Object.assign(clone(s), { teacher: t ? { id: t.id, display_name: t.display_name, avatar_url: t.avatar_url } : null });
     }
-    const visible = (s) => !s.hidden && (teacherOf(s.teacher_id) || {}).status === 'approved';
+    const visible = (s) => !s.hidden && (s.review || 'ok') === 'ok' && (teacherOf(s.teacher_id) || {}).status === 'approved';
+    // نفس قواعد sessions_guard: حقول المهارات، ومراجعة دروس المعلم غير الموثوق
+    function cleanRow(r) {
+      if (r.grade !== 'skills') { r.level = null; r.ages = null; }
+      r.skill_name = r.grade === 'skills' && r.subject === 'sk_other' ? (String(r.skill_name || '').trim() || null) : null;
+      if (r.unit == null && r.grade !== 'skills') r.unit_title = null;
+      return r;
+    }
+    const CONTENT = ['title', 'description', 'video_url', 'recording_url', 'skill_name', 'quiz', 'attachments'];
+    function trustAfterReview(teacherId) {
+      const t = teacherOf(teacherId);
+      if (!t || t.trusted || t.trust_lock || t.status !== 'approved') return;
+      if (db.sessions.filter((x) => x.teacher_id === teacherId && (x.review || 'ok') === 'ok').length >= (C.TRUST_AFTER || 3)) t.trusted = true;
+    }
     const isAdmin = () => !!(user && (teacherOf(user.id) || {}).is_admin);
     const overlaps = (a, b) => a.starts_at < b.ends_at && b.starts_at < a.ends_at;
     function guardOverlap(row, ignoreId) {
@@ -530,7 +650,7 @@
         if (arNorm(q).length < 2) return delay([]);
         return delay(db.sessions.filter((s) => s.grade === grade && (!subject || s.subject === subject) && s.status === 'scheduled' && visible(s)
           && s.starts_at <= now && (s.video_url || s.recording_url)
-          && words.every((w) => arNorm(s.title + ' ' + (s.unit_title || '')).includes(w)))
+          && words.every((w) => arNorm(s.title + ' ' + (s.unit_title || '') + ' ' + (s.skill_name || '')).includes(w)))
           .sort((a, b) => b.starts_at.localeCompare(a.starts_at)).slice(0, 40).map(withTeacher));
       },
       async listExamLessons(grade) {
@@ -561,8 +681,104 @@
         save();
         return delay({ id: q.id, votes: q.votes });
       },
-      async countView(id) { load(); const st = db.stats[id] || (db.stats[id] = { views: 0, views7: 0, thanks: 0, understood: 0 }); st.views += 1; st.views7 += 1; save(); return delay(null); },
-      async thankLesson(id, kind) { load(); const st = db.stats[id] || (db.stats[id] = { views: 0, views7: 0, thanks: 0, understood: 0 }); st[kind === 'thanks' ? 'thanks' : 'understood'] += 1; save(); return delay(null); },
+      async countView(id) {
+        load();
+        const s = db.sessions.find((x) => x.id === id);
+        if (!s || !visible(s)) return delay(null);
+        const st = db.stats[id] || (db.stats[id] = { views: 0, views7: 0, thanks: 0, understood: 0, views30: 0, thanks30: 0 });
+        st.views += 1; st.views7 += 1; st.views30 = (st.views30 || 0) + 1; save(); return delay(null);
+      },
+      async thankLesson(id, kind) {
+        load();
+        const st = db.stats[id] || (db.stats[id] = { views: 0, views7: 0, thanks: 0, understood: 0, views30: 0, thanks30: 0 });
+        st[kind === 'thanks' ? 'thanks' : 'understood'] += 1; st.thanks30 = (st.thanks30 || 0) + 1; save(); return delay(null);
+      },
+      async skillCounts() {
+        load();
+        const now = iso(Date.now()); const n = {};
+        db.sessions.filter((s) => s.grade === 'skills' && s.status === 'scheduled' && visible(s) && s.starts_at <= now && s.video_url)
+          .forEach((s) => { n[s.subject] = (n[s.subject] || 0) + 1; });
+        return delay(n);
+      },
+      async listPaths(grade) {
+        load();
+        const ok = (x) => { const t = teacherOf(x.owner) || {}; return x.published && t.status === 'approved' && (t.trusted || t.is_admin); };
+        return delay((db.paths || []).filter((x) => ok(x) && (!grade || x.grade === grade))
+          .sort((a, b) => b.updated_at.localeCompare(a.updated_at)).map((x) => Object.assign(clone(x), { teacher: { id: x.owner, display_name: (teacherOf(x.owner) || {}).display_name } })));
+      },
+      async getPath(id) {
+        load();
+        const x = (db.paths || []).find((y) => y.id === id);
+        if (!x) return delay(null);
+        const t = teacherOf(x.owner) || {};
+        const mine = user && (x.owner === user.id || isAdmin());
+        if (!mine && !(x.published && t.status === 'approved' && (t.trusted || t.is_admin))) return delay(null);
+        return delay(Object.assign(clone(x), { teacher: { id: x.owner, display_name: t.display_name } }));
+      },
+      async lessonsByIds(ids) {
+        load();
+        const now = iso(Date.now());
+        return delay((ids || []).map((id) => db.sessions.find((s) => s.id === id)).filter((s) => s && s.status === 'scheduled' && visible(s) && s.starts_at <= now).map(withTeacher));
+      },
+      async inviteInfo(code) {
+        load();
+        const c = String(code || '').toUpperCase().replace(/[\s-]/g, '');
+        const i = (db.invites || []).find((x) => x.code === c && x.active && x.uses_left > 0);
+        return delay(i ? { label: i.label, kind: i.kind } : null);
+      },
+      async redeemInvite(code) {
+        need(); load();
+        const me = teacherOf(user.id);
+        if (!me) throw new ApiError({ message: 'أكمل ملفك أولاً' });
+        const c = String(code || '').toUpperCase().replace(/[\s-]/g, '');
+        const i = (db.invites || []).find((x) => x.code === c);
+        if (!i || !i.active || i.uses_left < 1) throw new ApiError({ message: 'رابط الدعوة غير صالح أو انتهى' });
+        if (i.created_by === user.id) throw new ApiError({ message: 'لا يمكنك استخدام رابط الترشيح الخاص بك' });
+        db.inviteUses = db.inviteUses || [];
+        if (db.inviteUses.some((u) => u.teacher_id === user.id)) return delay({ kind: i.kind, label: i.label, already: true });
+        db.inviteUses.push({ code: c, teacher_id: user.id }); i.uses_left -= 1; i.used = (i.used || 0) + 1;
+        me.status = 'approved'; if (i.kind === 'invite') me.trusted = true;
+        me.vouch = (i.kind === 'invite' ? 'بدعوة من ' : 'رشّحه ') + i.label;
+        save();
+        return delay({ kind: i.kind, label: i.label });
+      },
+      async myNomination() {
+        need(); load();
+        const me = teacherOf(user.id) || {};
+        if (me.status !== 'approved' || !me.trusted) throw new ApiError({ code: '42501', message: 'يصبح رابط الترشيح متاحاً بعد أن تصبح معلماً موثوقاً' });
+        db.invites = db.invites || [];
+        let i = db.invites.find((x) => x.created_by === user.id && x.kind === 'nominate' && x.active);
+        if (!i) {
+          const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+          i = { code: Array.from({ length: 10 }, () => A[Math.floor(Math.random() * 32)]).join(''), kind: 'nominate', label: me.display_name,
+            created_by: user.id, uses_left: 5, active: true, created_at: iso(Date.now()), used: 0 };
+          db.invites.push(i); save();
+        }
+        return delay({ code: i.code, uses_left: i.uses_left });
+      },
+      async myPaths() { need(); load(); return delay((db.paths || []).filter((x) => x.owner === user.id).sort((a, b) => b.updated_at.localeCompare(a.updated_at)).map(clone)); },
+      async savePath(pth) {
+        need(); load();
+        const me = teacherOf(user.id) || {};
+        db.paths = db.paths || [];
+        const title = String(pth.title || '').trim();
+        if (title.length < 3) throw new ApiError({ message: 'اكتب عنواناً للمسار (3 أحرف على الأقل)' });
+        const row = { grade: pth.grade, title, description: (pth.description || '').trim() || null, items: (pth.items || []).slice(0, 40), published: !!pth.published, updated_at: iso(Date.now()) };
+        if (pth.id) {
+          const x = db.paths.find((y) => y.id === pth.id);
+          if (!x || (x.owner !== user.id && !isAdmin())) throw new ApiError({ code: '42501' });
+          Object.assign(x, row); save(); return delay(clone(x));
+        }
+        if (!(me.status === 'approved' && me.trusted) && !isAdmin()) throw new ApiError({ code: '42501' });
+        const x = Object.assign({ id: uid(), owner: user.id, created_at: iso(Date.now()) }, row);
+        db.paths.push(x); save(); return delay(clone(x));
+      },
+      async deletePath(id) {
+        need(); load();
+        const x = (db.paths || []).find((y) => y.id === id);
+        if (!x || (x.owner !== user.id && !isAdmin())) throw new ApiError({ code: '42501' });
+        db.paths = db.paths.filter((y) => y.id !== id); save(); return delay();
+      },
       async verifyCertificate(code) {
         load();
         const c = String(code || '').toUpperCase().replace(/[\s-]/g, '');
@@ -620,12 +836,13 @@
         let t = teacherOf(user.id);
         if (!exists || !t) {
           // المعلم التجريبي يصبح مشرفاً حتى ترى لوحة الإدارة
-          t = { id: user.id, status: db.settings.auto_approve ? 'approved' : 'pending', is_admin: true, email: user.email, created_at: iso(Date.now()) };
+          t = { id: user.id, status: db.settings.auto_approve ? 'approved' : 'pending', is_admin: true, email: user.email, created_at: iso(Date.now()),
+            trusted: true, verified: false, trust_lock: false, vouch: null };
           db.teachers.push(t);
         }
         Object.assign(t, {
           display_name: p.display_name, specialty: p.specialty || null, bio: p.bio || null,
-          youtube_channel: p.youtube_channel || null, avatar_url: p.avatar_url || null,
+          youtube_channel: p.youtube_channel || null, avatar_url: p.avatar_url || null, portfolio_url: p.portfolio_url || null,
         });
         save();
         return delay(clone(t));
@@ -639,9 +856,9 @@
         need(); load();
         const me = teacherOf(user.id);
         if (!me || me.status === 'suspended') throw new ApiError({ code: '42501' });
-        const made = rows.map((r) => Object.assign({
+        const made = rows.map((r) => cleanRow(Object.assign({
           id: uid(), teacher_id: user.id, status: 'scheduled', hidden: false, recording_url: null, created_at: iso(Date.now()),
-        }, r));
+        }, r, { review: me.trusted || me.is_admin ? 'ok' : 'pending', review_note: null })));
         const staged = [];
         made.forEach((m) => {
           guardOverlap(m);
@@ -660,10 +877,18 @@
         need(); load();
         const s = db.sessions.find((x) => x.id === id);
         if (!s || (s.teacher_id !== user.id && !isAdmin())) throw new ApiError({ code: '42501' });
-        const next = Object.assign({}, s, patch);
-        if ('hidden' in patch && !isAdmin()) next.hidden = s.hidden;
+        const next = cleanRow(Object.assign({}, s, patch));
+        if (!isAdmin()) {
+          next.hidden = s.hidden; next.review = s.review; next.review_note = s.review_note;
+          const me = teacherOf(user.id) || {};
+          if (!me.trusted && CONTENT.some((k) => JSON.stringify(next[k] == null ? null : next[k]) !== JSON.stringify(s[k] == null ? null : s[k]))) {
+            next.review = 'pending'; next.review_note = null;
+          }
+        }
         guardOverlap(next, id);
+        const approved = next.review === 'ok' && (s.review || 'ok') !== 'ok';
         Object.assign(s, next);
+        if (approved) trustAfterReview(s.teacher_id);
         save();
         return delay({ id });
       },
@@ -730,6 +955,10 @@
           views: sum('views'), views_week: sum('views7'), thanks: sum('thanks') + sum('understood'),
           requests_open: db.requests.filter((q) => q.status === 'open').length, requests_done: db.requests.filter((q) => q.status === 'done').length,
           certificates: db.certificates.filter((c) => !c.revoked).length, reports_week: db.reports.length,
+          review_pending: db.sessions.filter((s) => s.review === 'pending' && s.status === 'scheduled').length,
+          teachers_trusted: db.teachers.filter((t) => t.status === 'approved' && t.trusted).length,
+          skills_lessons: pub.filter((s) => s.grade === 'skills' && (s.review || 'ok') === 'ok').length,
+          paths: (db.paths || []).filter((x) => x.published).length,
         });
       },
       async adminRequests() { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); return delay(db.requests.slice().sort((a, b) => (b.status === 'open') - (a.status === 'open') || b.votes - a.votes).map(clone)); },
@@ -740,6 +969,27 @@
         save(); return delay();
       },
       async adminCertificates() { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); return delay(db.certificates.map(clone)); },
+      async adminBadge() {
+        need(); load(); if (!isAdmin()) return delay(0);
+        return delay(db.teachers.filter((t) => t.status === 'pending').length + db.sessions.filter((s) => s.review === 'pending' && s.status === 'scheduled').length + db.reports.length);
+      },
+      async adminReviewQueue() {
+        need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' });
+        return delay(db.sessions.filter((s) => s.review === 'pending' && s.status === 'scheduled').sort((a, b) => a.created_at.localeCompare(b.created_at)).map(withTeacher));
+      },
+      async adminReview(id, ok, note) { return this.updateSession(id, { review: ok ? 'ok' : 'rejected', review_note: ok ? null : (note || null) }); },
+      async adminCreateInvite(label, uses) {
+        need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' });
+        if (String(label || '').trim().length < 2) throw new ApiError({ message: 'اكتب اسم الجهة أو الشخص المدعو' });
+        const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const code = Array.from({ length: 10 }, () => A[Math.floor(Math.random() * 32)]).join('');
+        db.invites = db.invites || [];
+        db.invites.unshift({ code, kind: 'invite', label: String(label).trim(), created_by: user.id, uses_left: Math.min(500, Math.max(1, Number(uses) || 1)), active: true, created_at: iso(Date.now()), used: 0 });
+        save(); return delay(code);
+      },
+      async adminInvites() { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); return delay((db.invites || []).map((i) => Object.assign({ used: 0 }, clone(i)))); },
+      async adminSetInvite(code, active) { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); const i = (db.invites || []).find((x) => x.code === code); if (i) i.active = !!active; save(); return delay(); },
+      async setFeatured(id) { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); db.settings.featured_session = id || null; save(); return delay(); },
       async adminSetCertificate(code, revoked) { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); const c = db.certificates.find((x) => x.code === code); if (c) c.revoked = revoked; save(); return delay(); },
       async adminTeachers() {
         need(); load();
@@ -747,7 +997,8 @@
         return delay(db.teachers.map((t) => Object.assign(clone(t), {
           sessions_count: db.sessions.filter((s) => s.teacher_id === t.id).length,
           last_session_at: (db.sessions.filter((s) => s.teacher_id === t.id).map((s) => s.starts_at).sort().pop()) || null,
-        })).sort((a, b) => (b.status === 'pending') - (a.status === 'pending')));
+          pending_reviews: db.sessions.filter((s) => s.teacher_id === t.id && s.review === 'pending').length,
+        })).sort((a, b) => (b.status === 'pending') - (a.status === 'pending') || (b.pending_reviews > 0) - (a.pending_reviews > 0)));
       },
       async adminSetTeacher(id, patch) {
         need(); load();
