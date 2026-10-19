@@ -1,0 +1,1576 @@
+<!-- ================================================================
+  مختبر الفيزياء التفاعلي — Kamirty.ai
+  الصق هذا الكود كاملاً في "عرض HTML" داخل مقالة أو صفحة في بلوجر.
+  لا يحتاج خادماً ولا مكتبات خارجية (الخطوط فقط من Google Fonts).
+================================================================= -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Reem+Kufi:wght@500;700&display=swap">
+<style>
+/* التخطيط: قائمة تجارب جانبية + منصة محاكاة (لوحة رسم، متغيرات، قياسات). كل الأنماط محصورة داخل .kph حتى لا تتأثر بقالب المدونة */
+.kph{
+  --kph-ink:#0b0c0f;--kph-panel:#121419;--kph-raise:#1a1d24;--kph-line:#2a2e37;
+  --kph-grid:rgba(217,173,60,.055);--kph-veil:rgba(11,12,15,.8);
+  --kph-gold:#d9ad3c;--kph-gold2:#f2d488;--kph-text:#ece7da;--kph-muted:#9a968b;
+  --kph-blue:#5db4dc;--kph-red:#e46f5a;--kph-green:#82c98f;--kph-violet:#ad8ff2;
+  --kph-display:'Reem Kufi','IBM Plex Sans Arabic',Tahoma,sans-serif;
+  --kph-body:'IBM Plex Sans Arabic','Segoe UI',Tahoma,sans-serif;
+  --kph-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  container-type:inline-size;container-name:kph;color-scheme:dark;
+  background:var(--kph-ink);color:var(--kph-text);
+  font:400 15px/1.7 var(--kph-body);direction:rtl;text-align:right;
+  border:1px solid var(--kph-line);border-radius:16px;
+  padding:clamp(14px,2.6vw,28px);margin:0 auto;max-width:1240px;
+  -webkit-font-smoothing:antialiased;
+}
+.kph *,.kph *::before,.kph *::after{box-sizing:border-box}
+.kph h2,.kph h3,.kph h4,.kph p,.kph ul{margin:0;padding:0}
+.kph h2,.kph h3,.kph h4{font-family:var(--kph-display);color:var(--kph-text);text-wrap:balance;letter-spacing:0;text-transform:none;border:0;background:none}
+.kph :where(button){all:unset;box-sizing:border-box;cursor:pointer;font-family:var(--kph-body)}
+.kph button:focus-visible,.kph input:focus-visible{outline:2px solid var(--kph-gold);outline-offset:2px}
+
+/* الرأس */
+.kph-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 28px;padding-bottom:18px;margin-bottom:20px;border-bottom:1px solid var(--kph-line)}
+.kph-brand{display:flex;align-items:center;gap:14px}
+.kph-brand svg{flex:none;width:46px;height:46px}
+.kph-eyebrow{display:block;font:500 12px/1.4 var(--kph-mono);color:var(--kph-gold);letter-spacing:.06em;direction:ltr;text-align:right}
+.kph-title{font-size:clamp(24px,3.4vw,34px);font-weight:700;line-height:1.25}
+.kph-sub{color:var(--kph-muted);max-width:52ch;font-size:14px}
+
+/* الجسم */
+.kph-body{display:grid;grid-template-columns:232px minmax(0,1fr);gap:22px;align-items:start}
+.kph-nav{display:flex;flex-direction:column;gap:16px;position:sticky;top:12px}
+.kph-grp{display:flex;flex-direction:column;gap:3px}
+.kph-grp h4{font:500 12px/1.5 var(--kph-body);color:var(--kph-muted);letter-spacing:.04em;padding:0 10px 4px;display:flex;align-items:center;gap:8px}
+.kph-grp h4::before{content:"";width:7px;height:7px;background:var(--c,var(--kph-gold));transform:rotate(45deg)}
+.kph-lab{display:block;padding:7px 10px;border-radius:8px;color:var(--kph-text);font-size:14px;line-height:1.45;border:1px solid transparent;transition:background .15s,border-color .15s}
+.kph-lab small{display:block;color:var(--kph-muted);font-size:11.5px}
+.kph-lab:hover{background:var(--kph-raise)}
+.kph-lab[aria-current="true"]{background:var(--kph-raise);border-color:var(--kph-gold);color:var(--kph-gold2)}
+
+.kph-stage{min-width:0;display:flex;flex-direction:column;gap:14px}
+.kph-top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+.kph-top>div:first-child{min-width:0}
+.kph-cat{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--kph-muted)}
+.kph-cat::before{content:"";width:7px;height:7px;background:var(--c,var(--kph-gold));transform:rotate(45deg)}
+.kph-top h3{font-size:clamp(21px,2.6vw,27px);font-weight:700;line-height:1.3}
+.kph-law{color:var(--kph-muted);font-size:13.5px}
+.kph-formula{direction:ltr;text-align:left;font:400 19px/1.4 'Cambria Math','Times New Roman',serif;color:var(--kph-text);background:var(--kph-panel);border:1px solid var(--kph-line);border-radius:10px;padding:8px 14px;white-space:nowrap;overflow-x:auto;max-width:100%}
+.kph-formula i{color:var(--kph-gold2)}
+.kph-formula .s{display:inline-block;width:1.4em}
+
+.kph-cv{position:relative;border:1px solid var(--kph-line);border-radius:12px;overflow:hidden;background:var(--kph-panel)}
+.kph-cv canvas{display:block;width:100%;max-width:100%}
+.kph-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.kph-btn{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:8px;border:1px solid var(--kph-line);background:var(--kph-raise);color:var(--kph-text);font-size:13.5px;line-height:1.4;transition:border-color .15s}
+.kph-btn:hover{border-color:var(--kph-gold)}
+.kph-btn.is-main{background:var(--kph-gold);border-color:var(--kph-gold);color:var(--kph-ink);font-weight:600}
+.kph-btn svg{width:13px;height:13px;fill:currentColor}
+.kph-extra{display:contents}
+.kph-speed{display:inline-flex;border:1px solid var(--kph-line);border-radius:8px;overflow:hidden;direction:ltr}
+.kph-speed button{padding:6px 10px;font:500 12px/1.4 var(--kph-mono);color:var(--kph-muted)}
+.kph-speed button[aria-pressed="true"]{background:var(--kph-raise);color:var(--kph-gold2)}
+.kph-hint{color:var(--kph-muted);font-size:12.5px;margin-inline-start:auto}
+
+.kph-panels{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.kph-box{background:var(--kph-panel);border:1px solid var(--kph-line);border-radius:12px;padding:14px 16px;min-width:0}
+.kph-box h4{font-size:15px;font-weight:500;color:var(--kph-gold);margin-bottom:10px}
+.kph-p{padding:6px 0}
+.kph-p+.kph-p{border-top:1px dashed var(--kph-line)}
+.kph-p[hidden]{display:none!important}
+.kph-pl{display:flex;justify-content:space-between;gap:10px;font-size:13.5px}
+.kph-pl output{font:500 13px/1.6 var(--kph-mono);color:var(--kph-gold2);direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+.kph-pl output span{font-family:var(--kph-body);color:var(--kph-muted);font-size:12px}
+.kph input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;margin:2px 0 0;padding:0;border:0;direction:ltr;cursor:pointer}
+.kph input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--kph-gold) var(--pct,50%),var(--kph-line) var(--pct,50%))}
+.kph input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--kph-line)}
+.kph input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:var(--kph-gold)}
+.kph input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-6px;background:var(--kph-ink);border:3px solid var(--kph-gold);transform:rotate(45deg);border-radius:3px}
+.kph input[type=range]::-moz-range-thumb{width:11px;height:11px;background:var(--kph-ink);border:3px solid var(--kph-gold);transform:rotate(45deg);border-radius:3px}
+.kph-seg{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.kph-seg button{padding:4px 10px;border-radius:7px;border:1px solid var(--kph-line);font-size:12.5px;color:var(--kph-muted)}
+.kph-seg button:hover{border-color:var(--kph-gold)}
+.kph-seg button[aria-pressed="true"]{border-color:var(--kph-gold);color:var(--kph-ink);background:var(--kph-gold);font-weight:600}
+
+.kph-r{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:6px 0;font-size:13.5px}
+.kph-r+.kph-r{border-top:1px dashed var(--kph-line)}
+.kph-r span{color:var(--kph-muted)}
+.kph-r b{font:500 13.5px/1.5 var(--kph-mono);color:var(--kph-text);direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kph-r b em{font-style:normal;color:var(--kph-muted);font-size:12px;margin-left:5px}
+.kph-r b.ar{font-family:var(--kph-body);direction:rtl}
+.kph-r.hl span{color:var(--kph-text)}
+.kph-r.hl b{color:var(--kph-gold2)}
+
+.kph-notes{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px 26px;padding-top:4px}
+.kph-notes h4{font-size:15px;font-weight:500;color:var(--kph-gold);margin-bottom:6px}
+.kph-notes p{color:var(--kph-text);font-size:14.5px;max-width:65ch}
+.kph-tips{list-style:none;display:flex;flex-direction:column;gap:7px}
+.kph-tips li{position:relative;padding-inline-start:18px;font-size:14px;color:var(--kph-text)}
+.kph-tips li::before{content:"";position:absolute;inset-inline-start:2px;top:.72em;width:6px;height:6px;border:1.5px solid var(--kph-gold);transform:rotate(45deg)}
+
+.kph-foot{margin-top:22px;padding-top:14px;border-top:1px solid var(--kph-line);display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--kph-muted)}
+.kph-foot b{color:var(--kph-gold);font-weight:500;font-family:var(--kph-mono);direction:ltr;unicode-bidi:isolate}
+
+@container kph (max-width:860px){
+  .kph-body{grid-template-columns:minmax(0,1fr)}
+  .kph-nav{position:static;flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:6px;scrollbar-width:thin}
+  .kph-grp{display:contents}
+  .kph-grp h4{display:none}
+  .kph-lab{flex:none;border-color:var(--kph-line);white-space:nowrap}
+  .kph-lab small{display:none}
+}
+@container kph (max-width:620px){
+  .kph-panels,.kph-notes{grid-template-columns:minmax(0,1fr)}
+  .kph-hint{margin-inline-start:0;flex-basis:100%}
+  .kph-formula{font-size:17px}
+}
+@media (prefers-reduced-motion:reduce){.kph *{transition:none!important}}
+</style>
+
+<div class="kph" id="kph" dir="rtl" lang="ar">
+  <header class="kph-head">
+    <div class="kph-brand">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M16 12.5l2.6-4.5h10.8l2.6 4.5" fill="none" stroke="#d9ad3c" stroke-width="2.2" stroke-linejoin="round"/>
+        <rect x="4" y="12.5" width="40" height="28" rx="5" fill="none" stroke="#d9ad3c" stroke-width="2.2"/>
+        <circle cx="24" cy="26.5" r="9.6" fill="none" stroke="#d9ad3c" stroke-width="2.2"/>
+        <rect x="20" y="22.5" width="8" height="8" rx="1.3" fill="#d9ad3c"/>
+        <path d="M22 22.5v-2.2M26 22.5v-2.2M22 30.5v2.2M26 30.5v2.2M20 24.5h-2.2M20 28.5h-2.2M28 24.5h2.2M28 28.5h2.2" stroke="#d9ad3c" stroke-width="1.3"/>
+        <circle cx="37.5" cy="18" r="1.6" fill="#f2d488"/>
+      </svg>
+      <div>
+        <span class="kph-eyebrow">KAMIRTY.AI · LAB</span>
+        <h2 class="kph-title">مختبر الفيزياء التفاعلي</h2>
+      </div>
+    </div>
+    <p class="kph-sub">ست عشرة تجربة محاكاة حيّة. غيّر المتغيرات، وشاهد القانون وهو يعمل، وقارن القيمة النظرية بالقيمة المقيسة لحظة بلحظة.</p>
+  </header>
+
+  <div class="kph-body">
+    <nav class="kph-nav" id="kph-nav" aria-label="قائمة التجارب"></nav>
+
+    <div class="kph-stage">
+      <div class="kph-top">
+        <div>
+          <span class="kph-cat" id="kph-cat"></span>
+          <h3 id="kph-name"></h3>
+          <p class="kph-law" id="kph-law"></p>
+        </div>
+        <div class="kph-formula" id="kph-formula"></div>
+      </div>
+
+      <div class="kph-cv" id="kph-cvwrap"><canvas id="kph-cv" aria-label="لوحة المحاكاة"></canvas></div>
+
+      <div class="kph-bar">
+        <button class="kph-btn is-main" id="kph-play" type="button"></button>
+        <button class="kph-btn" id="kph-reset" type="button">
+          <svg viewBox="0 0 16 16"><path d="M8 2.5a5.5 5.5 0 1 0 5.4 6.6h-1.8A3.8 3.8 0 1 1 8 4.2c1 0 1.9.4 2.6 1L8.8 7H14V1.8l-2.2 2.2A5.5 5.5 0 0 0 8 2.5z"/></svg>
+          إعادة
+        </button>
+        <span class="kph-extra" id="kph-extra"></span>
+        <div class="kph-speed" id="kph-speed" role="group" aria-label="سرعة المحاكاة"></div>
+        <span class="kph-hint" id="kph-hint"></span>
+      </div>
+
+      <div class="kph-panels">
+        <section class="kph-box"><h4>المتغيرات</h4><div id="kph-params"></div></section>
+        <section class="kph-box"><h4>القياسات</h4><div id="kph-reads"></div></section>
+      </div>
+
+      <div class="kph-notes">
+        <section><h4>الفكرة</h4><p id="kph-about"></p></section>
+        <section><h4>جرّب بنفسك</h4><ul class="kph-tips" id="kph-tips"></ul></section>
+      </div>
+    </div>
+  </div>
+
+  <footer class="kph-foot">
+    <span>أداة مجانية من <b>Kamirty.ai</b> · صُمّمت بمساعدة الذكاء الاصطناعي</span>
+    <span>المحاكاة تقريبية لأغراض تعليمية، والقيم النظرية محسوبة من القوانين مباشرة.</span>
+  </footer>
+</div>
+
+<script>
+//<![CDATA[
+(function () {
+'use strict';
+var root = document.getElementById('kph');
+if (!root || root.dataset.ready) return;
+root.dataset.ready = '1';
+
+/* ---------- أدوات عامة ---------- */
+var TAU = Math.PI * 2, DEG = Math.PI / 180;
+var clamp = function (v, a, b) { return v < a ? a : v > b ? b : v; };
+var C = {};
+var BODY = '"IBM Plex Sans Arabic", Tahoma, sans-serif', MONO = '"IBM Plex Mono", Menlo, Consolas, monospace';
+function readColors() {
+  var cs = getComputedStyle(root);
+  ['ink','panel','raise','line','grid','veil','gold','gold2','text','muted','blue','red','green','violet'].forEach(function (k) {
+    C[k] = cs.getPropertyValue('--kph-' + k).trim();
+  });
+}
+var SUP = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+function sci(v) {
+  var e = Math.floor(Math.log10(Math.abs(v))), m = v / Math.pow(10, e);
+  if (Math.abs(m) >= 9.995) { m /= 10; e++; }
+  return m.toFixed(2) + '×10' + String(e).replace(/[-0-9]/g, function (c) { return SUP[c]; });
+}
+function fmt(v, d) {
+  if (typeof v === 'string') return v;
+  if (v == null || isNaN(v)) return '—';
+  if (!isFinite(v)) return '∞';
+  if (d == null) d = 2;
+  var a = Math.abs(v);
+  if (a !== 0 && (a >= 1e6 || a < 1e-3)) return sci(v);
+  var s = v.toFixed(d);
+  return /^-0(\.0+)?$/.test(s) ? s.slice(1) : s;
+}
+function isAr(s) { return /[؀-ۿ]/.test(s); }
+function txt(g, s, x, y, col, size, align, weight, mono) {
+  g.fillStyle = col || C.text;
+  g.font = (weight || 400) + ' ' + (size || 12) + 'px ' + (mono ? MONO : BODY);
+  g.textAlign = align || 'center';
+  g.textBaseline = 'middle';
+  g.direction = isAr(s) ? 'rtl' : 'ltr';
+  g.fillText(s, x, y);
+}
+function arrow(g, x1, y1, x2, y2, col, w, hd) {
+  var dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+  if (L < 2) return;
+  w = w || 2.5; hd = Math.min(hd || 10, L * 0.6);
+  var ux = dx / L, uy = dy / L;
+  g.strokeStyle = col; g.fillStyle = col; g.lineWidth = w; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2 - ux * hd * 0.8, y2 - uy * hd * 0.8); g.stroke();
+  g.beginPath(); g.moveTo(x2, y2);
+  g.lineTo(x2 - ux * hd - uy * hd * 0.5, y2 - uy * hd + ux * hd * 0.5);
+  g.lineTo(x2 - ux * hd + uy * hd * 0.5, y2 - uy * hd - ux * hd * 0.5);
+  g.closePath(); g.fill();
+}
+function rr(g, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r);
+  g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r);
+  g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
+}
+function bg(g, W, H, dark) {
+  g.fillStyle = dark ? C.ink : C.panel; g.fillRect(0, 0, W, H);
+  g.strokeStyle = C.grid; g.lineWidth = 1; g.beginPath();
+  for (var x = 0.5; x < W; x += 24) { g.moveTo(x, 0); g.lineTo(x, H); }
+  for (var y = 0.5; y < H; y += 24) { g.moveTo(0, y); g.lineTo(W, y); }
+  g.stroke();
+}
+function dashed(g, x1, y1, x2, y2, col, w) {
+  g.save(); g.setLineDash([5, 5]); g.strokeStyle = col; g.lineWidth = w || 1.2;
+  g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); g.restore();
+}
+function niceStep(range, n) {
+  var raw = range / (n || 6), p = Math.pow(10, Math.floor(Math.log10(raw)));
+  var m = [1, 2, 5, 10];
+  for (var i = 0; i < m.length; i++) if (m[i] * p >= raw) return m[i] * p;
+  return 10 * p;
+}
+/* رسم بياني صغير داخل اللوحة */
+function plot(g, x, y, w, h, data, o) {
+  g.save();
+  rr(g, x, y, w, h, 8); g.fillStyle = C.veil; g.fill(); g.strokeStyle = C.line; g.lineWidth = 1; g.stroke();
+  txt(g, o.title, x + w - 8, y + 12, C.muted, 11, 'right');
+  var top = y + 24, bot = y + h - 8, lo = o.min, hi = o.max;
+  if (hi - lo < 1e-9) hi = lo + 1;
+  var Y = function (v) { return bot - (v - lo) / (hi - lo) * (bot - top); };
+  if (lo < 0 && hi > 0) dashed(g, x + 6, Y(0), x + w - 6, Y(0), C.line, 1);
+  var n = o.n || 240;
+  if (data.length > 1) {
+    g.strokeStyle = o.col || C.gold; g.lineWidth = 1.8; g.beginPath();
+    for (var i = 0; i < data.length; i++) {
+      var px = x + 6 + (i / (n - 1)) * (w - 12), py = Y(clamp(data[i], lo, hi));
+      if (i) g.lineTo(px, py); else g.moveTo(px, py);
+    }
+    g.stroke();
+  }
+  g.restore();
+}
+function bars(g, x, y, items, maxV, hgt) {
+  /* أعمدة طاقة عمودية: items = [[label, value, color]] */
+  var bw = 18, gap = 14;
+  items.forEach(function (it, i) {
+    var bx = x + i * (bw + gap), v = Math.max(0, it[1]);
+    var bh = maxV > 0 ? Math.min(1, v / maxV) * hgt : 0;
+    g.fillStyle = C.raise; g.fillRect(bx, y - hgt, bw, hgt);
+    g.fillStyle = it[2]; g.fillRect(bx, y - bh, bw, bh);
+    txt(g, it[0], bx + bw / 2, y + 11, C.muted, 10.5);
+  });
+}
+function coil(g, x1, y1, x2, y2, n, amp) {
+  var dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, px = -uy, py = ux;
+  var lead = Math.min(12, L * 0.12), seg = (L - 2 * lead) / (n * 2);
+  g.beginPath(); g.moveTo(x1, y1); g.lineTo(x1 + ux * lead, y1 + uy * lead);
+  for (var i = 0; i < n * 2; i++) {
+    var d = lead + seg * (i + 0.5), s = i % 2 ? -amp : amp;
+    g.lineTo(x1 + ux * d + px * s, y1 + uy * d + py * s);
+  }
+  g.lineTo(x2 - ux * lead, y2 - uy * lead); g.lineTo(x2, y2); g.stroke();
+}
+function gauss() { var u = 1 - Math.random(), v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * v); }
+function nearest(list, v, tol) {
+  var best = null, bd = Infinity;
+  list.forEach(function (it) { var d = Math.abs(it[0] - v); if (d < bd) { bd = d; best = it[1]; } });
+  return bd <= tol ? best : '';
+}
+function wlColor(nm) {
+  if (nm < 380) return '#b48cff';
+  if (nm > 750) return '#8a2a1e';
+  var r = 0, gg = 0, b = 0;
+  if (nm < 440) { r = (440 - nm) / 60; b = 1; }
+  else if (nm < 490) { gg = (nm - 440) / 50; b = 1; }
+  else if (nm < 510) { gg = 1; b = (510 - nm) / 20; }
+  else if (nm < 580) { r = (nm - 510) / 70; gg = 1; }
+  else if (nm < 645) { r = 1; gg = (645 - nm) / 65; }
+  else r = 1;
+  var f = nm < 420 ? 0.4 + 0.6 * (nm - 380) / 40 : nm > 700 ? 0.4 + 0.6 * (750 - nm) / 50 : 1;
+  var c = function (v) { return Math.round(255 * Math.pow(v * f, 0.8)); };
+  return 'rgb(' + c(r) + ',' + c(gg) + ',' + c(b) + ')';
+}
+
+var G_OPTS = [['الأرض', 9.81], ['القمر', 1.62], ['المريخ', 3.71], ['المشتري', 24.79]];
+
+/* ---------- التجارب ---------- */
+var CATS = [
+  ['mech', 'الميكانيكا', '#d9ad3c'],
+  ['fluid', 'الموائع والحرارة', '#e46f5a'],
+  ['elec', 'الكهرباء', '#5db4dc'],
+  ['optics', 'الضوء والبصريات', '#82c98f'],
+  ['waves', 'الموجات والصوت', '#ad8ff2'],
+  ['modern', 'الفيزياء الحديثة', '#f2d488']
+];
+
+var LABS = [];
+
+/* 1) قانون نيوتن الثاني */
+LABS.push({
+  id: 'newton', cat: 'mech', name: 'قانون نيوتن الثاني', law: 'القوة المحصلة تساوي الكتلة في التسارع',
+  formula: 'Σ<i>F</i> = <i>m</i> · <i>a</i><span class="s"></span><i>f</i> = <i>μ</i> · <i>m</i> · <i>g</i>',
+  about: 'صندوق على أرضية أفقية تدفعه قوة ثابتة ويقاومه الاحتكاك. ما يحرك الصندوق هو القوة المحصلة، أي الفرق بين الدفع والاحتكاك، وكلما زادت الكتلة قلّ التسارع الناتج عن القوة نفسها.',
+  tips: ['ضاعف الكتلة مع ثبات القوة، ولاحظ أن التسارع ينخفض إلى النصف تقريباً.', 'اجعل الاحتكاك صفراً ثم أنزل القوة إلى صفر أثناء الحركة: سيستمر الصندوق بسرعة ثابتة (قانون نيوتن الأول).', 'ارفع الاحتكاك حتى يتوقف الصندوق تماماً: الدفع لم يتجاوز الاحتكاك السكوني.'],
+  hint: 'غيّر القوة أثناء الحركة وراقب منحنى السرعة',
+  params: [
+    { k: 'F', label: 'قوة الدفع', min: 0, max: 120, step: 1, v: 40, unit: 'N' },
+    { k: 'm', label: 'الكتلة', min: 1, max: 50, step: 1, v: 10, unit: 'kg' },
+    { k: 'mu', label: 'معامل الاحتكاك μ', min: 0, max: 0.6, step: 0.01, v: 0.15, unit: '' }
+  ],
+  init: function (s) { s.x = 0; s.v = 0; s.a = 0; s.fr = 0; s.hist = []; s.ht = 0; },
+  step: function (s, p, h) {
+    var fmax = p.mu * p.m * 9.81, fr;
+    if (s.v <= 1e-9) { s.v = 0; fr = p.F <= fmax ? -p.F : -fmax; } else fr = -fmax;
+    var a = (p.F + fr) / p.m, nv = s.v + a * h;
+    if (nv < 0) { nv = 0; a = 0; }
+    s.v = nv; s.x += s.v * h; s.a = a; s.fr = fr;
+    s.ht += h; if (s.ht >= 1 / 30) { s.ht = 0; s.hist.push(s.v); if (s.hist.length > 240) s.hist.shift(); }
+  },
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H);
+    var gy = Math.round(H * 0.72), pxm = Math.max(30, W / 20), bx = W * 0.42, cam = s.x * pxm;
+    g.fillStyle = C.raise; g.fillRect(0, gy, W, H - gy);
+    g.strokeStyle = C.gold; g.lineWidth = 2; g.beginPath(); g.moveTo(0, gy); g.lineTo(W, gy); g.stroke();
+    var i0 = Math.floor((cam - bx) / pxm) - 1, i1 = i0 + Math.ceil(W / pxm) + 2;
+    g.strokeStyle = C.muted; g.lineWidth = 1;
+    for (var i = i0; i <= i1; i++) {
+      var x = bx + i * pxm - cam, big = i % 5 === 0;
+      g.beginPath(); g.moveTo(x, gy); g.lineTo(x, gy + (big ? 11 : 5)); g.stroke();
+      if (big) txt(g, i + ' m', x, gy + 24, C.muted, 11, 'center', 400, true);
+    }
+    var side = 36 + Math.sqrt(p.m) * 7, top = gy - side;
+    if (s.v > 0.3) {
+      g.strokeStyle = C.line; g.lineWidth = 2;
+      for (var k = 0; k < 3; k++) {
+        var ly = top + side * (0.25 + k * 0.25), len = Math.min(70, s.v * 8);
+        g.beginPath(); g.moveTo(bx - side / 2 - 14, ly); g.lineTo(bx - side / 2 - 14 - len, ly); g.stroke();
+      }
+    }
+    rr(g, bx - side / 2, top, side, side, 4); g.fillStyle = C.raise; g.fill(); g.strokeStyle = C.gold; g.lineWidth = 2; g.stroke();
+    txt(g, p.m + ' kg', bx, top + side / 2, C.gold2, 12, 'center', 500, true);
+    var k2 = Math.min(1.7, (W * 0.3) / 120);
+    if (p.F > 0) { arrow(g, bx - side / 2 - 6 - p.F * k2, top + side / 2, bx - side / 2 - 6, top + side / 2, C.gold, 3); txt(g, 'F', bx - side / 2 - 12 - p.F * k2, top + side / 2 - 14, C.gold, 13, 'center', 600, true); }
+    if (Math.abs(s.fr) > 0.01) { arrow(g, bx, gy - 6, bx + s.fr * k2, gy - 6, C.red, 3); txt(g, 'f', bx + s.fr * k2 - 8, gy - 18, C.red, 13, 'center', 600, true); }
+    var net = p.F + s.fr;
+    if (net > 0.01) { arrow(g, bx, top - 16, bx + net * k2, top - 16, C.blue, 3); txt(g, 'ΣF', bx + net * k2 + 16, top - 16, C.blue, 13, 'center', 600, true); }
+    var mx = 5; s.hist.forEach(function (v) { if (v > mx) mx = v; });
+    plot(g, 12, 12, Math.min(230, W * 0.44), 84, s.hist, { min: 0, max: mx * 1.1, title: 'السرعة مع الزمن v(t)', col: C.blue });
+  },
+  read: function (s, p) {
+    return [['القوة المحصلة ΣF', p.F + s.fr, 'N'], ['قوة الاحتكاك', Math.abs(s.fr), 'N'], ['التسارع a', s.a, 'm/s²', 1],
+      ['السرعة v', s.v, 'm/s'], ['المسافة المقطوعة', s.x, 'm', 0, 1], ['الزمن', s.t, 's', 0, 1]];
+  }
+});
+
+/* 2) السقوط الحر */
+var AIR = { '9.81': 1, '1.62': 0, '3.71': 0.017, '24.79': 0.13 };
+LABS.push({
+  id: 'freefall', cat: 'mech', name: 'السقوط الحر', law: 'كل الأجسام تسقط بالتسارع نفسه في غياب الهواء',
+  formula: '<i>h</i> = ½ <i>g t</i>²<span class="s"></span><i>v</i> = <i>g t</i>',
+  about: 'كرة حديدية وريشة تسقطان من الارتفاع نفسه. الدوائر الباهتة صور ملتقطة كل ربع ثانية، وتباعدها المتزايد يدل على التسارع. مقاومة الهواء وحدها هي ما يجعل الريشة أبطأ.',
+  tips: ['اختر القمر: لا هواء هناك، فتصل الريشة والكرة معاً كما في تجربة رواد أبولو 15.', 'أوقف مقاومة الهواء على الأرض وقارن زمن السقوط بالزمن النظري.', 'لاحظ أن الريشة تبلغ سرعة حدّية ثابتة تقريباً، فتصبح صورها متساوية التباعد.'],
+  hint: 'الصور الباهتة تُلتقط كل 0.25 ثانية',
+  btns: [{ label: 'إسقاط من جديد', act: 'reset' }],
+  params: [
+    { k: 'h', label: 'ارتفاع السقوط', min: 5, max: 100, step: 1, v: 40, unit: 'm', reset: 1 },
+    { k: 'g', label: 'المكان', opts: G_OPTS, v: 9.81, reset: 1 },
+    { k: 'air', label: 'الهواء', opts: [['بدون هواء', 0], ['مع مقاومة الهواء', 1]], v: 1, reset: 1 }
+  ],
+  init: function (s) {
+    s.wait = 0.5; s.ft = 0; s.mt = 0;
+    s.o = [{ n: 'كرة حديدية', m: 4, b: 0.009, y: 0, v: 0, tt: null, marks: [] }, { n: 'ريشة', m: 0.004, b: 0.04, y: 0, v: 0, tt: null, marks: [] }];
+  },
+  step: function (s, p, h) {
+    if (s.wait > 0) { s.wait -= h; return; }
+    s.ft += h; s.mt += h;
+    var mark = s.mt >= 0.25; if (mark) s.mt -= 0.25;
+    var air = p.air * (AIR[String(p.g)] || 0);
+    s.o.forEach(function (o) {
+      if (o.tt != null) return;
+      var a = p.g - air * o.b * o.v * o.v / o.m;
+      o.v += a * h; o.y += o.v * h;
+      if (o.y >= p.h) { o.y = p.h; o.tt = s.ft; }
+      if (mark) o.marks.push(o.y);
+    });
+  },
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H);
+    var top = 34, bot = H - 30, sc = (bot - top) / p.h, rx = 58;
+    g.fillStyle = C.raise; g.fillRect(0, bot, W, H - bot);
+    g.strokeStyle = C.gold; g.lineWidth = 2; g.beginPath(); g.moveTo(0, bot); g.lineTo(W, bot); g.stroke();
+    g.strokeStyle = C.muted; g.lineWidth = 1; g.beginPath(); g.moveTo(rx, top); g.lineTo(rx, bot); g.stroke();
+    var st = niceStep(p.h, 6);
+    for (var d = 0; d <= p.h + 1e-6; d += st) {
+      var y = top + d * sc; g.beginPath(); g.moveTo(rx - 6, y); g.lineTo(rx, y); g.stroke();
+      txt(g, d + ' m', rx - 10, y, C.muted, 10.5, 'right', 400, true);
+    }
+    var cols = [W * 0.42, W * 0.72];
+    s.o.forEach(function (o, i) {
+      var cx = cols[i];
+      txt(g, o.n, cx, 16, C.text, 13, 'center', 500);
+      o.marks.forEach(function (my) {
+        g.beginPath(); g.arc(cx, top + my * sc - (i ? 4 : 10), i ? 6 : 10, 0, TAU); g.strokeStyle = i ? 'rgba(236,231,218,.28)' : 'rgba(217,173,60,.35)'; g.lineWidth = 1.2; g.stroke();
+      });
+      var oy = top + o.y * sc;
+      if (i === 0) {
+        g.beginPath(); g.arc(cx, oy - 10, 10, 0, TAU);
+        var gr = g.createRadialGradient(cx - 3, oy - 13, 1, cx, oy - 10, 10); gr.addColorStop(0, C.gold2); gr.addColorStop(1, '#6b5320');
+        g.fillStyle = gr; g.fill();
+      } else {
+        g.save(); g.translate(cx, oy - 4); g.rotate(-0.5 + Math.sin(s.ft * 6) * 0.25 * (o.tt == null ? 1 : 0));
+        g.strokeStyle = C.text; g.lineWidth = 1.3; g.beginPath(); g.moveTo(-11, 0); g.lineTo(11, 0); g.stroke();
+        g.fillStyle = 'rgba(236,231,218,.55)'; g.beginPath(); g.ellipse(1, 0, 10, 4, 0, 0, TAU); g.fill(); g.restore();
+      }
+      if (o.tt != null) txt(g, 't = ' + o.tt.toFixed(2) + ' s', cx + 18, bot - 14, i ? C.text : C.gold2, 12, 'left', 500, true);
+    });
+  },
+  read: function (s, p) {
+    var b = s.o[0], f = s.o[1];
+    return [['الزمن النظري بلا هواء √(2h/g)', Math.sqrt(2 * p.h / p.g), 's', 1], ['زمن سقوط الكرة', b.tt != null ? b.tt : s.ft, 's'],
+      ['زمن سقوط الريشة', f.tt != null ? f.tt : s.ft, 's'], ['سرعة الكرة', b.v, 'm/s'], ['سرعة الريشة', f.v, 'm/s'],
+      ['السرعة النظرية عند الأرض √(2gh)', Math.sqrt(2 * p.g * p.h), 'm/s']];
+  }
+});
+
+/* 3) المقذوفات */
+function fire(s, p) {
+  if (s.c && s.c.pts.length > 2) { s.old.push(s.c); if (s.old.length > 5) s.old.shift(); }
+  var a = p.ang * DEG;
+  s.c = { x: 0, y: 0, vx: p.v0 * Math.cos(a), vy: p.v0 * Math.sin(a), t: 0, lp: 0, pts: [[0, 0]], top: 0, done: false, R: 0 };
+}
+LABS.push({
+  id: 'projectile', cat: 'mech', name: 'حركة المقذوفات', law: 'حركة أفقية منتظمة وحركة رأسية متسارعة معاً',
+  formula: '<i>R</i> = <i>v</i>₀² sin2<i>θ</i> / <i>g</i><span class="s"></span><i>H</i> = <i>v</i>₀² sin²<i>θ</i> / 2<i>g</i>',
+  about: 'يُطلق المدفع قذيفة بسرعة وزاوية تختارهما. المنحنى المتقطع هو المسار المتوقع نظرياً، والخط الذهبي هو المسار الفعلي. يبقى السهم الأزرق (السرعة الأفقية) ثابتاً بينما يتغير السهم الأخضر (السرعة الرأسية).',
+  tips: ['أطلق بزاويتي 30° و60°: المدى نفسه تقريباً لأن sin2θ متساوية.', 'ابحث عن الزاوية التي تعطي أكبر مدى. ستجدها 45° في غياب الهواء.', 'أضف مقاومة الهواء وأطلق مجدداً: يقصر المسار ويفقد تماثله، وتصبح أفضل زاوية أقل من 45°.'],
+  hint: 'غيّر الزاوية ثم اضغط «إطلاق» لمقارنة المسارات',
+  btns: [{ label: 'إطلاق', main: 1, act: function (s, p) { fire(s, p); } }, { label: 'مسح المسارات', act: function (s) { s.old = []; } }],
+  params: [
+    { k: 'v0', label: 'سرعة الإطلاق', min: 5, max: 50, step: 1, v: 22, unit: 'm/s' },
+    { k: 'ang', label: 'زاوية الإطلاق θ', min: 5, max: 85, step: 1, v: 50, unit: '°' },
+    { k: 'g', label: 'الجاذبية', opts: G_OPTS, v: 9.81 },
+    { k: 'k', label: 'مقاومة الهواء', min: 0, max: 0.02, step: 0.001, v: 0, unit: '', fmt: function (v) { return v === 0 ? 'بدون' : v.toFixed(3); } }
+  ],
+  init: function (s, p) { s.old = []; s.c = null; fire(s, p); },
+  step: function (s, p, h) {
+    var c = s.c; if (!c || c.done) return;
+    var sp = Math.hypot(c.vx, c.vy), ax = -p.k * sp * c.vx, ay = -p.g - p.k * sp * c.vy;
+    var py = c.y, px = c.x;
+    c.x += c.vx * h + 0.5 * ax * h * h; c.y += c.vy * h + 0.5 * ay * h * h;
+    c.vx += ax * h; c.vy += ay * h; c.t += h;
+    if (c.y > c.top) c.top = c.y;
+    if (c.y < 0) { var f = py / (py - c.y); c.x = px + (c.x - px) * f; c.y = 0; c.t -= h * (1 - f); c.done = true; c.R = c.x; }
+    if (c.done || c.t - c.lp > 1 / 50) { c.pts.push([c.x, c.y]); c.lp = c.t; }
+  },
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H);
+    var a = p.ang * DEG, R = p.v0 * p.v0 * Math.sin(2 * a) / p.g, Hm = Math.pow(p.v0 * Math.sin(a), 2) / (2 * p.g), T = 2 * p.v0 * Math.sin(a) / p.g;
+    var wx = R, wy = Hm;
+    s.old.concat(s.c ? [s.c] : []).forEach(function (c) { c.pts.forEach(function (q) { if (q[0] > wx) wx = q[0]; }); if (c.top > wy) wy = c.top; if (c.x > wx) wx = c.x; });
+    wx *= 1.08; wy *= 1.18;
+    var ox = 50, oy = H - 34, sc = Math.min((W - ox - 18) / wx, (oy - 18) / wy);
+    var X = function (x) { return ox + x * sc; }, Y = function (y) { return oy - y * sc; };
+    g.fillStyle = C.raise; g.fillRect(0, oy, W, H - oy);
+    g.strokeStyle = C.muted; g.lineWidth = 1; g.beginPath(); g.moveTo(0, oy); g.lineTo(W, oy); g.moveTo(ox, oy); g.lineTo(ox, 8); g.stroke();
+    var stx = niceStep((W - ox) / sc, 7), sty = niceStep(oy / sc, 5), v;
+    for (v = stx; X(v) < W - 10; v += stx) { g.beginPath(); g.moveTo(X(v), oy); g.lineTo(X(v), oy + 5); g.stroke(); txt(g, fmt(v, v < 10 ? 1 : 0), X(v), oy + 16, C.muted, 10.5, 'center', 400, true); }
+    for (v = sty; Y(v) > 14; v += sty) { g.beginPath(); g.moveTo(ox - 5, Y(v)); g.lineTo(ox, Y(v)); g.stroke(); txt(g, fmt(v, v < 10 ? 1 : 0), ox - 8, Y(v), C.muted, 10.5, 'right', 400, true); }
+    txt(g, 'm', W - 12, oy + 16, C.muted, 10.5, 'center', 400, true);
+    g.save(); g.setLineDash([4, 5]); g.strokeStyle = C.muted; g.lineWidth = 1.2; g.beginPath();
+    for (var i = 0; i <= 60; i++) { var t = T * i / 60, x = p.v0 * Math.cos(a) * t, y = p.v0 * Math.sin(a) * t - 0.5 * p.g * t * t; if (i) g.lineTo(X(x), Y(y)); else g.moveTo(X(x), Y(y)); }
+    g.stroke(); g.restore();
+    var path = function (c, col, w) { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); c.pts.forEach(function (q, j) { if (j) g.lineTo(X(q[0]), Y(q[1])); else g.moveTo(X(q[0]), Y(q[1])); }); if (!c.done) g.lineTo(X(c.x), Y(c.y)); g.stroke(); };
+    s.old.forEach(function (c) { path(c, 'rgba(242,212,136,.28)', 1.6); });
+    var c = s.c;
+    if (c) {
+      path(c, C.gold, 2.4);
+      var bxp = X(c.x), byp = Y(c.y);
+      if (!c.done) { arrow(g, bxp, byp, bxp + c.vx * 2.4, byp, C.blue, 2); arrow(g, bxp, byp, bxp, byp - c.vy * 2.4, C.green, 2); }
+      g.beginPath(); g.arc(bxp, byp, 6, 0, TAU); g.fillStyle = C.gold2; g.fill();
+      if (c.done) { txt(g, 'R = ' + c.R.toFixed(1) + ' m', bxp, oy - 14, C.gold2, 12, 'center', 500, true); }
+    }
+    g.save(); g.translate(ox, oy); g.rotate(-a); rr(g, -4, -5, 34, 10, 3); g.fillStyle = C.gold; g.fill(); g.restore();
+    g.beginPath(); g.arc(ox, oy, 10, Math.PI, TAU); g.fillStyle = C.raise; g.fill(); g.strokeStyle = C.gold; g.lineWidth = 2; g.stroke();
+  },
+  read: function (s, p) {
+    var a = p.ang * DEG, c = s.c || { x: 0, y: 0, t: 0, top: 0, vx: 0, vy: 0 };
+    return [['المدى النظري R', p.v0 * p.v0 * Math.sin(2 * a) / p.g, 'm', 1], ['أقصى ارتفاع نظري H', Math.pow(p.v0 * Math.sin(a), 2) / (2 * p.g), 'm'],
+      ['زمن التحليق النظري', 2 * p.v0 * Math.sin(a) / p.g, 's'], ['المدى المقيس', c.done ? c.R : c.x, 'm', 1], ['أقصى ارتفاع مقيس', c.top, 'm'],
+      ['زمن التحليق', c.t, 's'], ['السرعة الآن |v|', c.done ? 0 : Math.hypot(c.vx, c.vy), 'm/s']];
+  }
+});
+
+/* 4) حفظ الزخم */
+LABS.push({
+  id: 'momentum', cat: 'mech', name: 'حفظ الزخم والتصادمات', law: 'الزخم الكلي قبل التصادم يساوي الزخم الكلي بعده',
+  formula: '<i>m</i>₁<i>v</i>₁ + <i>m</i>₂<i>v</i>₂ = <i>m</i>₁<i>v</i>₁′ + <i>m</i>₂<i>v</i>₂′',
+  about: 'عربتان على مسار أفقي أملس تتصادمان. الزخم الكلي يبقى محفوظاً في كل أنواع التصادم، أما الطاقة الحركية فتُحفظ فقط في التصادم المرن تماماً (e = 1).',
+  tips: ['اجعل الكتلتين متساويتين وe = 1 وأوقف العربة الثانية: ستتوقف الأولى وتنطلق الثانية بسرعتها.', 'اجعل e = 0: تلتحم العربتان وتتحركان معاً، ويضيع جزء من الطاقة الحركية بينما يبقى الزخم كما هو.', 'صادم عربة خفيفة بعربة ثقيلة ساكنة ولاحظ ارتداد الخفيفة.'],
+  hint: 'كل تغيير في المتغيرات يعيد التجربة من البداية',
+  params: [
+    { k: 'm1', label: 'كتلة العربة 1', min: 0.5, max: 10, step: 0.5, v: 2, unit: 'kg', reset: 1 },
+    { k: 'v1', label: 'سرعة العربة 1', min: -6, max: 6, step: 0.5, v: 4, unit: 'm/s', reset: 1 },
+    { k: 'm2', label: 'كتلة العربة 2', min: 0.5, max: 10, step: 0.5, v: 6, unit: 'kg', reset: 1 },
+    { k: 'v2', label: 'سرعة العربة 2', min: -6, max: 6, step: 0.5, v: -1, unit: 'm/s', reset: 1 },
+    { k: 'e', label: 'معامل الارتداد e', min: 0, max: 1, step: 0.05, v: 1, unit: '', reset: 1, hint: function (v) { return v === 1 ? 'مرن تماماً' : v === 0 ? 'التحام' : ''; } }
+  ],
+  init: function (s, p) {
+    s.c = [{ m: p.m1, x: 2.5, v: p.v1, w: 0.45 + 0.1 * Math.sqrt(p.m1) }, { m: p.m2, x: 7.5, v: p.v2, w: 0.45 + 0.1 * Math.sqrt(p.m2) }];
+    s.hit = false; s.end = false; s.wait = 0.4; s.after = null;
+    s.before = { p1: p.m1 * p.v1, p2: p.m2 * p.v2, k: 0.5 * p.m1 * p.v1 * p.v1 + 0.5 * p.m2 * p.v2 * p.v2 };
+  },
+  step: function (s, p, h) {
+    if (s.end) return;
+    if (s.wait > 0) { s.wait -= h; return; }
+    var a = s.c[0], b = s.c[1];
+    a.x += a.v * h; b.x += b.v * h;
+    var gap = (b.x - a.x) - (a.w + b.w) / 2;
+    if (gap <= 0 && a.v > b.v) {
+      var M = a.m + b.m, P = a.m * a.v + b.m * b.v;
+      var va = (P + b.m * p.e * (b.v - a.v)) / M, vb = (P + a.m * p.e * (a.v - b.v)) / M;
+      a.v = va; b.v = vb; a.x += gap / 2; b.x -= gap / 2;
+      s.hit = true; s.flash = 0.25;
+      s.after = { p1: a.m * a.v, p2: b.m * b.v, k: 0.5 * a.m * a.v * a.v + 0.5 * b.m * b.v * b.v };
+    }
+    if (s.flash > 0) s.flash -= h;
+    s.c.forEach(function (c) { if (c.x - c.w / 2 < 0 || c.x + c.w / 2 > 10) { c.x = clamp(c.x, c.w / 2, 10 - c.w / 2); s.end = true; } });
+  },
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H);
+    var x0 = 20, pxm = (W - 40) / 10, ty = Math.round(H * 0.5);
+    g.strokeStyle = C.muted; g.lineWidth = 2; g.beginPath(); g.moveTo(x0, ty); g.lineTo(x0 + 10 * pxm, ty); g.stroke();
+    g.lineWidth = 1;
+    for (var i = 0; i <= 10; i++) { var x = x0 + i * pxm; g.beginPath(); g.moveTo(x, ty); g.lineTo(x, ty + 6); g.stroke(); txt(g, String(i), x, ty + 16, C.muted, 10, 'center', 400, true); }
+    var cols = [C.gold, C.blue];
+    s.c.forEach(function (c, j) {
+      var w = c.w * pxm, hh = 22 + Math.sqrt(c.m) * 7, cx = x0 + c.x * pxm;
+      rr(g, cx - w / 2, ty - 8 - hh, w, hh, 5); g.fillStyle = C.raise; g.fill(); g.strokeStyle = cols[j]; g.lineWidth = 2; g.stroke();
+      [cx - w / 3, cx + w / 3].forEach(function (wx) { g.beginPath(); g.arc(wx, ty - 5, 5, 0, TAU); g.fillStyle = C.line; g.fill(); g.strokeStyle = cols[j]; g.lineWidth = 1.2; g.stroke(); });
+      txt(g, c.m + ' kg', cx, ty - 8 - hh / 2, cols[j], 11.5, 'center', 500, true);
+      var ay = ty - 22 - hh;
+      if (Math.abs(c.v) > 0.01) arrow(g, cx, ay, cx + c.v * pxm * 0.32, ay, cols[j], 2.5);
+      txt(g, fmt(c.v) + ' m/s', cx, ay - 14, C.text, 11, 'center', 400, true);
+    });
+    if (s.flash > 0) { var mx = x0 + ((s.c[0].x + s.c[0].w / 2) * pxm); g.fillStyle = 'rgba(242,212,136,' + (s.flash * 3).toFixed(2) + ')'; g.beginPath(); g.arc(mx, ty - 30, 22, 0, TAU); g.fill(); }
+    var by = Math.round(H * 0.68), half = W / 2;
+    var groups = [['قبل التصادم', s.before, W - 16 - (half - 24)], ['بعد التصادم', s.after, 16]];
+    var pm = Math.max(1, Math.abs(s.before.p1), Math.abs(s.before.p2), Math.abs(s.before.p1 + s.before.p2));
+    if (s.after) pm = Math.max(pm, Math.abs(s.after.p1), Math.abs(s.after.p2));
+    groups.forEach(function (gp) {
+      var gx = gp[2], gw = half - 24, cx = gx + gw / 2, d = gp[1];
+      txt(g, gp[0], gx + gw, by, C.text, 12.5, 'right', 500);
+      g.strokeStyle = C.line; g.lineWidth = 1; g.beginPath(); g.moveTo(cx, by + 12); g.lineTo(cx, by + 66); g.stroke();
+      if (!d) { txt(g, 'بانتظار التصادم', cx, by + 40, C.muted, 12); return; }
+      var rows = [['p₁', d.p1, C.gold], ['p₂', d.p2, C.blue], ['Σp', d.p1 + d.p2, C.text]], k = (gw / 2 - 30) / pm;
+      rows.forEach(function (r, j) {
+        var y = by + 18 + j * 16; g.fillStyle = r[2]; g.fillRect(Math.min(cx, cx + r[1] * k), y, Math.abs(r[1] * k), 10);
+        txt(g, r[0] + ' ' + fmt(r[1], 1), r[1] >= 0 ? cx - 6 : cx + 6, y + 5, C.muted, 10.5, r[1] >= 0 ? 'right' : 'left', 400, true);
+      });
+      txt(g, 'طاقة حركية: ' + fmt(d.k, 1) + ' J', cx, by + 74, C.muted, 11);
+    });
+    if (s.end) txt(g, 'انتهت التجربة. اضغط «إعادة» لتكرارها', W / 2, 20, C.gold2, 12.5);
+  },
+  read: function (s) {
+    var b = s.before, a = s.after;
+    return [['الزخم الكلي قبل', b.p1 + b.p2, 'kg·m/s', 1], ['الزخم الكلي بعد', a ? a.p1 + a.p2 : '—', 'kg·m/s', 1],
+      ['الطاقة الحركية قبل', b.k, 'J'], ['الطاقة الحركية بعد', a ? a.k : '—', 'J'],
+      ['الطاقة الضائعة', a ? (b.k > 0 ? (1 - a.k / b.k) * 100 : 0) : '—', '%', 0, 1],
+      ['السرعتان بعد التصادم', a ? fmt(s.c[0].v) + ' , ' + fmt(s.c[1].v) : '—', 'm/s']];
+  }
+});
+
+/* 5) البندول البسيط */
+LABS.push({
+  id: 'pendulum', cat: 'mech', name: 'البندول البسيط', law: 'الزمن الدوري يعتمد على الطول والجاذبية فقط',
+  formula: '<i>T</i> = 2π √(<i>L</i> / <i>g</i>)<span class="s"></span><i>E</i> = ½<i>mv</i>² + <i>mgh</i>',
+  about: 'ثقل معلق بخيط يتأرجح تحت تأثير الجاذبية. الصيغة النظرية دقيقة للزوايا الصغيرة. أعمدة الطاقة تبين كيف تتحول طاقة الوضع إلى طاقة حركة ذهاباً وإياباً ومجموعهما ثابت ما لم يوجد تخميد.',
+  tips: ['غيّر الكتلة: الزمن الدوري لا يتغير إطلاقاً.', 'اجعل الطول أربعة أضعاف: يتضاعف الزمن الدوري.', 'ابدأ بزاوية 80° وقارن الزمن المقيس بالنظري: الصيغة تفقد دقتها في الزوايا الكبيرة.', 'أضف تخميداً وراقب تناقص الطاقة الكلية.'],
+  hint: 'اسحب الثقل بالفأرة أو بإصبعك لتغيير زاوية البدء',
+  params: [
+    { k: 'L', label: 'طول الخيط', min: 0.2, max: 3, step: 0.05, v: 1.5, unit: 'm', reset: 1 },
+    { k: 'g', label: 'الجاذبية', opts: G_OPTS, v: 9.81, reset: 1 },
+    { k: 'amp', label: 'زاوية البدء', min: 5, max: 80, step: 1, v: 25, unit: '°', reset: 1 },
+    { k: 'm', label: 'كتلة الثقل', min: 0.1, max: 5, step: 0.1, v: 1, unit: 'kg' },
+    { k: 'b', label: 'التخميد', min: 0, max: 0.5, step: 0.01, v: 0, unit: '1/s' }
+  ],
+  init: function (s, p) { s.th = p.amp * DEG; s.w = 0; s.tr = []; s.hist = []; s.ht = 0; s.lc = null; s.T = null; s.prev = s.th; },
+  step: function (s, p, h) {
+    if (s.drag) return;
+    var al = -(p.g / p.L) * Math.sin(s.th) - p.b * s.w;
+    s.w += al * h; s.th += s.w * h;
+    if (s.prev < 0 && s.th >= 0) { if (s.lc != null) s.T = s.t - s.lc; s.lc = s.t; }
+    s.prev = s.th;
+    s.ht += h; if (s.ht >= 1 / 30) { s.ht = 0; s.hist.push(s.th / DEG); if (s.hist.length > 240) s.hist.shift(); }
+  },
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H);
+    var px = W / 2, py = 30, sc = (H - 70) / 3.1, L = p.L * sc;
+    s.m = { px: px, py: py, L: L };
+    g.fillStyle = C.raise; g.fillRect(px - 60, py - 10, 120, 10); g.strokeStyle = C.gold; g.lineWidth = 1.5; g.strokeRect(px - 60, py - 10, 120, 10);
+    dashed(g, px, py, px, py + L + 20, C.line);
+    var A = Math.abs(p.amp * DEG);
+    g.strokeStyle = C.line; g.lineWidth = 1; g.beginPath(); g.arc(px, py, L, Math.PI / 2 - A, Math.PI / 2 + A); g.stroke();
+    var bx = px + L * Math.sin(s.th), by = py + L * Math.cos(s.th);
+    s.tr.push([bx, by]); if (s.tr.length > 50) s.tr.shift();
+    s.tr.forEach(function (q, i) { g.fillStyle = 'rgba(217,173,60,' + (i / 50 * 0.35).toFixed(3) + ')'; g.beginPath(); g.arc(q[0], q[1], 2.2, 0, TAU); g.fill(); });
+    g.strokeStyle = C.text; g.lineWidth = 1.5; g.beginPath(); g.moveTo(px, py); g.lineTo(bx, by); g.stroke();
+    g.strokeStyle = C.gold; g.lineWidth = 1.5; g.beginPath();
+    var a0 = Math.PI / 2, a1 = Math.PI / 2 - s.th; g.arc(px, py, 38, Math.min(a0, a1), Math.max(a0, a1)); g.stroke();
+    txt(g, 'θ', px + (s.th > 0 ? 12 : -12), py + 52, C.gold, 13, 'center', 600, true);
+    var r = 9 + Math.sqrt(p.m) * 5;
+    var gr = g.createRadialGradient(bx - r / 3, by - r / 3, 1, bx, by, r); gr.addColorStop(0, C.gold2); gr.addColorStop(1, '#7a5c1c');
+    g.beginPath(); g.arc(bx, by, r, 0, TAU); g.fillStyle = gr; g.fill();
+    var v = p.L * s.w, KE = 0.5 * p.m * v * v, PE = p.m * p.g * p.L * (1 - Math.cos(s.th)), E0 = p.m * p.g * p.L * (1 - Math.cos(p.amp * DEG));
+    bars(g, W - 110, H - 30, [['حركة', KE, C.gold], ['وضع', PE, C.blue], ['كلية', KE + PE, C.text]], Math.max(E0, KE + PE) * 1.05, Math.min(120, H * 0.35));
+    plot(g, 12, 12, Math.min(220, W * 0.36), 80, s.hist, { min: -90, max: 90, title: 'الزاوية مع الزمن θ(t)', col: C.gold });
+  },
+  down: function (s, p, x, y) { var m = s.m, bx = m.px + m.L * Math.sin(s.th), by = m.py + m.L * Math.cos(s.th); if (Math.hypot(x - bx, y - by) < 34) { s.drag = true; return true; } },
+  move: function (s, p, x, y) { var m = s.m; s.th = clamp(Math.atan2(x - m.px, y - m.py), -170 * DEG, 170 * DEG); s.w = 0; s.lc = null; s.T = null; s.prev = s.th; setParam('amp', clamp(Math.round(Math.abs(s.th) / DEG), 5, 80)); },
+  up: function (s) { s.drag = false; },
+  read: function (s, p) {
+    var v = p.L * s.w;
+    return [['الزمن الدوري النظري', TAU * Math.sqrt(p.L / p.g), 's', 1], ['الزمن الدوري المقيس', s.T || '—', 's', 1], ['الزاوية θ', s.th / DEG, '°', 0, 1],
+      ['سرعة الثقل', Math.abs(v), 'm/s'], ['طاقة الحركة', 0.5 * p.m * v * v, 'J'], ['طاقة الوضع', p.m * p.g * p.L * (1 - Math.cos(s.th)), 'J']];
+  }
+});
+
+/* 6) قانون هوك والنابض */
+LABS.push({
+  id: 'spring', cat: 'mech', name: 'قانون هوك والنابض', law: 'قوة النابض تتناسب طردياً مع استطالته',
+  formula: '<i>F</i> = −<i>k x</i><span class="s"></span><i>T</i> = 2π √(<i>m</i> / <i>k</i>)',
+  about: 'كتلة مربوطة بنابض على سطح أملس. كلما ابتعدت الكتلة عن موضع الاتزان زادت القوة التي تعيدها، فتنشأ حركة توافقية بسيطة. السهم الأحمر هو قوة النابض وإشارته دائماً عكس الإزاحة.',
+  tips: ['ضاعف ثابت النابض k أربع مرات: يقل الزمن الدوري إلى النصف.', 'غيّر سعة الاهتزاز: الزمن الدوري لا يتغير، وهذه سمة الحركة التوافقية.', 'أضف تخميداً لترى اهتزازاً متضائلاً كما في ممتص الصدمات في السيارة.'],
+  hint: 'اسحب الكتلة يميناً أو يساراً ثم أفلتها',
+  params: [
+    { k: 'k', label: 'ثابت النابض k', min: 5, max: 200, step: 1, v: 40, unit: 'N/m' },
+    { k: 'm', label: 'الكتلة', min: 0.2, max: 5, step: 0.1, v: 1, unit: 'kg' },
+    { k: 'A', label: 'الإزاحة الابتدائية', min: 0.05, max: 0.4, step: 0.01, v: 0.25, unit: 'm', reset: 1 },
+    { k: 'b', label: 'التخميد', min: 0, max: 2, step: 0.05, v: 0, unit: 'kg/s' }
+  ],
+  init: function (s, p) { s.x = p.A; s.v = 0; s.a = 0; s.hist = []; s.ht = 0; s.lc = null; s.T = null; s.prev = s.x; },
+  step: function (s, p, h) {
+    if (s.drag) return;
+    var a = (-p.k * s.x - p.b * s.v) / p.m; s.v += a * h; s.x += s.v * h; s.a = a;
+    if (s.prev < 0 && s.x >= 0) { if (s.lc != null) s.T = s.t - s.lc; s.lc = s.t; }
+    s.prev = s.x;
+    s.ht += h; if (s.ht >= 1 / 30) { s.ht = 0; s.hist.push(s.x); if (s.hist.length > 240) s.hist.shift(); }
+  },
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H);
+    var fy = Math.round(H * 0.68), wx = 28, xe = W * 0.56, sc = Math.min((W * 0.36) / 0.45, 700), bs = 34 + Math.sqrt(p.m) * 12, xc = xe + s.x * sc;
+    s.m = { xe: xe, sc: sc, fy: fy, bs: bs };
+    g.fillStyle = C.raise; g.fillRect(0, fy, W, H - fy);
+    g.strokeStyle = C.gold; g.lineWidth = 2; g.beginPath(); g.moveTo(0, fy); g.lineTo(W, fy); g.stroke();
+    g.fillStyle = C.raise; g.fillRect(wx - 12, fy - 110, 12, 110); g.strokeStyle = C.muted; g.lineWidth = 1;
+    for (var i = 0; i < 8; i++) { g.beginPath(); g.moveTo(wx - 12, fy - 110 + i * 14 + 14); g.lineTo(wx, fy - 110 + i * 14); g.stroke(); }
+    dashed(g, xe, fy - bs - 40, xe, fy + 4, C.muted);
+    txt(g, 'x = 0', xe, fy - bs - 48, C.muted, 11, 'center', 400, true);
+    for (var d = -0.4; d <= 0.401; d += 0.05) {
+      var tx = xe + d * sc, big = Math.abs(Math.round(d * 10) - d * 10) < 1e-6;
+      g.strokeStyle = C.muted; g.beginPath(); g.moveTo(tx, fy); g.lineTo(tx, fy + (big ? 10 : 5)); g.stroke();
+      if (big) txt(g, fmt(d, 1), tx, fy + 22, C.muted, 10, 'center', 400, true);
+    }
+    g.strokeStyle = C.text; g.lineWidth = 2; coil(g, wx, fy - bs / 2, xc - bs / 2, fy - bs / 2, 13, 11);
+    rr(g, xc - bs / 2, fy - bs, bs, bs, 4); g.fillStyle = C.raise; g.fill(); g.strokeStyle = C.gold; g.lineWidth = 2; g.stroke();
+    txt(g, p.m + ' kg', xc, fy - bs / 2, C.gold2, 11.5, 'center', 500, true);
+    var F = -p.k * s.x, fs = 110 / Math.max(1, p.k * 0.4);
+    if (Math.abs(F) > 0.01) { arrow(g, xc, fy - bs - 14, xc + F * fs, fy - bs - 14, C.red, 3); txt(g, 'F', xc + F * fs + (F > 0 ? 10 : -10), fy - bs - 14, C.red, 13, 'center', 600, true); }
+    var KE = 0.5 * p.m * s.v * s.v, PE = 0.5 * p.k * s.x * s.x;
+    bars(g, W - 110, Math.min(H * 0.45, fy - 30), [['حركة', KE, C.gold], ['مرونية', PE, C.blue], ['كلية', KE + PE, C.text]], 0.5 * p.k * Math.max(p.A * p.A, s.x * s.x) * 1.05 + 1e-9, Math.min(90, H * 0.28));
+    plot(g, 12, 12, Math.min(220, W * 0.38), 80, s.hist, { min: -0.42, max: 0.42, title: 'الإزاحة مع الزمن x(t)', col: C.gold });
+  },
+  down: function (s, p, x, y) { var m = s.m, xc = m.xe + s.x * m.sc; if (Math.abs(x - xc) < m.bs / 2 + 10 && y > m.fy - m.bs - 10 && y < m.fy + 10) { s.drag = true; return true; } },
+  move: function (s, p, x) { var m = s.m; s.x = clamp((x - m.xe) / m.sc, -0.45, 0.45); s.v = 0; s.lc = null; s.T = null; s.prev = s.x; },
+  up: function (s) { s.drag = false; },
+  read: function (s, p) {
+    return [['قوة النابض F = −kx', -p.k * s.x, 'N', 1], ['الإزاحة x', s.x, 'm', 0, 3], ['السرعة v', s.v, 'm/s'], ['التسارع a', s.a, 'm/s²'],
+      ['الزمن الدوري النظري', TAU * Math.sqrt(p.m / p.k), 's'], ['الزمن الدوري المقيس', s.T || '—', 's'], ['الطاقة المرونية ½kx²', 0.5 * p.k * s.x * s.x, 'J', 0, 3]];
+  }
+});
+
+/* 7) الجاذبية العامة وقوانين كبلر */
+var STARS = [];
+LABS.push({
+  id: 'orbit', cat: 'mech', name: 'الجذب العام وقوانين كبلر', law: 'قوة الجذب تتناسب عكسياً مع مربع المسافة',
+  formula: '<i>F</i> = <i>G Mm</i> / <i>r</i>²<span class="s"></span><i>T</i>² ∝ <i>a</i>³',
+  about: 'كوكب بكتلة الأرض يدور حول نجم. السرعة الابتدائية تحدد شكل المدار: دائري أو إهليلجي أو مفتوح يهرب فيه الكوكب. المقاطع الملونة تستغرق أزمنة متساوية، ومساحاتها متساوية أيضاً، وهذا قانون كبلر الثاني.',
+  tips: ['اجعل السرعة 1.00 من السرعة الدائرية: مدار دائري تماماً.', 'خفّض السرعة إلى 0.7: مدار إهليلجي يسرع فيه الكوكب قرب النجم ويبطئ بعيداً عنه.', 'ارفع السرعة فوق 1.41 (√2): يتجاوز الكوكب سرعة الإفلات ولا يعود.', 'ضاعف كتلة النجم وراقب كيف يقصر الزمن الدوري.'],
+  hint: 'المقاطع المتناوبة تُرسم كل 1/12 من الدورة',
+  params: [
+    { k: 'M', label: 'كتلة النجم', min: 0.3, max: 3, step: 0.1, v: 1, unit: 'M☉', reset: 1 },
+    { k: 'r0', label: 'البعد الابتدائي', min: 0.4, max: 2, step: 0.05, v: 1, unit: 'AU', reset: 1 },
+    { k: 'vf', label: 'السرعة الابتدائية ÷ السرعة الدائرية', min: 0.4, max: 1.6, step: 0.01, v: 0.8, unit: '', reset: 1 }
+  ],
+  init: function (s, p) {
+    var GM = 4 * Math.PI * Math.PI * p.M; s.GM = GM;
+    s.x = p.r0; s.y = 0; s.vx = 0; s.vy = p.vf * Math.sqrt(GM / p.r0);
+    var E = 0.5 * s.vy * s.vy - GM / p.r0, hm = p.r0 * s.vy;
+    s.e = Math.sqrt(Math.max(0, 1 + 2 * E * hm * hm / (GM * GM)));
+    if (E < 0) { s.a = -GM / (2 * E); s.T = Math.sqrt(Math.pow(s.a, 3) / p.M); s.view = s.a * (1 + s.e) * 1.12; s.rate = s.T / 7; }
+    else { s.a = Infinity; s.T = null; s.view = p.r0 * 3.5; s.rate = Math.pow(p.r0, 1.5) / Math.sqrt(p.M) / 4; }
+    s.view = Math.max(s.view, p.r0 * 1.25);
+    s.tr = [[s.x, s.y, 0]]; s.st = 0; s.crash = false; s.gone = false; s.ang = 0; s.rev = 0; s.Tm = null;
+  },
+  step: function (s, p, h) {
+    if (s.crash || s.gone) return;
+    var dt = h * s.rate, n = 0, GM = s.GM;
+    while (dt > 1e-12 && n < 400) {
+      var r = Math.hypot(s.x, s.y), d = Math.min(dt, 0.004 * Math.sqrt(r * r * r / GM));
+      var r3 = r * r * r, ax = -GM * s.x / r3, ay = -GM * s.y / r3, a0 = Math.atan2(s.y, s.x);
+      s.x += s.vx * d + 0.5 * ax * d * d; s.y += s.vy * d + 0.5 * ay * d * d;
+      var r2 = Math.hypot(s.x, s.y), q = r2 * r2 * r2, bx = -GM * s.x / q, by = -GM * s.y / q;
+      s.vx += 0.5 * (ax + bx) * d; s.vy += 0.5 * (ay + by) * d;
+      var da = Math.atan2(s.y, s.x) - a0; if (da > Math.PI) da -= TAU; if (da < -Math.PI) da += TAU;
+      s.ang += da; s.st += d; dt -= d; n++;
+      if (s.ang >= TAU * (s.rev + 1)) { s.rev++; s.Tm = s.st / s.rev; }
+      if (r2 < 0.02) { s.crash = true; break; }
+      if (r2 > s.view * 3) { s.gone = true; break; }
+    }
+    var last = s.tr[s.tr.length - 1], gap = s.T ? s.T / 500 : s.rate / 60;
+    if (s.st - last[2] >= gap) { s.tr.push([s.x, s.y, s.st]); if (s.tr.length > 3000) s.tr.shift(); }
+    if (s.T) { while (s.tr.length > 2 && s.tr[0][2] < s.st - s.T) s.tr.shift(); }
+  },
+  draw: function (g, s, p, W, H) {
+    g.fillStyle = C.ink; g.fillRect(0, 0, W, H);
+    if (STARS.length === 0) for (var i = 0; i < 140; i++) STARS.push([Math.random(), Math.random(), Math.random()]);
+    STARS.forEach(function (q) { g.fillStyle = 'rgba(236,231,218,' + (0.12 + q[2] * 0.4).toFixed(2) + ')'; g.fillRect(q[0] * W, q[1] * H, 1.4, 1.4); });
+    var cx = W / 2, cy = H / 2, sc = Math.min(W, H) / 2 / s.view * 0.94;
+    var X = function (x) { return cx + x * sc; }, Y = function (y) { return cy - y * sc; };
+    if (s.T) {
+      var bin = s.T / 12, cur = null, poly = [];
+      var flush = function () { if (poly.length > 1 && cur % 2 === 0) { g.beginPath(); g.moveTo(cx, cy); poly.forEach(function (q) { g.lineTo(X(q[0]), Y(q[1])); }); g.closePath(); g.fillStyle = 'rgba(217,173,60,.13)'; g.fill(); } };
+      s.tr.forEach(function (q) { var b = Math.floor(q[2] / bin); if (b !== cur) { if (poly.length) { var lastp = poly[poly.length - 1]; flush(); poly = [lastp]; } cur = b; } poly.push(q); });
+      flush();
+    }
+    g.strokeStyle = 'rgba(93,180,220,.7)'; g.lineWidth = 1.6; g.beginPath();
+    s.tr.forEach(function (q, j) { if (j) g.lineTo(X(q[0]), Y(q[1])); else g.moveTo(X(q[0]), Y(q[1])); }); g.lineTo(X(s.x), Y(s.y)); g.stroke();
+    var sr = 7 + p.M * 4, gr = g.createRadialGradient(cx, cy, 1, cx, cy, sr * 3);
+    gr.addColorStop(0, C.gold2); gr.addColorStop(0.3, 'rgba(217,173,60,.55)'); gr.addColorStop(1, 'rgba(217,173,60,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, sr * 3, 0, TAU); g.fill();
+    g.fillStyle = C.gold2; g.beginPath(); g.arc(cx, cy, sr, 0, TAU); g.fill();
+    var px = X(s.x), py = Y(s.y), r = Math.hypot(s.x, s.y);
+    if (!s.crash) {
+      var fl = clamp(30 * Math.pow(p.r0 / r, 2), 8, 70);
+      arrow(g, px, py, px - s.x / r * fl, py + s.y / r * fl, C.gold, 2);
+      var v = Math.hypot(s.vx, s.vy), vc = Math.sqrt(s.GM / p.r0), vl = 34 * v / vc;
+      arrow(g, px, py, px + s.vx / v * vl, py - s.vy / v * vl, C.green, 2);
+      g.fillStyle = C.blue; g.beginPath(); g.arc(px, py, 5.5, 0, TAU); g.fill();
+    }
+    txt(g, '1 AU', 14 + sc / 2, H - 26, C.muted, 10.5, 'center', 400, true);
+    g.strokeStyle = C.muted; g.lineWidth = 1; g.beginPath(); g.moveTo(14, H - 16); g.lineTo(14 + sc, H - 16); g.stroke();
+    if (s.crash) txt(g, 'اصطدم الكوكب بالنجم', W / 2, 22, C.red, 13);
+    if (s.gone) txt(g, 'أفلت الكوكب من جاذبية النجم', W / 2, 22, C.gold2, 13);
+    txt(g, '→ الجاذبية', W - 14, 18, C.gold, 11, 'right'); txt(g, '→ السرعة', W - 14, 36, C.green, 11, 'right');
+  },
+  read: function (s, p) {
+    var r = Math.hypot(s.x, s.y), F = 1.32712e20 * p.M * 5.972e24 / Math.pow(r * 1.496e11, 2);
+    return [['البعد عن النجم r', r, 'AU'], ['السرعة المدارية', Math.hypot(s.vx, s.vy) * 4.74, 'km/s'], ['قوة الجذب على كوكب بكتلة الأرض', F, 'N', 1],
+      ['الدور حسب كبلر الثالث', s.T || 'مدار مفتوح', 'سنة'], ['الدور المقيس', s.Tm || '—', 'سنة'], ['الاختلاف المركزي e', s.e, ''], ['الزمن المنقضي', s.st, 'سنة']];
+  }
+});
+
+/* 8) قاعدة أرخميدس */
+var FLUIDS = [['زيت', 900], ['ماء عذب', 1000], ['ماء البحر', 1025], ['زئبق', 13600]];
+var MATS = [[160, 'فلين'], [600, 'خشب'], [917, 'جليد'], [1050, 'بلاستيك'], [2700, 'ألومنيوم'], [7870, 'حديد']];
+var TANK = 0.7;
+LABS.push({
+  id: 'archimedes', cat: 'fluid', name: 'قاعدة أرخميدس والطفو', law: 'قوة الطفو تساوي وزن السائل المُزاح',
+  formula: '<i>F</i><sub>b</sub> = <i>ρ</i><sub>سائل</sub> · <i>g</i> · <i>V</i><sub>مغمور</sub><span class="s"></span><i>P</i> = <i>ρ g h</i>',
+  about: 'مكعب يُلقى في حوض. يطفو إذا كانت كثافته أقل من كثافة السائل، ويستقر حين يصبح وزن السائل الذي أزاحه مساوياً لوزنه. نسبة الجزء المغمور تساوي نسبة الكثافتين.',
+  tips: ['ضع مكعباً من الجليد (917) في الماء العذب: يُغمر نحو 92% منه، وهذا سرّ خطورة الجبال الجليدية.', 'ضع مكعب حديد في الماء فيغوص، ثم بدّل السائل إلى الزئبق فيطفو.', 'قارن الطفو في الماء العذب وماء البحر لنفس الجسم.'],
+  hint: 'اسحب المكعب وأفلته من أي ارتفاع',
+  params: [
+    { k: 'rho', label: 'كثافة الجسم', min: 100, max: 8000, step: 10, v: 600, unit: 'kg/m³', hint: function (v) { return nearest(MATS, v, 120); } },
+    { k: 'vol', label: 'حجم المكعب', min: 1, max: 20, step: 1, v: 8, unit: 'L' },
+    { k: 'fl', label: 'السائل', opts: FLUIDS, v: 1000 }
+  ],
+  init: function (s) { s.y = null; s.v = 0; s.wait = 0.6; },
+  step: function (s, p, h) {
+    var a = Math.cbrt(p.vol / 1000);
+    if (s.y == null) s.y = -a - 0.06;
+    if (s.drag) return;
+    if (s.wait > 0) { s.wait -= h; return; }
+    var sub = clamp(s.y + a, 0, a), m = p.rho * a * a * a, Fb = p.fl * 9.81 * a * a * sub;
+    var acc = (m * 9.81 - Fb) / m - s.v * (0.6 + 5 * sub / a);
+    s.v += acc * h; s.y += s.v * h;
+    if (s.y + a >= TANK) { s.y = TANK - a; if (s.v > 0) s.v = 0; }
+  },
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H);
+    var a = Math.cbrt(p.vol / 1000), sc = (H - 40) / (TANK + 0.34), Y = function (y) { return 20 + (y + 0.32) * sc; };
+    var cx = W * 0.44, tw = Math.min(W * 0.62, 0.9 * sc * 1.4);
+    s.m = { cx: cx, sc: sc, Y: Y, a: a };
+    var col = p.fl === 900 ? 'rgba(217,173,60,.28)' : p.fl === 13600 ? 'rgba(190,195,205,.45)' : p.fl === 1025 ? 'rgba(80,170,190,.32)' : 'rgba(93,180,220,.3)';
+    g.fillStyle = col; g.fillRect(cx - tw / 2, Y(0), tw, Y(TANK) - Y(0));
+    g.strokeStyle = C.text; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - tw / 2, Y(-0.12)); g.lineTo(cx - tw / 2, Y(TANK)); g.lineTo(cx + tw / 2, Y(TANK)); g.lineTo(cx + tw / 2, Y(-0.12)); g.stroke();
+    g.strokeStyle = 'rgba(236,231,218,.5)'; g.lineWidth = 1; g.beginPath(); g.moveTo(cx - tw / 2, Y(0)); g.lineTo(cx + tw / 2, Y(0)); g.stroke();
+    txt(g, FLUIDS.filter(function (f) { return f[1] === p.fl; })[0][0] + ' · ' + p.fl + ' kg/m³', cx + tw / 2 - 8, Y(TANK) - 14, C.muted, 11, 'right');
+    var y = s.y == null ? -a - 0.06 : s.y, side = a * sc, top = Y(y);
+    rr(g, cx - side / 2, top, side, side, 3); g.fillStyle = p.rho > 2000 ? '#3a3f4a' : p.rho > 1000 ? '#4b4237' : '#6b5426'; g.fill(); g.strokeStyle = C.gold; g.lineWidth = 2; g.stroke();
+    var nm = nearest(MATS, p.rho, 120);
+    if (side > 34 && nm) txt(g, nm, cx, top + side / 2, C.gold2, 11.5, 'center', 500);
+    var sub = clamp(y + a, 0, a), Wt = p.rho * a * a * a * 9.81, Fb = p.fl * 9.81 * a * a * sub, Fmax = Math.max(Wt, p.fl * 9.81 * a * a * a), k = 90 / Fmax;
+    arrow(g, cx - 8, top + side / 2, cx - 8, top + side / 2 + Wt * k, C.red, 3);
+    txt(g, 'W', cx - 22, top + side / 2 + Wt * k, C.red, 12, 'center', 600, true);
+    if (Fb > 0.01) { arrow(g, cx + 8, top + side / 2, cx + 8, top + side / 2 - Fb * k, C.blue, 3); txt(g, 'Fb', cx + 26, top + side / 2 - Fb * k, C.blue, 12, 'center', 600, true); }
+    var gx = Math.min(W - 70, cx + tw / 2 + 50);
+    if (gx > cx + tw / 2 + 30) {
+      txt(g, 'الجزء المغمور', gx, 24, C.muted, 11);
+      var bh = Math.min(140, H * 0.45); g.fillStyle = C.raise; g.fillRect(gx - 9, 40, 18, bh);
+      g.fillStyle = C.blue; g.fillRect(gx - 9, 40 + bh * (1 - sub / a), 18, bh * sub / a);
+      txt(g, Math.round(sub / a * 100) + '%', gx, 52 + bh, C.text, 12, 'center', 500, true);
+    }
+  },
+  down: function (s, p, x, y) { var m = s.m; if (!m || s.y == null) return; var side = m.a * m.sc, top = m.Y(s.y); if (Math.abs(x - m.cx) < side / 2 + 10 && y > top - 10 && y < top + side + 10) { s.drag = true; s.off = y - top; return true; } },
+  move: function (s, p, x, y) { var m = s.m; s.y = clamp((y - s.off - 20) / m.sc - 0.32, -0.32, TANK - m.a); s.v = 0; s.wait = 0; },
+  up: function (s) { s.drag = false; },
+  read: function (s, p) {
+    var a = Math.cbrt(p.vol / 1000), y = s.y == null ? -a : s.y, sub = clamp(y + a, 0, a), Wt = p.rho * a * a * a * 9.81, Fb = p.fl * 9.81 * a * a * sub;
+    var st = p.rho < p.fl ? 'يطفو' : p.rho > p.fl ? 'يغوص' : 'معلّق';
+    return [['الوزن W', Wt, 'N'], ['قوة الطفو Fb', Fb, 'N', 1], ['الوزن الظاهري', Math.max(0, Wt - Fb), 'N'], ['الجزء المغمور الآن', sub / a * 100, '%', 0, 0],
+      ['المتوقع عند الاتزان', p.rho < p.fl ? p.rho / p.fl * 100 : 100, '%', 0, 0], ['حالة الجسم', st, ''], ['الضغط عند قاعدة المكعب ρgh', p.fl * 9.81 * Math.max(0, y + a), 'Pa', 0, 0]];
+  }
+});
+
+/* 9) قانون الغاز المثالي */
+var BW = 1.6, BH = 1, SIG0 = 0.6, GCONV = (8.314 / 24.6) / (SIG0 * SIG0 * 100 / 480);
+LABS.push({
+  id: 'gas', cat: 'fluid', name: 'قانون الغاز المثالي', law: 'العلاقة بين الضغط والحجم ودرجة الحرارة',
+  formula: '<i>P V</i> = <i>n R T</i>',
+  about: 'جزيئات غاز تتحرك عشوائياً داخل وعاء بمكبس. الضغط المقيس محسوب فعلياً من اصطدام الجزيئات بالجدران، ويقارَن بالقيمة النظرية nRT/V. الرسم السفلي يبين توزيع سرعات الجزيئات (توزيع ماكسويل).',
+  tips: ['قانون بويل: ثبّت الحرارة وقلّل الحجم إلى النصف، فيتضاعف الضغط.', 'قانون شارل وغاي-لوساك: ضاعف درجة الحرارة المطلقة فيتضاعف الضغط وتنتشر السرعات نحو قيم أعلى.', 'ضاعف عدد الجزيئات: يتضاعف الضغط لأن الاصطدامات تتضاعف.'],
+  hint: 'الضغط المقيس يتذبذب قليلاً لأنه ناتج عن اصطدامات عشوائية',
+  params: [
+    { k: 'T', label: 'درجة الحرارة', min: 50, max: 1000, step: 10, v: 300, unit: 'K' },
+    { k: 'V', label: 'الحجم (موضع المكبس)', min: 30, max: 100, step: 1, v: 100, unit: '%', fmt: function (v) { return (24.6 * v / 100).toFixed(1) + ' L'; } },
+    { k: 'N', label: 'عدد الجزيئات', min: 20, max: 300, step: 10, v: 100, unit: '', reset: 1, fmt: function (v) { return v + ' (' + (v / 100).toFixed(1) + ' mol)'; } }
+  ],
+  init: function (s, p) {
+    s.T = p.T; s.ps = []; var sg = SIG0 * Math.sqrt(p.T / 300), wb = BW * p.V / 100;
+    for (var i = 0; i < p.N; i++) s.ps.push({ x: Math.random() * wb, y: Math.random() * BH, vx: gauss() * sg, vy: gauss() * sg });
+    s.imp = 0; s.it = 0; s.Pm = null; s.hist = new Array(18).fill(0);
+  },
+  step: function (s, p, h) {
+    if (p.T !== s.T) { var f = Math.sqrt(p.T / s.T); s.ps.forEach(function (q) { q.vx *= f; q.vy *= f; }); s.T = p.T; }
+    var wb = BW * p.V / 100, imp = 0;
+    for (var i = 0; i < s.ps.length; i++) {
+      var q = s.ps[i]; q.x += q.vx * h; q.y += q.vy * h;
+      if (q.x < 0) { q.x = -q.x; q.vx = -q.vx; imp += 2 * Math.abs(q.vx); }
+      else if (q.x > wb) { q.x = q.x > wb + 0.05 ? wb - Math.random() * 0.03 : 2 * wb - q.x; q.vx = -Math.abs(q.vx); imp += 2 * Math.abs(q.vx); }
+      if (q.y < 0) { q.y = -q.y; q.vy = -q.vy; imp += 2 * Math.abs(q.vy); }
+      else if (q.y > BH) { q.y = 2 * BH - q.y; q.vy = -q.vy; imp += 2 * Math.abs(q.vy); }
+    }
+    s.imp += imp; s.it += h;
+    if (s.it >= 0.25) { var meas = s.imp / (s.it * 2 * (wb + BH)); s.Pm = s.Pm == null ? meas : s.Pm * 0.75 + meas * 0.25; s.imp = 0; s.it = 0; }
+  },
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H);
+    var narrow = W < 520, u = Math.min(((narrow ? W - 32 : W * 0.62) - 16) / BW, (H - (narrow ? 130 : 40)) / BH), bx = 16, by = 18, wb = BW * p.V / 100;
+    g.save(); g.setLineDash([3, 4]); g.strokeStyle = C.line; g.strokeRect(bx, by, BW * u, BH * u); g.restore();
+    g.strokeStyle = C.text; g.lineWidth = 2; g.beginPath(); g.moveTo(bx + wb * u, by); g.lineTo(bx, by); g.lineTo(bx, by + BH * u); g.lineTo(bx + wb * u, by + BH * u); g.stroke();
+    g.fillStyle = C.gold; g.fillRect(bx + wb * u - 2, by - 4, 8, BH * u + 8);
+    g.fillStyle = C.raise; g.fillRect(bx + wb * u + 6, by + BH * u / 2 - 4, BW * u - wb * u + 4, 8);
+    var sg = SIG0 * Math.sqrt(p.T / 300), vmax = 4.4 * SIG0 * Math.sqrt(1000 / 300), bins = s.hist.fill(0);
+    s.ps.forEach(function (q) {
+      var sp = Math.hypot(q.vx, q.vy), t = clamp(sp / (3 * sg), 0, 1);
+      g.fillStyle = t > 0.5 ? C.gold2 : t > 0.25 ? C.gold : C.blue;
+      g.beginPath(); g.arc(bx + clamp(q.x, 0, wb) * u, by + q.y * u, 2.8, 0, TAU); g.fill();
+      var bi = Math.floor(sp / vmax * bins.length); if (bi < bins.length) bins[bi]++;
+    });
+    var Pth = (p.N / 100) * 8.314 * p.T / (24.6 * p.V / 100), Pm = s.Pm == null ? Pth : s.Pm * GCONV;
+    var rx = narrow ? 16 : bx + BW * u + 22, rw = narrow ? W - 32 : W - rx - 14, ry = narrow ? by + BH * u + 14 : by;
+    var gr = Math.min(rw / 2 - 6, narrow ? 46 : 62, H * 0.17), gcx = narrow ? rx + gr + 4 : rx + rw / 2, gcy = ry + gr + 6;
+    var scale = [200, 500, 1000, 2000, 5000].filter(function (v) { return v > Pth * 1.3; })[0] || 5000;
+    g.beginPath(); g.arc(gcx, gcy, gr, Math.PI * 0.75, Math.PI * 2.25); g.strokeStyle = C.line; g.lineWidth = 6; g.stroke();
+    var fr = clamp(Pm / scale, 0, 1);
+    g.beginPath(); g.arc(gcx, gcy, gr, Math.PI * 0.75, Math.PI * (0.75 + 1.5 * fr)); g.strokeStyle = C.gold; g.stroke();
+    var na = Math.PI * (0.75 + 1.5 * fr); g.strokeStyle = C.text; g.lineWidth = 2; g.beginPath(); g.moveTo(gcx, gcy); g.lineTo(gcx + Math.cos(na) * (gr - 10), gcy + Math.sin(na) * (gr - 10)); g.stroke();
+    txt(g, Pm.toFixed(0), gcx, gcy + gr * 0.45, C.gold2, 15, 'center', 500, true);
+    txt(g, 'kPa · 0 – ' + scale, gcx, gcy + gr * 0.45 + 16, C.muted, 10, 'center', 400, true);
+    var hx = narrow ? gcx + gr + 22 : rx, hw = narrow ? W - 16 - hx : rw, hy = narrow ? ry + 8 : gcy + gr + 26, hh = narrow ? gr * 2 - 6 : Math.min(110, H - hy - 24);
+    if (hh > 40 && hw > 80) {
+      txt(g, 'توزيع السرعات', hx + hw, hy, C.muted, 11, 'right');
+      var top = hy + 14, bot = top + hh - 14, bwid = hw / bins.length, kk = (bot - top) / (0.32 * s.ps.length);
+      bins.forEach(function (c, i) { g.fillStyle = 'rgba(217,173,60,.55)'; g.fillRect(hx + i * bwid + 1, bot - c * kk, bwid - 2, c * kk); });
+      g.strokeStyle = C.text; g.lineWidth = 1.5; g.beginPath();
+      for (var i = 0; i <= 60; i++) { var v = vmax * i / 60, f = v / (sg * sg) * Math.exp(-v * v / (2 * sg * sg)) * (vmax / bins.length) * s.ps.length; var X = hx + hw * i / 60, Yv = bot - f * kk; if (i) g.lineTo(X, Math.max(top, Yv)); else g.moveTo(X, Yv); }
+      g.stroke();
+      g.strokeStyle = C.line; g.beginPath(); g.moveTo(hx, bot); g.lineTo(hx + hw, bot); g.stroke();
+    }
+  },
+  read: function (s, p) {
+    var Pth = (p.N / 100) * 8.314 * p.T / (24.6 * p.V / 100);
+    return [['الضغط المقيس من الاصطدامات', s.Pm == null ? Pth : s.Pm * GCONV, 'kPa', 1, 1], ['الضغط النظري nRT/V', Pth, 'kPa', 0, 1], ['الحجم V', 24.6 * p.V / 100, 'L', 0, 1],
+      ['كمية المادة n', p.N / 100, 'mol'], ['درجة الحرارة T', p.T, 'K', 0, 0], ['سرعة جزيئات N₂ (جذر متوسط المربعات)', Math.sqrt(3 * 8.314 * p.T / 0.028), 'm/s', 0, 0]];
+  }
+});
+
+/* 10) قانون أوم والدوائر */
+function pathLen(pts) { var L = 0; for (var i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); return L; }
+function pathAt(pts, d) {
+  for (var i = 1; i < pts.length; i++) {
+    var l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    if (d <= l) { var t = l ? d / l : 0; return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t]; }
+    d -= l;
+  }
+  return pts[pts.length - 1];
+}
+function circuit(p) {
+  var Req = p.mode === 0 ? p.R1 : p.mode === 1 ? p.R1 + p.R2 : p.R1 * p.R2 / (p.R1 + p.R2), I = p.V / Req, I1, I2, V1, V2;
+  if (p.mode === 0) { I1 = I; I2 = 0; V1 = p.V; V2 = 0; }
+  else if (p.mode === 1) { I1 = I2 = I; V1 = I * p.R1; V2 = I * p.R2; }
+  else { V1 = V2 = p.V; I1 = p.V / p.R1; I2 = p.V / p.R2; }
+  return { Req: Req, I: I, I1: I1, I2: I2, V1: V1, V2: V2 };
+}
+function resistor(g, x, y, vertical, label, heat) {
+  var len = 60, amp = 8, n = 6;
+  g.save(); g.translate(x, y); if (vertical) g.rotate(Math.PI / 2);
+  g.fillStyle = C.panel; g.fillRect(-len / 2 - 2, -amp - 3, len + 4, amp * 2 + 6);
+  var t = clamp(heat, 0, 1);
+  g.shadowColor = 'rgba(228,111,90,' + (t * 0.9).toFixed(2) + ')'; g.shadowBlur = t * 18;
+  g.strokeStyle = t > 0.5 ? C.red : C.gold; g.lineWidth = 2.4; g.beginPath(); g.moveTo(-len / 2 - 2, 0);
+  for (var i = 0; i < n * 2; i++) g.lineTo(-len / 2 + (i + 0.5) * len / (n * 2), i % 2 ? amp : -amp);
+  g.lineTo(len / 2 + 2, 0); g.stroke(); g.restore();
+  txt(g, label, vertical ? x - 26 : x, vertical ? y : y - 22, C.text, 12, 'center', 500, true);
+}
+LABS.push({
+  id: 'ohm', cat: 'elec', name: 'قانون أوم والدوائر', law: 'التيار يتناسب طردياً مع فرق الجهد',
+  formula: '<i>V</i> = <i>I R</i><span class="s"></span><i>P</i> = <i>V I</i>',
+  about: 'دائرة كهربائية فيها بطارية ومقاومة أو مقاومتان. النقاط الزرقاء إلكترونات تتحرك عكس اتجاه التيار الاصطلاحي، وسرعتها تعكس شدة التيار. يتوهج المقاوم كلما زادت القدرة المستهلكة فيه. الرسم الداخلي يبين العلاقة الخطية بين V وI.',
+  tips: ['ضاعف الجهد وراقب تضاعف التيار: النقطة تتحرك على الخط المستقيم نفسه.', 'في التوالي يمر التيار نفسه في المقاومتين ويتقاسمان الجهد.', 'في التوازي يكون الجهد نفسه على المقاومتين، وتكون المقاومة المكافئة أصغر من أصغرهما.'],
+  hint: 'سرعة الإلكترونات في المحاكاة مكبرة لتُرى بالعين',
+  params: [
+    { k: 'V', label: 'جهد البطارية', min: 0, max: 24, step: 0.5, v: 12, unit: 'V' },
+    { k: 'mode', label: 'طريقة التوصيل', opts: [['مقاومة واحدة', 0], ['توالي', 1], ['توازي', 2]], v: 0 },
+    { k: 'R1', label: 'المقاومة R₁', min: 1, max: 100, step: 1, v: 20, unit: 'Ω' },
+    { k: 'R2', label: 'المقاومة R₂', min: 1, max: 100, step: 1, v: 30, unit: 'Ω', show: function (p) { return p.mode > 0; } }
+  ],
+  init: function (s) { s.ph = { m: 0, a: 0, b: 0 }; },
+  step: function (s, p, h) { var c = circuit(p); s.ph.m += Math.min(c.I * 60, 600) * h; s.ph.a += Math.min(c.I1 * 60, 600) * h; s.ph.b += Math.min(c.I2 * 60, 600) * h; },
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H);
+    var c = circuit(p), L = 46, R = W - 46, T = 40, B = H - 40, mid = (T + B) / 2, a = W * 0.3, b = W * 0.7, gap = Math.min(70, (B - T) * 0.3);
+    var paths;
+    if (p.mode === 2) paths = [[[[b, T], [R, T], [R, B], [L, B], [L, T], [a, T]], s.ph.m], [[[a, T], [b, T]], s.ph.a], [[[a, T], [a, T + gap], [b, T + gap], [b, T]], s.ph.b]];
+    else paths = [[[[L, B], [L, T], [R, T], [R, B], [L, B]], s.ph.m]];
+    g.strokeStyle = C.muted; g.lineWidth = 3; g.lineJoin = 'round';
+    paths.forEach(function (pp) { g.beginPath(); pp[0].forEach(function (q, i) { if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); }); g.stroke(); });
+    g.fillStyle = C.blue;
+    paths.forEach(function (pp) {
+      var pts = pp[0], Lp = pathLen(pts), sp = 22, n = Math.floor(Lp / sp);
+      for (var i = 0; i < n; i++) { var d = Lp - ((i * sp + pp[1]) % Lp); var q = pathAt(pts, d); g.beginPath(); g.arc(q[0], q[1], 2.6, 0, TAU); g.fill(); }
+    });
+    if (p.mode === 0) resistor(g, W / 2, T, false, 'R₁ = ' + p.R1 + ' Ω', c.V1 * c.I1 / 30);
+    if (p.mode === 1) { resistor(g, W / 2, T, false, 'R₁ = ' + p.R1 + ' Ω', c.V1 * c.I1 / 30); resistor(g, R, mid, true, 'R₂', c.V2 * c.I2 / 30); txt(g, p.R2 + ' Ω', R - 26, mid + 18, C.text, 12, 'center', 500, true); }
+    if (p.mode === 2) { resistor(g, W / 2, T, false, 'R₁ = ' + p.R1 + ' Ω', c.V1 * c.I1 / 30); resistor(g, W / 2, T + gap, false, '', c.V2 * c.I2 / 30); txt(g, 'R₂ = ' + p.R2 + ' Ω', W / 2, T + gap + 22, C.text, 12, 'center', 500, true); }
+    g.fillStyle = C.panel; g.fillRect(L - 20, mid - 12, 40, 24);
+    g.strokeStyle = C.gold; g.lineWidth = 3; g.beginPath(); g.moveTo(L - 18, mid - 6); g.lineTo(L + 18, mid - 6); g.stroke();
+    g.lineWidth = 5; g.beginPath(); g.moveTo(L - 9, mid + 6); g.lineTo(L + 9, mid + 6); g.stroke();
+    txt(g, '+', L + 26, mid - 12, C.gold, 14, 'center', 600, true); txt(g, '−', L + 26, mid + 12, C.gold, 14, 'center', 600, true);
+    txt(g, p.V + ' V', L + 38, mid, C.gold2, 12.5, 'left', 500, true);
+    g.beginPath(); g.arc(W / 2, B, 15, 0, TAU); g.fillStyle = C.panel; g.fill(); g.strokeStyle = C.text; g.lineWidth = 1.6; g.stroke();
+    txt(g, 'A', W / 2, B, C.text, 12, 'center', 600, true);
+    txt(g, c.I.toFixed(3) + ' A', W / 2, B + 24, C.gold2, 12, 'center', 500, true);
+    arrow(g, L + 14, T - 14, L + 54, T - 14, C.gold, 1.6, 7);
+    txt(g, 'التيار الاصطلاحي', L + 60, T - 14, C.muted, 10.5, 'left');
+    var gw = Math.min(220, W * 0.44), gh = Math.min(110, (B - T) * 0.42), gx = W / 2 - gw / 2 + 10, gy = B - gh - 30;
+    if (gy > T + (p.mode === 2 ? gap + 30 : 34) && gw > 120) {
+      g.strokeStyle = C.line; g.lineWidth = 1; g.beginPath(); g.moveTo(gx, gy); g.lineTo(gx, gy + gh); g.lineTo(gx + gw, gy + gh); g.stroke();
+      var Imax = 24 / c.Req * 1.05;
+      g.strokeStyle = C.gold; g.lineWidth = 1.6; g.beginPath(); g.moveTo(gx, gy + gh); g.lineTo(gx + gw, gy + gh - (24 / c.Req) / Imax * gh); g.stroke();
+      var dx = gx + p.V / 24 * gw, dy = gy + gh - c.I / Imax * gh;
+      g.beginPath(); g.arc(dx, dy, 4.5, 0, TAU); g.fillStyle = C.gold2; g.fill();
+      txt(g, 'V', gx + gw + 10, gy + gh, C.muted, 11, 'center', 400, true); txt(g, 'I', gx, gy - 10, C.muted, 11, 'center', 400, true);
+      txt(g, 'الميل = 1/R', gx + gw, gy + 4, C.muted, 10.5, 'right');
+    }
+  },
+  read: function (s, p) {
+    var c = circuit(p), two = p.mode > 0;
+    return [['المقاومة المكافئة', c.Req, 'Ω'], ['التيار الكلي I', c.I, 'A', 1, 3], ['التيار في R₁', c.I1, 'A', 0, 3], ['التيار في R₂', two ? c.I2 : '—', 'A', 0, 3],
+      ['فرق الجهد على R₁', c.V1, 'V'], ['فرق الجهد على R₂', two ? c.V2 : '—', 'V'], ['القدرة الكلية P', p.V * c.I, 'W']];
+  }
+});
+
+/* 11) قانون كولوم */
+var KC = 8.9875e9;
+function efield(qs, x, y) {
+  var ex = 0, ey = 0;
+  qs.forEach(function (c) { var dx = x - c.x, dy = y - c.y, r2 = dx * dx + dy * dy, r = Math.sqrt(r2); if (r < 1e-6) return; var e = KC * c.q * 1e-6 / r2; ex += e * dx / r; ey += e * dy / r; });
+  return [ex, ey];
+}
+LABS.push({
+  id: 'coulomb', cat: 'elec', name: 'قانون كولوم', law: 'القوة بين شحنتين تتناسب عكسياً مع مربع المسافة',
+  formula: '<i>F</i> = <i>k</i> |<i>q</i>₁<i>q</i>₂| / <i>r</i>²',
+  about: 'شحنتان نقطيتان يمكنك تحريكهما. الشحنات المتشابهة تتنافر والمختلفة تتجاذب، والقوة على كل شحنة مساوية للقوة على الأخرى ومعاكسة لها (قانون نيوتن الثالث). الأسهم الصغيرة في الخلفية تبين اتجاه المجال الكهربائي.',
+  tips: ['ضاعف المسافة بين الشحنتين: تقل القوة إلى الربع.', 'اجعل إحدى الشحنتين صفراً: تختفي القوة، لكن مجال الشحنة الأخرى يبقى.', 'اجعل الشحنتين متساويتين ومتعاكستين وراقب شكل المجال بينهما.'],
+  hint: 'اسحب أي شحنة لتغيير المسافة',
+  params: [
+    { k: 'q1', label: 'الشحنة q₁', min: -10, max: 10, step: 0.5, v: 4, unit: 'μC' },
+    { k: 'q2', label: 'الشحنة q₂', min: -10, max: 10, step: 0.5, v: -3, unit: 'μC' }
+  ],
+  init: function (s) { if (!s.a) { s.a = { x: 0.32, y: 0.28 }; s.b = { x: 0.68, y: 0.28 }; } },
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H, true);
+    var k = W, hm = H / W;
+    s.a.y = clamp(s.a.y, 0.03, hm - 0.03); s.b.y = clamp(s.b.y, 0.03, hm - 0.03);
+    var qs = [{ x: s.a.x, y: s.a.y, q: p.q1 }, { x: s.b.x, y: s.b.y, q: p.q2 }];
+    for (var gx = 15; gx < W; gx += 30) for (var gy = 15; gy < H; gy += 30) {
+      var x = gx / k, y = gy / k;
+      if (Math.hypot(x - s.a.x, y - s.a.y) * k < 24 || Math.hypot(x - s.b.x, y - s.b.y) * k < 24) continue;
+      var E = efield(qs, x, y), m = Math.hypot(E[0], E[1]); if (m < 1) continue;
+      var al = clamp((Math.log10(m) - 3.6) / 4, 0.07, 0.85), ux = E[0] / m * 9, uy = E[1] / m * 9;
+      g.globalAlpha = al; arrow(g, gx - ux, gy - uy, gx + ux, gy + uy, C.text, 1.2, 5); g.globalAlpha = 1;
+    }
+    var ax = s.a.x * k, ay = s.a.y * k, bx = s.b.x * k, by = s.b.y * k, r = Math.hypot(s.b.x - s.a.x, s.b.y - s.a.y);
+    dashed(g, ax, ay, bx, by, C.muted);
+    txt(g, 'r = ' + r.toFixed(2) + ' m', (ax + bx) / 2, (ay + by) / 2 - 14, C.muted, 11.5, 'center', 400, true);
+    var F = KC * p.q1 * p.q2 * 1e-12 / (r * r), ux = (ax - bx) / (r * k), uy = (ay - by) / (r * k), Lf = clamp(32 * Math.log10(1 + Math.abs(F) * 20), 0, 150);
+    if (F !== 0) {
+      var sgn = F > 0 ? 1 : -1;
+      arrow(g, ax + ux * sgn * 18, ay + uy * sgn * 18, ax + ux * sgn * (18 + Lf), ay + uy * sgn * (18 + Lf), C.red, 3);
+      arrow(g, bx - ux * sgn * 18, by - uy * sgn * 18, bx - ux * sgn * (18 + Lf), by - uy * sgn * (18 + Lf), C.red, 3);
+    }
+    [[ax, ay, p.q1, 'q₁'], [bx, by, p.q2, 'q₂']].forEach(function (c) {
+      var col = c[2] > 0 ? C.gold : c[2] < 0 ? C.blue : C.muted;
+      g.beginPath(); g.arc(c[0], c[1], 16, 0, TAU); g.fillStyle = col; g.fill();
+      txt(g, c[2] > 0 ? '+' : c[2] < 0 ? '−' : '0', c[0], c[1] + 1, C.ink, 18, 'center', 600, true);
+      txt(g, c[3] + ' = ' + c[2] + ' μC', c[0], c[1] + 30, C.text, 11.5, 'center', 500, true);
+    });
+  },
+  down: function (s, p, x, y, W) { var k = W; if (Math.hypot(x - s.a.x * k, y - s.a.y * k) < 26) { s.dr = 'a'; return true; } if (Math.hypot(x - s.b.x * k, y - s.b.y * k) < 26) { s.dr = 'b'; return true; } },
+  move: function (s, p, x, y, W, H) {
+    var c = s[s.dr], o = s.dr === 'a' ? s.b : s.a;
+    c.x = clamp(x / W, 0.03, 0.97); c.y = clamp(y / W, 0.03, H / W - 0.03);
+    var r = Math.hypot(c.x - o.x, c.y - o.y);
+    if (r < 0.05) { var ux = r ? (c.x - o.x) / r : 1, uy = r ? (c.y - o.y) / r : 0; c.x = o.x + ux * 0.05; c.y = o.y + uy * 0.05; }
+  },
+  up: function (s) { s.dr = null; },
+  read: function (s, p) {
+    var r = Math.hypot(s.b.x - s.a.x, s.b.y - s.a.y), F = KC * Math.abs(p.q1 * p.q2) * 1e-12 / (r * r), pr = p.q1 * p.q2;
+    var E = efield([{ x: s.a.x, y: s.a.y, q: p.q1 }, { x: s.b.x, y: s.b.y, q: p.q2 }], (s.a.x + s.b.x) / 2, (s.a.y + s.b.y) / 2);
+    return [['المسافة r', r, 'm', 0, 3], ['مقدار القوة F', F, 'N', 1], ['نوع القوة', pr > 0 ? 'تنافر' : pr < 0 ? 'تجاذب' : 'لا توجد قوة', ''],
+      ['المجال عند منتصف المسافة', Math.hypot(E[0], E[1]), 'N/C'], ['ثابت كولوم k', '8.99×10⁹', 'N·m²/C²']];
+  }
+});
+
+/* 12) قانون سنل للانكسار */
+var MEDIA = [[1.0, 'هواء'], [1.33, 'ماء'], [1.36, 'إيثانول'], [1.47, 'زيت'], [1.52, 'زجاج'], [1.77, 'ياقوت'], [2.42, 'ألماس']];
+function snell(p) {
+  var t1 = p.th * DEG, sn = p.n1 * Math.sin(t1) / p.n2, tir = sn > 1, t2 = tir ? null : Math.asin(sn), R;
+  if (tir) R = 1; else {
+    var ci = Math.cos(t1), ct = Math.cos(t2);
+    var rs = Math.pow((p.n1 * ci - p.n2 * ct) / (p.n1 * ci + p.n2 * ct), 2), rp = Math.pow((p.n1 * ct - p.n2 * ci) / (p.n1 * ct + p.n2 * ci), 2);
+    R = (rs + rp) / 2;
+  }
+  return { t1: t1, t2: t2, tir: tir, R: R, crit: p.n1 > p.n2 ? Math.asin(p.n2 / p.n1) / DEG : null };
+}
+LABS.push({
+  id: 'snell', cat: 'optics', name: 'قانون سنل للانكسار', law: 'انكسار الضوء عند انتقاله بين وسطين',
+  formula: '<i>n</i>₁ sin<i>θ</i>₁ = <i>n</i>₂ sin<i>θ</i>₂',
+  about: 'شعاع ضوئي يسقط على السطح الفاصل بين وسطين. جزء منه ينعكس وجزء ينكسر، وسطوع كل شعاع يمثل نسبة الطاقة فيه. النبضات المتحركة تبين أن الضوء يبطئ في الوسط الأكثف، فتتقارب نبضاته.',
+  tips: ['انقل الضوء من الماء إلى الهواء (n₁ = 1.33، n₂ = 1.00) وزد الزاوية حتى يختفي الشعاع المنكسر: هذا الانعكاس الكلي الداخلي الذي تعمل به الألياف البصرية.', 'اجعل n₁ = n₂: يمر الضوء دون انكسار.', 'لاحظ ازدياد الانعكاس كلما اقتربت زاوية السقوط من 90°، كما يلمع سطح البحيرة عند الغروب.'],
+  hint: 'اسحب في النصف العلوي لتغيير زاوية السقوط',
+  params: [
+    { k: 'n1', label: 'معامل انكسار الوسط الأول n₁', min: 1, max: 2.5, step: 0.01, v: 1, unit: '', hint: function (v) { return nearest(MEDIA, v, 0.02); } },
+    { k: 'n2', label: 'معامل انكسار الوسط الثاني n₂', min: 1, max: 2.5, step: 0.01, v: 1.52, unit: '', hint: function (v) { return nearest(MEDIA, v, 0.02); } },
+    { k: 'th', label: 'زاوية السقوط θ₁', min: 0, max: 89, step: 1, v: 40, unit: '°' }
+  ],
+  init: function () {},
+  draw: function (g, s, p, W, H) {
+    var O = [W / 2, H / 2], z = snell(p), Rl = Math.hypot(W, H) * 0.55;
+    g.fillStyle = C.ink; g.fillRect(0, 0, W, H);
+    g.fillStyle = 'rgba(93,180,220,' + (0.03 + (p.n1 - 1) * 0.16).toFixed(3) + ')'; g.fillRect(0, 0, W, H / 2);
+    g.fillStyle = 'rgba(93,180,220,' + (0.03 + (p.n2 - 1) * 0.16).toFixed(3) + ')'; g.fillRect(0, H / 2, W, H / 2);
+    g.strokeStyle = C.line; g.lineWidth = 1.5; g.beginPath(); g.moveTo(0, H / 2); g.lineTo(W, H / 2); g.stroke();
+    txt(g, 'n₁ = ' + p.n1.toFixed(2) + '  ' + nearest(MEDIA, p.n1, 0.02), W - 14, 18, C.muted, 12, 'right', 500);
+    txt(g, 'n₂ = ' + p.n2.toFixed(2) + '  ' + nearest(MEDIA, p.n2, 0.02), W - 14, H - 18, C.muted, 12, 'right', 500);
+    dashed(g, O[0], 10, O[0], H - 10, C.muted);
+    var si = Math.sin(z.t1), co = Math.cos(z.t1), S = [O[0] - si * Rl, O[1] - co * Rl];
+    var dirR = [si, -co], dirT = z.tir ? null : [Math.sin(z.t2), Math.cos(z.t2)];
+    g.lineCap = 'round';
+    g.strokeStyle = C.gold2; g.lineWidth = 3; g.beginPath(); g.moveTo(S[0], S[1]); g.lineTo(O[0], O[1]); g.stroke();
+    g.globalAlpha = clamp(z.R, 0.12, 1); g.beginPath(); g.moveTo(O[0], O[1]); g.lineTo(O[0] + dirR[0] * Rl, O[1] + dirR[1] * Rl); g.stroke(); g.globalAlpha = 1;
+    if (dirT) { g.globalAlpha = clamp(1 - z.R, 0.12, 1); g.beginPath(); g.moveTo(O[0], O[1]); g.lineTo(O[0] + dirT[0] * Rl, O[1] + dirT[1] * Rl); g.stroke(); g.globalAlpha = 1; }
+    var v1 = 150 / p.n1, v2 = 150 / p.n2, t1 = Rl / v1, per = 0.35, maxAge = t1 + Rl / Math.min(v1, v2);
+    for (var e = Math.floor((s.t - maxAge) / per); e * per <= s.t; e++) {
+      var age = s.t - e * per; if (age < 0) continue;
+      var pts = [];
+      if (age < t1) pts.push([S[0] + si * age * v1, S[1] + co * age * v1]);
+      else { var d = age - t1; pts.push([O[0] + dirR[0] * d * v1, O[1] + dirR[1] * d * v1, z.R]); if (dirT) pts.push([O[0] + dirT[0] * d * v2, O[1] + dirT[1] * d * v2, 1 - z.R]); }
+      pts.forEach(function (q) { if (q[0] < -5 || q[0] > W + 5 || q[1] < -5 || q[1] > H + 5) return; g.globalAlpha = q[2] == null ? 1 : clamp(q[2] + 0.15, 0.2, 1); g.beginPath(); g.arc(q[0], q[1], 3.2, 0, TAU); g.fillStyle = '#fff4d0'; g.fill(); g.globalAlpha = 1; });
+    }
+    g.strokeStyle = C.gold; g.lineWidth = 1.5;
+    if (p.th > 0) { g.beginPath(); g.arc(O[0], O[1], 48, -Math.PI / 2 - z.t1, -Math.PI / 2); g.stroke(); txt(g, 'θ₁ = ' + p.th + '°', O[0] - 14, O[1] - 66, C.gold, 12, 'right', 500, true); }
+    if (dirT && z.t2 > 0.001) { g.beginPath(); g.arc(O[0], O[1], 48, Math.PI / 2 - z.t2, Math.PI / 2); g.stroke(); txt(g, 'θ₂ = ' + (z.t2 / DEG).toFixed(1) + '°', O[0] + 14, O[1] + 66, C.gold, 12, 'left', 500, true); }
+    if (z.tir) txt(g, 'انعكاس كلي داخلي', O[0] + 20, O[1] + 30, C.red, 13, 'left', 500);
+  },
+  down: function (s, p, x, y, W, H) { if (y < H / 2) { this.move(s, p, x, y, W, H); return true; } },
+  move: function (s, p, x, y, W, H) { var th = Math.atan2(Math.abs(x - W / 2), Math.max(1, H / 2 - y)) / DEG; setParam('th', clamp(Math.round(th), 0, 89)); },
+  read: function (s, p) {
+    var z = snell(p);
+    return [['زاوية السقوط θ₁', p.th, '°', 0, 0], ['زاوية الانكسار θ₂', z.tir ? 'لا يوجد' : z.t2 / DEG, '°', 1, 1], ['الزاوية الحرجة', z.crit == null ? 'لا توجد' : z.crit, '°', 0, 1],
+      ['نسبة الضوء المنعكس', z.R * 100, '%', 0, 1], ['نسبة الضوء النافذ', (1 - z.R) * 100, '%', 0, 1], ['سرعة الضوء في الوسط الأول', 299792 / p.n1, 'km/s', 0, 0], ['سرعة الضوء في الوسط الثاني', 299792 / p.n2, 'km/s', 0, 0]];
+  }
+});
+
+/* 13) العدسات الرقيقة */
+function lensCalc(p) {
+  var F = p.type * p.f, inv = 1 / F - 1 / p.d, di = Math.abs(inv) < 1e-9 ? Infinity : 1 / inv;
+  return { F: F, di: di, hi: isFinite(di) ? -p.h * di / p.d : 0, m: isFinite(di) ? -di / p.d : Infinity };
+}
+LABS.push({
+  id: 'lens', cat: 'optics', name: 'العدسات وتكوّن الصور', law: 'معادلة العدسة الرقيقة',
+  formula: '1/<i>f</i> = 1/<i>d</i><sub>o</sub> + 1/<i>d</i><sub>i</sub><span class="s"></span><i>m</i> = −<i>d</i><sub>i</sub> / <i>d</i><sub>o</sub>',
+  about: 'جسم (السهم الذهبي) أمام عدسة. تُرسم الأشعة الثلاثة الأساسية: شعاع موازٍ للمحور، وشعاع يمر بالمركز، وشعاع يمر بالبؤرة. حيث تلتقي الأشعة يتكون الخيال الحقيقي، وحيث تلتقي امتداداتها (الخطوط المتقطعة) يتكون الخيال الوهمي.',
+  tips: ['ضع الجسم أبعد من 2F في العدسة المحدبة: خيال حقيقي مقلوب مصغر، كما في الكاميرا والعين.', 'قرّب الجسم إلى ما بين F والعدسة: خيال وهمي معتدل مكبر، وهذا مبدأ العدسة المكبرة.', 'ضع الجسم في البؤرة تماماً: تخرج الأشعة متوازية ولا يتكون خيال.', 'جرّب العدسة المقعرة: الخيال دائماً وهمي معتدل مصغر.'],
+  hint: 'اسحب السهم الذهبي يميناً ويساراً',
+  params: [
+    { k: 'type', label: 'نوع العدسة', opts: [['محدّبة (مجمّعة)', 1], ['مقعّرة (مفرّقة)', -1]], v: 1 },
+    { k: 'f', label: 'البعد البؤري', min: 5, max: 30, step: 0.5, v: 12, unit: 'cm' },
+    { k: 'd', label: 'بعد الجسم عن العدسة', min: 3, max: 60, step: 0.5, v: 30, unit: 'cm' },
+    { k: 'h', label: 'طول الجسم', min: 2, max: 8, step: 0.5, v: 4, unit: 'cm' }
+  ],
+  init: function () {},
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H);
+    var cx = W / 2, ay = H / 2, sc = (W - 30) / 130, z = lensCalc(p), F = z.F, d = p.d, h = p.h;
+    var X = function (x) { return cx + x * sc; }, Y = function (y) { return ay - y * sc; };
+    s.m = { X: X, Y: Y, sc: sc, cx: cx };
+    g.strokeStyle = C.muted; g.lineWidth = 1; g.beginPath(); g.moveTo(0, ay); g.lineTo(W, ay); g.stroke();
+    [[p.f, 'F'], [-p.f, 'F'], [2 * p.f, '2F'], [-2 * p.f, '2F']].forEach(function (q) { var x = X(q[0]); if (x < 6 || x > W - 6) return; g.fillStyle = C.text; g.beginPath(); g.arc(x, ay, 3, 0, TAU); g.fill(); txt(g, q[1], x, ay + 15, C.muted, 11, 'center', 500, true); });
+    var lh = H * 0.42;
+    g.beginPath();
+    if (p.type > 0) g.ellipse(cx, ay, 9, lh, 0, 0, TAU);
+    else { g.moveTo(cx - 11, ay - lh); g.quadraticCurveTo(cx - 1, ay, cx - 11, ay + lh); g.lineTo(cx + 11, ay + lh); g.quadraticCurveTo(cx + 1, ay, cx + 11, ay - lh); g.closePath(); }
+    g.fillStyle = 'rgba(93,180,220,.16)'; g.fill(); g.strokeStyle = C.blue; g.lineWidth = 1.5; g.stroke();
+    var top = [-d, h], xEnd = 70;
+    var ext = function (P, dx, dy) { var t = (xEnd - P[0]) / dx; return [P[0] + dx * t, P[1] + dy * t]; };
+    var ys = [h, 0]; if (Math.abs(d - F) > 1e-6) ys.push(-h * F / (d - F));
+    var cols = [C.gold2, C.green, C.violet];
+    g.lineWidth = 1.6;
+    ys.forEach(function (yl, i) {
+      g.strokeStyle = cols[i];
+      g.beginPath(); g.moveTo(X(top[0]), Y(top[1])); g.lineTo(X(0), Y(yl)); g.stroke();
+      var out;
+      if (!isFinite(z.di)) out = ext([0, yl], d, -h);
+      else if (z.di > 0) out = ext([0, yl], z.di, z.hi - yl);
+      else { out = ext([0, yl], -z.di, yl - z.hi); g.save(); g.setLineDash([4, 4]); g.globalAlpha = 0.7; g.beginPath(); g.moveTo(X(0), Y(yl)); g.lineTo(X(z.di), Y(z.hi)); g.stroke(); g.restore(); }
+      g.beginPath(); g.moveTo(X(0), Y(yl)); g.lineTo(X(out[0]), Y(out[1])); g.stroke();
+      if (i === 2) { g.save(); g.setLineDash([3, 4]); g.globalAlpha = 0.6; g.beginPath(); if (p.type > 0 && d < F) { g.moveTo(X(-F), Y(0)); g.lineTo(X(-d), Y(h)); } else if (p.type < 0) { g.moveTo(X(0), Y(yl)); g.lineTo(X(-F), Y(0)); } g.stroke(); g.restore(); }
+    });
+    arrow(g, X(-d), ay, X(-d), Y(h), C.gold, 3.5, 11);
+    txt(g, 'الجسم', X(-d), ay + 16, C.gold, 11.5);
+    if (isFinite(z.di) && Math.abs(z.di) < 200) {
+      if (z.di < 0) { g.save(); g.setLineDash([5, 4]); arrow(g, X(z.di), ay, X(z.di), Y(z.hi), C.blue, 3, 11); g.restore(); }
+      else arrow(g, X(z.di), ay, X(z.di), Y(z.hi), C.blue, 3.5, 11);
+      txt(g, z.di > 0 ? 'خيال حقيقي' : 'خيال وهمي', X(z.di), z.hi > 0 ? ay + 16 : ay - 14, C.blue, 11.5);
+    } else if (!isFinite(z.di)) txt(g, 'الأشعة متوازية: لا يتكون خيال', W / 2, 18, C.gold2, 12.5);
+  },
+  down: function (s, p, x, y) { var m = s.m; if (!m) return; if (Math.abs(x - m.X(-p.d)) < 20 && y > m.Y(p.h) - 16 && y < m.Y(0) + 16) return true; },
+  move: function (s, p, x) { var m = s.m; setParam('d', clamp(Math.round(-(x - m.cx) / m.sc * 2) / 2, 3, 60)); },
+  read: function (s, p) {
+    var z = lensCalc(p), fin = isFinite(z.di), am = Math.abs(z.m);
+    return [['بعد الخيال dᵢ', fin ? z.di : '∞', 'cm', 1, 1], ['التكبير m', fin ? z.m : '∞', '×'], ['نوع الخيال', fin ? (z.di > 0 ? 'حقيقي' : 'وهمي') : 'لا يتكون', ''],
+      ['اتجاهه', fin ? (z.m < 0 ? 'مقلوب' : 'معتدل') : '—', ''], ['حجمه', fin ? (am > 1.01 ? 'مكبَّر' : am < 0.99 ? 'مصغَّر' : 'بالحجم نفسه') : '—', ''],
+      ['طول الخيال', fin ? z.hi : '∞', 'cm'], ['قوة العدسة', 100 / z.F, 'D', 0, 1]];
+  }
+});
+
+/* 14) الموجات */
+var LS = 8;
+LABS.push({
+  id: 'waves', cat: 'waves', name: 'الموجات على وتر', law: 'السرعة تساوي التردد في الطول الموجي',
+  formula: '<i>v</i> = <i>f</i> · <i>λ</i><span class="s"></span><i>T</i> = 1 / <i>f</i>',
+  about: 'مولّد يهز طرف وتر طوله 8 أمتار. الموجة المستعرضة تنقل الطاقة على طول الوتر، بينما تتحرك كل نقطة منه صعوداً وهبوطاً فقط (تابع النقطة الذهبية). عند الطرف المثبت ترتد الموجة مقلوبة، وتداخلها مع الموجة الأصلية يكوّن موجة واقفة لها عُقد ثابتة.',
+  tips: ['ضاعف التردد مع ثبات السرعة: يقل الطول الموجي إلى النصف.', 'ضاعف سرعة الموجة: يتضاعف الطول الموجي.', 'في الموجة الواقفة اضبط التردد ليكون عدد أنصاف الأطوال الموجية عدداً صحيحاً (مثلاً f = 1 Hz وv = 2 m/s) لتحصل على رنين واضح.'],
+  hint: 'النقطة الذهبية تتحرك رأسياً فقط بينما تنتقل الموجة أفقياً',
+  params: [
+    { k: 'f', label: 'التردد f', min: 0.2, max: 3, step: 0.05, v: 0.75, unit: 'Hz', reset: 1 },
+    { k: 'v', label: 'سرعة الموجة v', min: 0.5, max: 4, step: 0.1, v: 2, unit: 'm/s', reset: 1 },
+    { k: 'A', label: 'السعة A', min: 2, max: 20, step: 1, v: 10, unit: 'cm' },
+    { k: 'mode', label: 'نوع الموجة', opts: [['موجة متقدمة', 0], ['موجة واقفة (طرف مثبت)', 1]], v: 0, reset: 1 }
+  ],
+  init: function () {},
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H);
+    var ox = 40, sc = (W - 70) / LS, mid = H * 0.56, vy = (H * 0.3) / 40, w = TAU * p.f, t = s.t;
+    var yAt = function (x) {
+      var y = 0; if (x <= p.v * t) y += Math.sin(w * (t - x / p.v));
+      if (p.mode === 1) { var bk = 2 * LS - x; if (bk <= p.v * t) y -= Math.sin(w * (t - bk / p.v)); }
+      return y * p.A;
+    };
+    g.strokeStyle = C.line; g.lineWidth = 1; g.beginPath(); g.moveTo(ox, mid); g.lineTo(ox + LS * sc, mid); g.stroke();
+    for (var m = 0; m <= LS; m++) { g.beginPath(); g.moveTo(ox + m * sc, mid + 4); g.lineTo(ox + m * sc, mid + 9); g.strokeStyle = C.muted; g.stroke(); txt(g, m + ' m', ox + m * sc, H - 14, C.muted, 10, 'center', 400, true); }
+    var lam = p.v / p.f;
+    if (p.mode === 1) for (var n = 0; LS - n * lam / 2 >= 0; n++) { var nx = ox + (LS - n * lam / 2) * sc; g.fillStyle = C.violet; g.beginPath(); g.moveTo(nx, mid - 5); g.lineTo(nx + 5, mid); g.lineTo(nx, mid + 5); g.lineTo(nx - 5, mid); g.closePath(); g.fill(); }
+    g.strokeStyle = C.gold; g.lineWidth = 2.4; g.beginPath();
+    for (var px = 0; px <= LS * sc; px += 2) { var y = mid - yAt(px / sc) * vy; if (px) g.lineTo(ox + px, y); else g.moveTo(ox + px, y); }
+    g.stroke();
+    for (var x = 0; x <= LS + 1e-6; x += 0.25) { g.beginPath(); g.arc(ox + x * sc, mid - yAt(x) * vy, 2.4, 0, TAU); g.fillStyle = C.text; g.fill(); }
+    var hx = 2, hy = mid - yAt(hx) * vy;
+    dashed(g, ox + hx * sc, mid - p.A * 2 * vy - 6, ox + hx * sc, mid + p.A * 2 * vy + 6, C.line);
+    g.beginPath(); g.arc(ox + hx * sc, hy, 6, 0, TAU); g.fillStyle = C.gold2; g.fill();
+    var dy = mid - yAt(0) * vy; rr(g, ox - 30, dy - 10, 22, 20, 4); g.fillStyle = C.raise; g.fill(); g.strokeStyle = C.gold; g.lineWidth = 1.5; g.stroke();
+    if (p.mode === 1) { g.fillStyle = C.text; g.fillRect(ox + LS * sc, mid - 40, 6, 80); }
+    if (lam < LS - 0.4) {
+      var x0 = 0.3, x1 = x0 + lam, by = 24;
+      if (p.mode === 1 || p.v * t >= x1) {
+        g.strokeStyle = C.blue; g.lineWidth = 1.5; g.beginPath(); g.moveTo(ox + x0 * sc, by + 6); g.lineTo(ox + x0 * sc, by); g.lineTo(ox + x1 * sc, by); g.lineTo(ox + x1 * sc, by + 6); g.stroke();
+        txt(g, 'λ = ' + lam.toFixed(2) + ' m', ox + (x0 + x1) / 2 * sc, by - 10, C.blue, 12, 'center', 500, true);
+      }
+    }
+  },
+  read: function (s, p) {
+    var lam = p.v / p.f;
+    return [['الطول الموجي λ = v/f', lam, 'm', 1], ['الزمن الدوري T = 1/f', 1 / p.f, 's'], ['السرعة الزاوية ω', TAU * p.f, 'rad/s'], ['العدد الموجي k', TAU / lam, 'rad/m'],
+      ['عدد العقد على الوتر', p.mode === 1 ? Math.floor(2 * LS / lam + 1e-9) + 1 : '—', ''], ['أقصى إزاحة لنقطة', p.mode === 1 ? 2 * p.A : p.A, 'cm', 0, 0]];
+  }
+});
+
+/* 15) تأثير دوبلر */
+var AC = null;
+function tones(list) {
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    var t = AC.currentTime + 0.05;
+    list.forEach(function (f) {
+      if (!f) { t += 0.75; return; }
+      var o = AC.createOscillator(), gn = AC.createGain();
+      o.type = 'sine'; o.frequency.value = f; o.connect(gn); gn.connect(AC.destination);
+      gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(0.18, t + 0.04); gn.gain.setValueAtTime(0.18, t + 0.55); gn.gain.linearRampToValueAtTime(0, t + 0.62);
+      o.start(t); o.stop(t + 0.65); t += 0.75;
+    });
+  } catch (e) {}
+}
+var CW = 0.16, PER = 0.22;
+LABS.push({
+  id: 'doppler', cat: 'waves', name: 'تأثير دوبلر', law: 'تغيّر التردد المسموع بحركة المصدر',
+  formula: '<i>f</i>′ = <i>f</i> · <i>v</i> / (<i>v</i> ∓ <i>v</i><sub>s</sub>)',
+  about: 'مصدر صوت يتحرك ويطلق موجات كروية. أمام المصدر تتزاحم الموجات فيرتفع التردد المسموع، وخلفه تتباعد فينخفض. حين تتجاوز سرعة المصدر سرعة الصوت تتراكم الموجات في مخروط ماخ ويُسمع دويّ اختراق حاجز الصوت.',
+  tips: ['اضغط «استمع للفرق» لتسمع النغمة الأصلية ثم المقتربة ثم المبتعدة، كصفارة سيارة الإسعاف.', 'اجعل السرعة 1.00 بالضبط: تتكدس الموجات أمام المصدر في جدار واحد.', 'تجاوز سرعة الصوت وراقب ضيق زاوية المخروط كلما زادت السرعة.'],
+  hint: 'تباعد الدوائر هو الطول الموجي الذي يصل إلى أذن المستمع',
+  btns: [{ label: 'استمع للفرق', act: function (s, p) { tones([p.f, p.M < 1 ? p.f / (1 - p.M) : 0, p.f / (1 + p.M)]); } }],
+  params: [
+    { k: 'M', label: 'سرعة المصدر ÷ سرعة الصوت', min: 0, max: 1.6, step: 0.02, v: 0.5, unit: '', reset: 1, fmt: function (v) { return v.toFixed(2) + ' (' + Math.round(v * 343) + ' m/s)'; } },
+    { k: 'f', label: 'تردد المصدر', min: 200, max: 1000, step: 10, v: 440, unit: 'Hz' }
+  ],
+  init: function (s, p) { s.x = p.M === 0 ? 0.5 : -0.05; s.waves = []; s.et = PER; },
+  step: function (s, p, h) {
+    s.x += p.M * CW * h; s.et += h;
+    if (s.et >= PER) { s.et -= PER; s.waves.push({ x: s.x, t: s.t }); }
+    if (s.x > 1.2) { s.x = -0.1; s.waves = []; s.et = PER; }
+    while (s.waves.length && s.t - s.waves[0].t > 9) s.waves.shift();
+  },
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H, true);
+    var cy = H * 0.55;
+    s.waves.forEach(function (w) {
+      var age = s.t - w.t, r = age * CW * W; if (r <= 0) return;
+      g.beginPath(); g.arc(w.x * W, cy, r, 0, TAU); g.strokeStyle = 'rgba(217,173,60,' + clamp(0.75 - age * 0.09, 0.08, 0.75).toFixed(2) + ')'; g.lineWidth = 1.5; g.stroke();
+    });
+    var sx = s.x * W;
+    if (p.M > 1) { var th = Math.asin(1 / p.M), Lc = W * 1.5; g.strokeStyle = C.red; g.lineWidth = 2; g.beginPath(); g.moveTo(sx - Math.cos(th) * Lc, cy - Math.sin(th) * Lc); g.lineTo(sx, cy); g.lineTo(sx - Math.cos(th) * Lc, cy + Math.sin(th) * Lc); g.stroke(); }
+    g.beginPath(); g.arc(sx, cy, 9, 0, TAU); g.fillStyle = C.gold2; g.fill();
+    if (p.M > 0) arrow(g, sx + 12, cy, sx + 12 + 20 + p.M * 30, cy, C.gold2, 2);
+    var fa = p.M < 1 ? p.f / (1 - p.M) : null, fb = p.f / (1 + p.M);
+    var box = function (x, align, title, val, col) { txt(g, title, x, 20, C.muted, 11.5, align); txt(g, val, x, 40, col, 15, align, 500, true); };
+    box(W - 14, 'right', 'أمام المصدر (يقترب)', fa ? Math.round(fa) + ' Hz' : 'لا صوت قبل وصوله', C.gold2);
+    box(14, 'left', 'خلف المصدر (يبتعد)', Math.round(fb) + ' Hz', C.blue);
+    [[W * 0.06], [W * 0.94]].forEach(function (q) { g.fillStyle = C.text; g.beginPath(); g.arc(q[0], cy + 38, 6, 0, TAU); g.fill(); g.fillRect(q[0] - 4, cy + 46, 8, 16); });
+  },
+  read: function (s, p) {
+    var fa = p.M < 1 ? p.f / (1 - p.M) : 'لا يصل قبل المصدر';
+    return [['تردد المصدر', p.f, 'Hz', 0, 0], ['التردد أمامه (يقترب)', fa, 'Hz', 1, 0], ['التردد خلفه (يبتعد)', p.f / (1 + p.M), 'Hz', 1, 0],
+      ['الطول الموجي أمامه', p.M < 1 ? 343 * (1 - p.M) / p.f : '—', 'm', 0, 3], ['الطول الموجي خلفه', 343 * (1 + p.M) / p.f, 'm', 0, 3],
+      ['عدد ماخ', p.M, ''], ['زاوية مخروط ماخ', p.M > 1 ? Math.asin(1 / p.M) / DEG : '—', '°', 0, 1]];
+  }
+});
+
+/* 16) التأثير الكهروضوئي */
+var METALS = [['سيزيوم', 2.1], ['صوديوم', 2.28], ['زنك', 4.3], ['نحاس', 4.7]];
+var BANDS = [[380, 'فوق بنفسجي'], [450, 'بنفسجي'], [495, 'أزرق'], [570, 'أخضر'], [590, 'أصفر'], [620, 'برتقالي'], [751, 'أحمر'], [9999, 'تحت أحمر']];
+LABS.push({
+  id: 'photo', cat: 'modern', name: 'التأثير الكهروضوئي', law: 'الضوء يتكون من فوتونات طاقتها hf',
+  formula: '<i>K</i><sub>max</sub> = <i>h f</i> − <i>φ</i><span class="s"></span><i>E</i> = <i>h c</i> / <i>λ</i>',
+  about: 'ضوء يسقط على سطح فلز. لا تتحرر الإلكترونات إلا إذا كانت طاقة الفوتون الواحد أكبر من دالة الشغل للفلز، مهما زادت شدة الضوء. هذه الملاحظة فسّرها أينشتاين ونال عنها جائزة نوبل عام 1921، وكانت من أسس فيزياء الكم.',
+  tips: ['اختر النحاس وضوءاً أحمر ثم ارفع الشدة إلى الحد الأقصى: لا يتحرر أي إلكترون.', 'قصّر الطول الموجي تدريجياً وابحث عن الطول الموجي الحرج الذي تبدأ عنده الإلكترونات بالتحرر.', 'فوق العتبة: الشدة تزيد عدد الإلكترونات، والتردد يزيد سرعتها.'],
+  hint: 'المخطط الجانبي يقارن طاقة الفوتون بدالة الشغل',
+  params: [
+    { k: 'lam', label: 'الطول الموجي للضوء λ', min: 150, max: 750, step: 5, v: 420, unit: 'nm', hint: function (v) { for (var i = 0; i < BANDS.length; i++) if (v < BANDS[i][0]) return BANDS[i][1]; return ''; } },
+    { k: 'I', label: 'شدة الضوء', min: 0, max: 10, step: 1, v: 5, unit: '' },
+    { k: 'phi', label: 'الفلز', opts: METALS, v: 2.28 }
+  ],
+  init: function (s) { s.ph = []; s.el = []; s.acc = 0; s.cnt = 0; s.ct = 0; s.rate = 0; },
+  step: function (s, p, h) {
+    var E = 1240 / p.lam, K = E - p.phi;
+    s.acc += p.I * 7 * h;
+    while (s.acc >= 1) { s.acc--; s.ph.push({ tx: 0.36 + Math.random() * 0.3, k: 0 }); }
+    for (var i = s.ph.length - 1; i >= 0; i--) {
+      var q = s.ph[i]; q.k += h * 1.3;
+      if (q.k >= 1) {
+        s.ph.splice(i, 1);
+        if (K > 0) { var ke = K * Math.sqrt(Math.random()), sp = 0.28 * Math.sqrt(ke), an = -Math.PI / 2 + (Math.random() - 0.5) * 1.6; s.el.push({ x: q.tx, y: 0.8, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp }); s.cnt++; }
+      }
+    }
+    for (var j = s.el.length - 1; j >= 0; j--) { var e = s.el[j]; e.x += e.vx * h; e.y += e.vy * h; if (e.y < -0.05 || e.x < -0.05 || e.x > 1.05) s.el.splice(j, 1); }
+    s.ct += h; if (s.ct >= 1) { s.rate = s.cnt / s.ct; s.cnt = 0; s.ct = 0; }
+  },
+  draw: function (g, s, p, W, H) {
+    bg(g, W, H, true);
+    var col = wlColor(p.lam), lx = W * 0.14, ly = H * 0.16, py = H * 0.8, E = 1240 / p.lam;
+    var ex = W - 92;
+    g.save(); g.globalAlpha = 0.08 + p.I * 0.012; g.fillStyle = col; g.beginPath(); g.moveTo(lx, ly); g.lineTo(W * 0.36, py); g.lineTo(W * 0.66, py); g.closePath(); g.fill(); g.restore();
+    rr(g, lx - 26, ly - 16, 44, 32, 6); g.fillStyle = C.raise; g.fill(); g.strokeStyle = C.gold; g.lineWidth = 1.5; g.stroke();
+    g.beginPath(); g.arc(lx + 12, ly + 6, 8, 0, TAU); g.fillStyle = col; g.fill();
+    s.ph.forEach(function (q) {
+      var x0 = lx + 12, y0 = ly + 6, x1 = q.tx * W, x = x0 + (x1 - x0) * q.k, y = y0 + (py - y0) * q.k, dx = x1 - x0, dy = py - y0, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
+      g.strokeStyle = col; g.lineWidth = 1.6; g.beginPath();
+      for (var i = 0; i <= 12; i++) { var d = (i - 12) * 1.5, wv = Math.sin(i / 12 * TAU * 1.5) * 3; var X = x + ux * d - uy * wv, Y = y + uy * d + ux * wv; if (i) g.lineTo(X, Y); else g.moveTo(X, Y); }
+      g.stroke();
+    });
+    var pg = g.createLinearGradient(0, py, 0, py + 16); pg.addColorStop(0, '#c9ccd3'); pg.addColorStop(1, '#5c606a');
+    g.fillStyle = pg; g.fillRect(W * 0.3, py, W * 0.42, 14);
+    txt(g, METALS.filter(function (m) { return m[1] === p.phi; })[0][0], W * 0.51, py + 30, C.text, 12, 'center', 500);
+    s.el.forEach(function (e) { var x = e.x * W, y = e.y * H; g.strokeStyle = 'rgba(93,180,220,.35)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x, y); g.lineTo(x - e.vx * W * 0.08, y - e.vy * H * 0.08); g.stroke(); g.beginPath(); g.arc(x, y, 3, 0, TAU); g.fillStyle = C.blue; g.fill(); });
+    var eTop = H * 0.12, eBot = H * 0.84, emax = 8.5, Ey = function (v) { return eBot - v / emax * (eBot - eTop); };
+    g.strokeStyle = C.line; g.lineWidth = 1; g.beginPath(); g.moveTo(ex, eTop); g.lineTo(ex, eBot); g.stroke();
+    for (var v = 0; v <= 8; v += 2) { g.beginPath(); g.moveTo(ex - 4, Ey(v)); g.lineTo(ex, Ey(v)); g.stroke(); txt(g, v + ' eV', ex - 8, Ey(v), C.muted, 10, 'right', 400, true); }
+    g.fillStyle = 'rgba(228,111,90,.22)'; g.fillRect(ex + 6, Ey(p.phi), 22, eBot - Ey(p.phi));
+    dashed(g, ex, Ey(p.phi), ex + 64, Ey(p.phi), C.red, 1.5);
+    txt(g, 'φ', ex + 72, Ey(p.phi), C.red, 13, 'center', 600, true);
+    arrow(g, ex + 46, eBot, ex + 46, Ey(Math.min(E, emax)), col, 3);
+    txt(g, 'hf', ex + 46, Ey(Math.min(E, emax)) - 12, C.text, 12, 'center', 500, true);
+    if (E > p.phi) { g.fillStyle = 'rgba(217,173,60,.45)'; g.fillRect(ex + 6, Ey(Math.min(E, emax)), 22, Ey(p.phi) - Ey(Math.min(E, emax))); }
+    if (E <= p.phi) txt(g, 'طاقة الفوتون أقل من دالة الشغل: لا تتحرر إلكترونات', W * 0.4, 20, C.red, 12.5);
+  },
+  read: function (s, p) {
+    var E = 1240 / p.lam, K = E - p.phi;
+    return [['طاقة الفوتون E', E, 'eV'], ['تردد الضوء f', 2.998e8 / (p.lam * 1e-9), 'Hz'], ['دالة الشغل φ', p.phi, 'eV'], ['أقصى طاقة حركية', K > 0 ? K : 'لا تتحرر إلكترونات', 'eV', 1],
+      ['الطول الموجي الحرج λ₀', 1240 / p.phi, 'nm', 0, 0], ['أقصى سرعة للإلكترون', K > 0 ? Math.sqrt(2 * K * 1.602e-19 / 9.109e-31) / 1000 : 0, 'km/s', 0, 0], ['إلكترونات في الثانية (في المحاكاة)', s.rate, '', 0, 0]];
+  }
+});
+
+/* ---------- المحرّك والواجهة ---------- */
+var $ = function (id) { return document.getElementById(id); };
+var cv = $('kph-cv'), ctx = cv.getContext('2d'), wrap = $('kph-cvwrap');
+var lab = null, S = null, P = null, store = {}, playing = true, speed = 1, VW = 600, VH = 340, dragging = false, visible = true;
+var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (reduce) playing = false;
+var readEls = [], inputs = {};
+
+function decimals(st) { var s = String(st); return s.indexOf('.') < 0 ? 0 : s.length - s.indexOf('.') - 1; }
+function paramText(q, v) {
+  var main = q.fmt ? q.fmt(v) : (v.toFixed(decimals(q.step)) + (q.unit ? ' ' + q.unit : ''));
+  var hint = q.hint ? q.hint(v) : '';
+  return main + (hint ? ' <span>· ' + hint + '</span>' : '');
+}
+function setPct(inp) { inp.style.setProperty('--pct', ((inp.value - inp.min) / (inp.max - inp.min) * 100) + '%'); }
+function setParam(k, v) {
+  P[k] = v; var r = inputs[k]; if (!r) return;
+  if (r.input) { r.input.value = v; setPct(r.input); r.out.innerHTML = paramText(r.q, v); }
+}
+function visibility() { lab.params.forEach(function (q) { var r = inputs[q.k]; if (r && q.show) r.row.hidden = !q.show(P); }); }
+function onParam(q, v) {
+  P[q.k] = v;
+  if (q.reset) resetLab();
+  visibility();
+}
+function resetLab() { S = { t: 0 }; lab.init(S, P); }
+
+function buildNav() {
+  var nav = $('kph-nav');
+  CATS.forEach(function (c) {
+    var grp = document.createElement('div'); grp.className = 'kph-grp'; grp.style.setProperty('--c', c[2]);
+    var h = document.createElement('h4'); h.textContent = c[1]; grp.appendChild(h);
+    LABS.filter(function (l) { return l.cat === c[0]; }).forEach(function (l) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'kph-lab'; b.dataset.id = l.id;
+      b.innerHTML = l.name + '<small>' + l.law + '</small>';
+      b.addEventListener('click', function () { select(l.id, true); });
+      grp.appendChild(b);
+    });
+    nav.appendChild(grp);
+  });
+}
+function buildParams() {
+  var box = $('kph-params'); box.innerHTML = ''; inputs = {};
+  lab.params.forEach(function (q) {
+    var row = document.createElement('div'); row.className = 'kph-p';
+    var head = document.createElement('div'); head.className = 'kph-pl';
+    var lb = document.createElement('label'); lb.textContent = q.label; head.appendChild(lb);
+    row.appendChild(head);
+    if (q.opts) {
+      var seg = document.createElement('div'); seg.className = 'kph-seg'; seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', q.label);
+      q.opts.forEach(function (o) {
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = o[0]; b.setAttribute('aria-pressed', String(P[q.k] === o[1]));
+        b.addEventListener('click', function () { seg.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); }); b.setAttribute('aria-pressed', 'true'); onParam(q, o[1]); });
+        seg.appendChild(b);
+      });
+      row.appendChild(seg);
+      inputs[q.k] = { row: row, q: q };
+    } else {
+      var id = 'kph-in-' + lab.id + '-' + q.k;
+      var out = document.createElement('output'); out.setAttribute('for', id); out.innerHTML = paramText(q, P[q.k]); head.appendChild(out);
+      lb.htmlFor = id;
+      var inp = document.createElement('input'); inp.type = 'range'; inp.id = id; inp.min = q.min; inp.max = q.max; inp.step = q.step; inp.value = P[q.k];
+      setPct(inp);
+      inp.addEventListener('input', function () { var v = parseFloat(inp.value); setPct(inp); out.innerHTML = paramText(q, v); onParam(q, v); });
+      row.appendChild(inp);
+      inputs[q.k] = { row: row, q: q, input: inp, out: out };
+    }
+    box.appendChild(row);
+  });
+  visibility();
+}
+function buildReads() {
+  var box = $('kph-reads'); box.innerHTML = ''; readEls = [];
+  lab.read(S, P).forEach(function (r) {
+    var row = document.createElement('div'); row.className = 'kph-r' + (r[3] ? ' hl' : '');
+    var sp = document.createElement('span'); sp.textContent = r[0];
+    var b = document.createElement('b');
+    row.appendChild(sp); row.appendChild(b); box.appendChild(row); readEls.push(b);
+  });
+  updateReads();
+}
+function updateReads() {
+  lab.read(S, P).forEach(function (r, i) {
+    var b = readEls[i]; if (!b) return;
+    var str = typeof r[1] === 'string', val = fmt(r[1], r[4]);
+    b.className = str && isAr(val) ? 'ar' : '';
+    b.innerHTML = '';
+    b.appendChild(document.createTextNode(val));
+    if (r[2] && !(str && isAr(val)) && val !== '—') { var em = document.createElement('em'); em.textContent = r[2]; b.appendChild(em); }
+  });
+}
+function buildBar() {
+  var ex = $('kph-extra'); ex.innerHTML = '';
+  (lab.btns || []).forEach(function (bt) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'kph-btn'; b.textContent = bt.label;
+    b.addEventListener('click', function () { if (bt.act === 'reset') resetLab(); else bt.act(S, P); if (!playing) { playing = true; syncPlay(); } });
+    ex.appendChild(b);
+  });
+  $('kph-hint').textContent = lab.hint || '';
+}
+function syncPlay() {
+  $('kph-play').innerHTML = playing
+    ? '<svg viewBox="0 0 16 16"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z"/></svg>إيقاف مؤقت'
+    : '<svg viewBox="0 0 16 16"><path d="M4 2.2l10 5.8-10 5.8z"/></svg>تشغيل';
+}
+function select(id, user) {
+  var l = LABS.filter(function (x) { return x.id === id; })[0] || LABS[0];
+  if (lab) store[lab.id] = P;
+  lab = l;
+  P = store[l.id] || (function () { var o = {}; l.params.forEach(function (q) { o[q.k] = q.v; }); return o; })();
+  S = { t: 0 }; l.init(S, P);
+  var cat = CATS.filter(function (c) { return c[0] === l.cat; })[0];
+  $('kph-cat').textContent = cat[1]; $('kph-cat').style.setProperty('--c', cat[2]);
+  $('kph-name').textContent = l.name; $('kph-law').textContent = l.law;
+  $('kph-formula').innerHTML = l.formula;
+  $('kph-about').textContent = l.about;
+  var tips = $('kph-tips'); tips.innerHTML = '';
+  l.tips.forEach(function (t) { var li = document.createElement('li'); li.textContent = t; tips.appendChild(li); });
+  root.querySelectorAll('.kph-lab').forEach(function (b) { b.setAttribute('aria-current', String(b.dataset.id === id)); });
+  var cur = root.querySelector('.kph-lab[aria-current="true"]');
+  if (cur && user && cur.parentNode && cur.scrollIntoView && getComputedStyle(cur.parentNode).display === 'contents') cur.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  buildParams(); buildReads(); buildBar();
+  cv.style.touchAction = l.down ? 'none' : 'auto';
+  cv.style.cursor = l.down ? 'grab' : 'default';
+  if (user) { try { history.replaceState(null, '', '#' + id); } catch (e) {} }
+  draw();
+}
+function resize() {
+  var w = Math.max(260, wrap.clientWidth), h = Math.round(clamp(w * (w < 560 ? 0.82 : 0.56), 280, 520)), d = Math.min(2, window.devicePixelRatio || 1);
+  VW = w; VH = h; cv.width = Math.round(w * d); cv.height = Math.round(h * d); cv.style.height = h + 'px';
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  draw();
+}
+function draw() { if (!lab) return; ctx.save(); lab.draw(ctx, S, P, VW, VH); ctx.restore(); }
+
+var last = 0, acc = 0, lastRead = 0, STEP = 1 / 240;
+function frame(now) {
+  requestAnimationFrame(frame);
+  var dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
+  if (!visible || !lab) return;
+  if (playing && lab.step) {
+    acc += dt * speed; var n = 0;
+    while (acc >= STEP && n < 80) { lab.step(S, P, STEP); S.t += STEP; acc -= STEP; n++; }
+    if (n >= 80) acc = 0;
+  } else if (playing) S.t += dt * speed;
+  draw();
+  if (now - lastRead > 110) { lastRead = now; updateReads(); }
+}
+
+function pt(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * VW / r.width, y: (e.clientY - r.top) * VH / r.height }; }
+cv.addEventListener('pointerdown', function (e) {
+  if (!lab.down) return; var q = pt(e);
+  if (lab.down(S, P, q.x, q.y, VW, VH)) { dragging = true; cv.style.cursor = 'grabbing'; try { cv.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault(); }
+});
+cv.addEventListener('pointermove', function (e) { if (!dragging) return; var q = pt(e); lab.move(S, P, q.x, q.y, VW, VH); });
+function endDrag() { if (!dragging) return; dragging = false; cv.style.cursor = 'grab'; if (lab.up) lab.up(S, P); }
+cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+
+$('kph-play').addEventListener('click', function () { playing = !playing; syncPlay(); });
+$('kph-reset').addEventListener('click', function () { resetLab(); draw(); });
+var spd = $('kph-speed');
+[0.25, 0.5, 1, 2].forEach(function (v) {
+  var b = document.createElement('button'); b.type = 'button'; b.textContent = v + '×'; b.setAttribute('aria-pressed', String(v === 1));
+  b.setAttribute('aria-label', 'سرعة ' + v);
+  b.addEventListener('click', function () { speed = v; spd.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); });
+  spd.appendChild(b);
+});
+
+readColors();
+buildNav();
+syncPlay();
+var start = (location.hash || '').replace('#', '');
+select(LABS.some(function (l) { return l.id === start; }) ? start : 'projectile', false);
+resize();
+if (window.ResizeObserver) new ResizeObserver(function () { if (Math.abs(wrap.clientWidth - VW) > 1) resize(); }).observe(wrap);
+else window.addEventListener('resize', resize);
+if (window.IntersectionObserver) new IntersectionObserver(function (en) { visible = en[0].isIntersecting; }).observe(wrap);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+requestAnimationFrame(frame);
+})();
+//]]>
+</script>
