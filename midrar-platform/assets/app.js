@@ -1270,7 +1270,8 @@
   async function subjectLessons(grade, subject) {
     const key = grade + '|' + subject;
     const hit = subjCache.get(key);
-    if (hit && Date.now() - hit.at < 5 * MIN) return hit.rows;
+    // المعلم والمشرف يرون التغييرات فوراً (ينشرون ويعتمدون)، والطالب يستفيد من الذاكرة المؤقتة
+    if (hit && !app.user && Date.now() - hit.at < 5 * MIN) return hit.rows;
     const rows = await API.listSubjectLessons(grade, subject);
     subjCache.set(key, { at: Date.now(), rows });
     return rows;
