@@ -97,7 +97,15 @@ alter table public.sessions add column if not exists lesson_type text not null d
 alter table public.sessions add column if not exists exam_year   smallint;               -- سنة امتحان الدبلوم المحلول
 alter table public.sessions add column if not exists exam_round  smallint;               -- الدور الأول أو الثاني
 -- المراجعة: ok ظاهر للطلاب، pending بانتظار المشرف، rejected مرفوض مع سبب يراه المعلم
-alter table public.sessions add column if not exists review      text not null default 'ok';
+do $$ begin
+  if not exists (select 1 from information_schema.columns
+                  where table_schema = 'public' and table_name = 'sessions' and column_name = 'review') then
+    alter table public.sessions add column review text not null default 'ok';
+    -- دروس المعلمين غير المعتمدين عند التحديث تمر على المراجعة (ولا يختفي أي درس ظاهر الآن)
+    update public.sessions s set review = 'pending'
+     where not exists (select 1 from public.teachers t where t.id = s.teacher_id and t.status = 'approved');
+  end if;
+end $$;
 alter table public.sessions add column if not exists review_note text;
 -- المهارات (grade = 'skills'): اسم المهارة عند اختيار «أخرى»، المستوى 1–3، والعمر المناسب
 -- (اسم الدورة في unit_title ورقم الجزء في unit)
@@ -264,10 +272,12 @@ begin
         new.hidden      := old.hidden;
         new.review      := old.review;
         new.review_note := old.review_note;
-        -- تعديل محتوى درس لم يُعتمد بعد (أو لمعلم غير موثوق) يعيده إلى المراجعة
-        if not coalesce((select t.trusted from public.teachers t where t.id = old.teacher_id), false)
-           and (new.title, new.description, new.video_url, new.recording_url, new.skill_name, new.quiz, new.attachments)
-               is distinct from (old.title, old.description, old.video_url, old.recording_url, old.skill_name, old.quiz, old.attachments) then
+        -- تعديل محتوى درس لمعلم غير موثوق، أو درس مرفوض، يعيده إلى المراجعة
+        if (old.review = 'rejected' or not coalesce((select t.trusted from public.teachers t where t.id = old.teacher_id), false))
+           and (new.title, new.description, new.video_url, new.recording_url, new.skill_name, new.quiz, new.attachments,
+                new.unit, new.unit_title, new.grade, new.subject, new.ages, new.level)
+               is distinct from (old.title, old.description, old.video_url, old.recording_url, old.skill_name, old.quiz, old.attachments,
+                old.unit, old.unit_title, old.grade, old.subject, old.ages, old.level) then
           new.review := 'pending';
           new.review_note := null;
         end if;
@@ -728,7 +738,7 @@ end $$;
 create or replace function public.sessions_fulfil_request() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  if new.request_id is not null then
+  if new.request_id is not null and new.review = 'ok' then
     update public.lesson_requests q set status = 'done', session_id = new.id, last_at = now()
      where q.id = new.request_id and q.status = 'open' and q.grade = new.grade and q.subject = new.subject
        and exists (select 1 from public.teachers t where t.id = new.teacher_id and t.status = 'approved');
@@ -1059,13 +1069,13 @@ begin
        or jsonb_typeof(e -> 'o') is distinct from 'array' or jsonb_typeof(e -> 'a') is distinct from 'number' then
       return false;
     end if;
-    if (select count(*) from jsonb_object_keys(e)) <> 3 or char_length(btrim(e ->> 'q')) not between 3 and 200 then
+    if (select count(*) from jsonb_object_keys(e)) <> 3 or char_length(e ->> 'q') > 200 or char_length(btrim(e ->> 'q')) < 3 then
       return false;
     end if;
     n := jsonb_array_length(e -> 'o');
     if n not between 2 and 4 or (e ->> 'a') !~ '^[0-3]$' or (e ->> 'a')::int >= n then return false; end if;
     for o in select x from jsonb_array_elements(e -> 'o') x loop
-      if jsonb_typeof(o) <> 'string' or char_length(btrim(o #>> '{}')) not between 1 and 100 then return false; end if;
+      if jsonb_typeof(o) <> 'string' or char_length(o #>> '{}') > 100 or char_length(btrim(o #>> '{}')) < 1 then return false; end if;
     end loop;
   end loop;
   return true;
@@ -1113,7 +1123,12 @@ begin
   if new.review = 'ok' and old.review is distinct from 'ok' then
     update public.teachers t set trusted = true
      where t.id = new.teacher_id and not t.trusted and not t.trust_lock and t.status = 'approved'
-       and (select count(*) from public.sessions s where s.teacher_id = new.teacher_id and s.review = 'ok') >= 3;
+       and (select count(*) from public.sessions s where s.teacher_id = new.teacher_id and s.review = 'ok' and not s.hidden) >= 3;
+    -- درس سُجّل لطلب: يصبح الطلب «تم» عند اعتماد الدرس فقط
+    if new.request_id is not null then
+      update public.lesson_requests q set status = 'done', session_id = new.id, last_at = now()
+       where q.id = new.request_id and q.status = 'open' and q.grade = new.grade and q.subject = new.subject;
+    end if;
   end if;
   return null;
 end $$;
@@ -1141,6 +1156,14 @@ create table if not exists private.invite_uses (
 );
 revoke all on private.invite_uses from public, anon, authenticated;
 
+-- الدعوة صالحة ما دام صاحبها مشرفاً معتمداً، والترشيح ما دام صاحبه معلماً موثوقاً معتمداً
+create or replace function private.invite_valid(p_kind text, p_by uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.teachers c where c.id = p_by and c.status = 'approved'
+                    and case when p_kind = 'invite' then c.is_admin else c.trusted end);
+$$;
+revoke all on function private.invite_valid(text, uuid) from public, anon, authenticated;
+
 -- صفحة الدعوة تعرض اسم الجهة الداعية قبل الدخول
 drop function if exists public.invite_info(text);
 create or replace function public.invite_info(p_code text)
@@ -1153,7 +1176,8 @@ begin
   if not private.hit(private.client_hash('invite'), 'invite', 30, 'hour') then
     raise exception 'محاولات كثيرة، حاول بعد ساعة' using errcode = '54000';
   end if;
-  return query select i.label, i.kind from public.invites i where i.code = c and i.active and i.uses_left > 0;
+  return query select i.label, i.kind from public.invites i
+   where i.code = c and i.active and i.uses_left > 0 and private.invite_valid(i.kind, i.created_by);
 end $$;
 
 -- استخدام الدعوة بعد إنشاء الملف: الدعوة تعتمد المعلم وتجعله موثوقاً، والترشيح يعتمده فقط
@@ -1164,7 +1188,7 @@ declare
   st  text;
   i   record;
 begin
-  select t.status into st from public.teachers t where t.id = auth.uid();
+  select t.status into st from public.teachers t where t.id = auth.uid() for update;
   if not found then
     raise exception 'أكمل ملفك أولاً' using errcode = '22023';
   end if;
@@ -1176,8 +1200,9 @@ begin
   end if;
   select x.code, x.kind, x.label, x.created_by, x.uses_left, x.active into i
     from public.invites x where x.code = c for update;
-  if not found or not i.active or i.uses_left < 1 then
-    raise exception 'رابط الدعوة غير صالح أو انتهى' using errcode = '22023';
+  -- بلا استثناء هنا حتى تبقى المحاولة الفاشلة محسوبة في حد المحاولات
+  if not found or not i.active or i.uses_left < 1 or not private.invite_valid(i.kind, i.created_by) then
+    return json_build_object('error', 'رابط الدعوة غير صالح أو انتهى');
   end if;
   if i.created_by = auth.uid() then
     raise exception 'لا يمكنك استخدام رابط الترشيح الخاص بك' using errcode = '22023';
@@ -1189,7 +1214,7 @@ begin
   update public.invites x set uses_left = x.uses_left - 1 where x.code = c;
   update public.teachers t
      set status  = 'approved',
-         trusted = t.trusted or i.kind = 'invite',
+         trusted = t.trusted or (i.kind = 'invite' and not t.trust_lock),
          vouch   = left(case when i.kind = 'invite' then 'بدعوة من ' else 'رشّحه ' end || i.label, 80)
    where t.id = auth.uid();
   return json_build_object('kind', i.kind, 'label', i.label);
@@ -1206,12 +1231,15 @@ declare
   ok boolean;
   c  text;
 begin
-  select t.display_name, (t.status = 'approved' and t.trusted) into nm, ok from public.teachers t where t.id = auth.uid();
+  select t.display_name, (t.status = 'approved' and t.trusted) into nm, ok from public.teachers t where t.id = auth.uid() for update;
   if not coalesce(ok, false) then
     raise exception 'يصبح رابط الترشيح متاحاً بعد أن تصبح معلماً موثوقاً' using errcode = '42501';
   end if;
   select i.code into c from public.invites i
-   where i.created_by = auth.uid() and i.kind = 'nominate' and i.active order by i.created_at desc limit 1;
+   where i.created_by = auth.uid() and i.kind = 'nominate' order by i.created_at desc limit 1;
+  if c is not null and not (select i.active from public.invites i where i.code = c) then
+    raise exception 'أوقفت الإدارة رابط الترشيح الخاص بك' using errcode = '42501';
+  end if;
   if c is null then
     c := private.new_code();
     insert into public.invites (code, kind, label, created_by, uses_left) values (c, 'nominate', left(nm, 60), auth.uid(), 5);

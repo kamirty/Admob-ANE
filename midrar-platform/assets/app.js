@@ -1376,19 +1376,23 @@
       const qs = s.quiz;
       $('#quiz').innerHTML = `<section class="box quiz"><h2>اختبر نفسك</h2><p class="muted small">${plural(qs.length, 'سؤال واحد', 'سؤالان', 'أسئلة', 'سؤالاً')}. إجاباتك لا تُرسل إلى أي مكان.</p>
         ${qs.map((q, i) => `<fieldset class="qz" data-q="${i}"><legend>${fNum(i + 1)}. ${esc(q.q)}</legend>
-          ${(q.o || []).map((o, j) => `<label class="qz-o"><input type="radio" name="qz${i}" value="${j}"><span dir="auto">${esc(o)}</span></label>`).join('')}
-          <p class="qz-r" role="status"></p></fieldset>`).join('')}
+          ${(q.o || []).map((o, j) => `<button type="button" class="qz-o" data-j="${j}"><span class="qz-dot" aria-hidden="true"></span><span dir="auto">${esc(o)}</span></button>`).join('')}
+          <p class="qz-r" role="status" tabindex="-1"></p></fieldset>`).join('')}
         <p class="qz-score" id="qz-score" role="status"></p></section>`;
       const answered = {};
-      $$('#quiz input[type=radio]').forEach((r) => r.addEventListener('change', () => {
-        const fs = r.closest('.qz');
+      // أزرار لا أزرار اختيار: التنقل بالأسهم لا يعتمد إجابة، والاختيار يكون بضغطة صريحة
+      $$('#quiz .qz-o').forEach((b) => b.addEventListener('click', () => {
+        const fs = b.closest('.qz');
         const i = Number(fs.getAttribute('data-q'));
+        if (i in answered) return;
         const q = qs[i];
-        const ok = Number(r.value) === q.a;
+        const pick = Number(b.getAttribute('data-j'));
+        const ok = pick === q.a;
         answered[i] = ok;
-        $$('.qz-o', fs).forEach((l, j) => { l.classList.toggle('right', j === q.a); l.classList.toggle('wrong', !ok && j === Number(r.value)); });
-        $('.qz-r', fs).innerHTML = ok ? 'إجابة صحيحة ✓' : `الإجابة الصحيحة: <bdi>${esc(q.o[q.a])}</bdi>`;
-        $$('input', fs).forEach((x) => { x.disabled = true; });
+        $$('.qz-o', fs).forEach((l, j) => { l.classList.toggle('right', j === q.a); l.classList.toggle('wrong', !ok && j === pick); l.setAttribute('aria-disabled', 'true'); l.setAttribute('aria-pressed', String(j === pick)); });
+        const res = $('.qz-r', fs);
+        res.innerHTML = ok ? 'إجابة صحيحة ✓' : `الإجابة الصحيحة: <bdi>${esc(q.o[q.a])}</bdi>`;
+        res.focus();
         const n = Object.keys(answered).length;
         if (n === qs.length) {
           const right = Object.values(answered).filter(Boolean).length;
@@ -1946,6 +1950,7 @@
       const b = ev.target.closest('[data-qdel]');
       if (!b) return;
       b.closest('.qz-ed').remove(); renumber(); sync();
+      const next = $$('[data-qdel]', list).pop(); (next || (add.hidden ? null : add) || list).focus();
     });
     sync();
   }
@@ -2048,7 +2053,7 @@
     const box = $('#reqs');
     if (!box || p.status !== 'approved' || !requestsOn() || !API.teacherRequests) return;
     const keys = [];
-    const addKey = (g, s) => { const k = g + ':' + s; if (g && s && GRADES[g] && !keys.includes(k)) keys.push(k); };
+    const addKey = (g, s) => { const k = g + ':' + s; if (g && s && (GRADES[g] || isSkills(g)) && !keys.includes(k)) keys.push(k); };
     list.forEach((s) => addKey(s.grade, s.subject));
     addKey(store.get('t-grade'), store.get('t-subject'));
     if (!keys.length) return;
@@ -2125,7 +2130,9 @@
         const x = await API.getPath(id);
         if (!x || (x.owner !== p.id && !p.is_admin)) return pageNotFound('لم نجد هذا المسار في مساراتك.');
         path = x;
-        chosen = await API.lessonsByIds(x.items || []);
+        const got = await API.lessonsByIds(x.items || []);
+        // دروس المسار المخفية أو قيد المراجعة الآن تبقى في مكانها حتى لا تضيع عند الحفظ
+        chosen = (x.items || []).map((sid) => got.find((s) => s.id === sid) || { id: sid, title: 'درس غير ظاهر للطلاب الآن', gone: true });
       }
     } catch (e) { if (tok === app.token) view.innerHTML = errorBox(e); return; }
     if (tok !== app.token) return;
@@ -2157,7 +2164,7 @@
     const drawChosen = () => {
       $('#pf-count').textContent = `(${fNum(chosen.length)} من ${fNum(MAXI)})`;
       $('#pf-list').innerHTML = chosen.length ? chosen.map((s, i) => `<div class="lrow pick-row"><span class="lr-num">${fNum(i + 1)}</span>
-          <span class="lr-main"><b>${esc(s.title)}</b><span>${esc([gradeName(s.grade), subjOf(s), (s.teacher && s.teacher.display_name) || ''].filter(Boolean).join(' · '))}</span></span>
+          <span class="lr-main"><b${s.gone ? ' class="muted"' : ''}>${esc(s.title)}</b><span>${s.gone ? 'مخفي أو قيد المراجعة؛ لن يراه الطالب حتى يعود. يمكنك إزالته.' : esc([gradeName(s.grade), subjOf(s), (s.teacher && s.teacher.display_name) || ''].filter(Boolean).join(' · '))}</span></span>
           <span class="row"><button type="button" class="btn btn-sm btn-ghost" data-up="${i}" aria-label="إلى الأعلى"${i ? '' : ' disabled'}>↑</button>
           <button type="button" class="btn btn-sm btn-ghost" data-down="${i}" aria-label="إلى الأسفل"${i < chosen.length - 1 ? '' : ' disabled'}>↓</button>
           <button type="button" class="btn btn-sm btn-ghost btn-danger" data-rm="${i}" aria-label="إزالة">✕</button></span></div>`).join('')
@@ -2178,11 +2185,21 @@
     $('#pform').addEventListener('click', (ev) => {
       const t = ev.target.closest('button');
       if (!t) return;
-      if (t.hasAttribute('data-add')) add(t.getAttribute('data-add'));
-      const move = (i, d) => { const j = i + d; if (j < 0 || j >= chosen.length) return; [chosen[i], chosen[j]] = [chosen[j], chosen[i]]; drawChosen(); };
+      // بعد إعادة الرسم يعود التركيز إلى زر مناسب بدل أن يضيع (لمستخدمي لوحة المفاتيح)
+      const focus = (...sels) => { for (const q of sels) { const x = q && $(q); if (x && !x.disabled) { x.focus(); return; } } };
+      if (t.hasAttribute('data-add')) {
+        const box = t.closest('.pick-list'); const bid = box && box.id;
+        add(t.getAttribute('data-add'));
+        focus(bid && `#${bid} [data-add]`, '#pf-q');
+      }
+      const move = (i, d) => { const j = i + d; if (j < 0 || j >= chosen.length) return; [chosen[i], chosen[j]] = [chosen[j], chosen[i]]; drawChosen(); focus(`[data-${d < 0 ? 'up' : 'down'}="${j}"]`, `[data-${d < 0 ? 'down' : 'up'}="${j}"]`); };
       if (t.hasAttribute('data-up')) move(Number(t.getAttribute('data-up')), -1);
       if (t.hasAttribute('data-down')) move(Number(t.getAttribute('data-down')), 1);
-      if (t.hasAttribute('data-rm')) { chosen.splice(Number(t.getAttribute('data-rm')), 1); drawChosen(); drawMine(); }
+      if (t.hasAttribute('data-rm')) {
+        const i = Number(t.getAttribute('data-rm'));
+        chosen.splice(i, 1); drawChosen(); drawMine();
+        focus(`[data-rm="${Math.min(i, chosen.length - 1)}"]`, '#pf-q');
+      }
     });
     let timer; let seq = 0;
     $('#pf-q').addEventListener('input', () => {
@@ -2228,7 +2245,7 @@
   // الطلب الذي اختار المعلم تسجيله (يبقى أسبوعاً)
   function pendingReq() {
     const q = store.json('st-req', null);
-    if (!q || !q.id || Date.now() - (q.at || 0) > 7 * DAY || !GRADES[q.grade]) return null;
+    if (!q || !q.id || Date.now() - (q.at || 0) > 7 * DAY || !(GRADES[q.grade] || isSkills(q.grade))) return null;
     return q;
   }
 
@@ -2349,7 +2366,7 @@
       ${p.status === 'suspended' ? '<div class="note bad"><b>حسابك موقوف.</b><span>دروسك لا تظهر للطلاب. تواصل مع إدارة المنصة.</span></div>' : ''}
       ${!p.youtube_channel && p.status !== 'suspended' ? '<div class="note warn" style="margin-top:10px"><b>أضف رابط قناتك على يوتيوب.</b><span>لن تستطيع تسجيل الدروس أو نشرها قبل ذلك. <a href="#/profile">أضفه الآن</a></span></div>' : ''}
       ${missingLinks ? `<div class="note warn" style="margin-top:10px"><b>${plural(missingLinks, 'حصة واحدة', 'حصتان', 'حصص', 'حصة')} خلال 24 ساعة بلا رابط بث.</b><span>أضف رابط يوتيوب حتى يتمكن الطلاب من الدخول.</span></div>` : ''}
-      ${p.status === 'approved' && !p.trusted && !p.is_admin ? (() => {
+      ${p.status === 'approved' && p.trusted !== undefined && !p.trusted && !p.is_admin ? (() => {
         const n = C.TRUST_AFTER || 3;
         const ok = list.filter((s) => (s.review || 'ok') === 'ok').length;
         return `<div class="note" style="margin-top:10px"><b>أهلاً بك متطوعاً جديداً</b><span>تراجع الإدارة أول ${fNum(n)} دروس لك قبل ظهورها للطلاب، ثم تُنشر دروسك مباشرة. اعتُمد لك حتى الآن ${fNum(Math.min(ok, n))} من ${fNum(n)}.</span></div>`;
@@ -2476,7 +2493,7 @@
       const list = gSel.value ? subjectsOf(gSel.value) : [];
       const cur = keep || sSel.value;
       sSel.innerHTML = `<option value="">${gSel.value ? 'اختر المادة' : 'اختر الصف أولاً'}</option>` + list.map((x) => `<option value="${esc(x)}"${x === cur ? ' selected' : ''}>${esc(subjectName(x))}</option>`).join('');
-      if (cur && !list.includes(cur) && C.SUBJECTS[cur]) sSel.insertAdjacentHTML('beforeend', `<option value="${esc(cur)}" selected>${esc(subjectName(cur))}</option>`);
+      if (cur && !list.includes(cur) && C.SUBJECTS[cur] && !isSkills(gSel.value) && cur === src.subject) sSel.insertAdjacentHTML('beforeend', `<option value="${esc(cur)}" selected>${esc(subjectName(cur))}</option>`);
     }
     fillSubjects(src.subject || store.get('t-subject') || '');
     const kindNow = () => kind;

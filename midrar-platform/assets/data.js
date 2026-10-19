@@ -8,19 +8,30 @@
   const LIVE = !!(C.SUPABASE_URL && C.SUPABASE_ANON_KEY);
   const AUTH_KEY = 'midrar-auth';
   const BASE_COLS = 'id,grade,subject,title,kind,starts_at,ends_at,video_url,recording_url,status,hidden,teacher_id,teacher:teachers(id,display_name,avatar_url)';
-  const PLACE_COLS = ',term,unit,unit_title,lesson_type,exam_year,exam_round,skill_name,level,ages';
+  // الأعمدة على مراحل: v4 (مكان الدرس في الكتاب) ثم v5 (المهارات والاختبار والمراجعة)
+  const V4_COLS = ',term,unit,unit_title,lesson_type,exam_year,exam_round';
+  const V5_COLS = ',skill_name,level,ages';
   const EXTRA_COLS = ',quiz,attachments,review,review_note';
   const PLACE_KEYS = ['term', 'unit', 'unit_title', 'lesson_type', 'exam_year', 'exam_round', 'request_id', 'skill_name', 'level', 'ages', 'quiz', 'attachments'];
-  const noPlace = (o) => { const x = Object.assign({}, o); PLACE_KEYS.forEach((k) => delete x[k]); return x; };
+  const V5_KEYS = ['skill_name', 'level', 'ages', 'quiz', 'attachments'];
+  const strip = (o, keys) => { const x = Object.assign({}, o); keys.forEach((k) => delete x[k]); return x; };
+  const noV5 = (o) => strip(o, V5_KEYS);
+  const noPlace = (o) => strip(o, PLACE_KEYS);
   const oldDb = (e) => !!e && (e.code === 'PGRST204' || e.code === '42703');
-  let LIST_COLS = BASE_COLS + PLACE_COLS;
+  let colTier = 2;
+  let LIST_COLS = BASE_COLS + V4_COLS + V5_COLS;
   let FULL_COLS = LIST_COLS + ',description,created_at' + EXTRA_COLS;
-  // إن رُفع الموقع قبل تحديث قاعدة البيانات: نعمل بالأعمدة القديمة بدل أن تتعطل الصفحات
+  // إن رُفع الموقع قبل تحديث قاعدة البيانات: نعمل بالأعمدة الأقدم خطوة خطوة بدل أن تتعطل الصفحات
   function legacyCols() {
-    if (LIST_COLS === BASE_COLS) return false;
-    LIST_COLS = BASE_COLS; FULL_COLS = BASE_COLS + ',description,created_at';
+    if (colTier === 0) return false;
+    colTier--;
+    LIST_COLS = BASE_COLS + (colTier ? V4_COLS : '');
+    FULL_COLS = LIST_COLS + ',description,created_at';
     return true;
   }
+  const ALL_COLS = [2, 1, 0].flatMap((t) => { const l = BASE_COLS + (t ? V4_COLS : '') + (t > 1 ? V5_COLS : ''); return [l, l + ',description,created_at' + (t > 1 ? EXTRA_COLS : '')]; });
+  // طلب فشل بأعمدة used: إن خفّض طلبٌ آخر الأعمدة في الأثناء نعيد المحاولة بالحالية دون خفض جديد
+  const lowerFrom = (used) => (used === LIST_COLS || used === FULL_COLS ? legacyCols() : ALL_COLS.includes(used));
   const iso = (d) => new Date(d).toISOString();
   // «الآن» مقرّباً للدقيقة حتى تتطابق الطلبات المتكررة
   const isoMin = () => { const d = new Date(); d.setSeconds(0, 0); return d.toISOString(); };
@@ -69,10 +80,12 @@
     async function rest(table, pairs) {
       try { return await restRaw(table, pairs); }
       catch (e) {
-        if (e.code === '42703' && pairs.some((p) => p[0] === 'select' && p[1].includes(PLACE_COLS))) {
-          legacyCols();
-          return restRaw(table, pairs.map((p) => (p[0] === 'select' ? ['select', p[1].replace(PLACE_COLS, '').replace(EXTRA_COLS, '')]
-            : p[0] === 'order' ? ['order', p[1].replace('term.asc.nullslast,unit.asc.nullslast,', '')] : p)));
+        const sel = pairs.find((p) => p[0] === 'select');
+        if (e.code === '42703' && sel && ALL_COLS.includes(sel[1])) {
+          const full = ALL_COLS.indexOf(sel[1]) % 2 === 1;
+          if (!lowerFrom(sel[1])) throw e;
+          return rest(table, pairs.map((p) => (p[0] === 'select' ? ['select', full ? FULL_COLS : LIST_COLS]
+            : p[0] === 'order' && !colTier ? ['order', p[1].replace('term.asc.nullslast,unit.asc.nullslast,', '')] : p)));
         }
         throw e;
       }
@@ -258,7 +271,10 @@
         if (rows[0]) return rows[0];
         if (user) { // المعلم صاحب الحصة أو المشرف يرى الحصص غير المنشورة
           const c = await client();
-          const r = await c.from('sessions').select(FULL_COLS).eq('id', id).maybeSingle();
+          let used = FULL_COLS;
+          const go = () => c.from('sessions').select(used = FULL_COLS).eq('id', id).maybeSingle();
+          let r = await go();
+          while (r.error && r.error.code === '42703' && lowerFrom(used)) r = await go();
           return check(r);
         }
         return null;
@@ -335,7 +351,12 @@
         if (oldDb(r.error)) { delete row.portfolio_url; r = await go(row); }
         return check(r);
       },
-      async redeemInvite(code) { const c = await authed(); return check(await c.rpc('redeem_invite', { p_code: code })); },
+      async redeemInvite(code) {
+        const c = await authed();
+        const r = check(await c.rpc('redeem_invite', { p_code: code }));
+        if (r && r.error) throw new ApiError({ message: r.error });
+        return r;
+      },
       async myNomination() { const c = await authed(); const r = check(await c.rpc('my_nomination')); return (r && r[0]) || null; },
       async myPaths() { const c = await authed(); return check(await c.from('paths').select('*').eq('owner', user.id).order('updated_at', { ascending: false })); },
       async savePath(pth) {
@@ -348,24 +369,25 @@
       async deletePath(id) { const c = await authed(); check(await c.from('paths').delete().eq('id', id)); },
       async mySessions() {
         const c = await authed();
-        const cols = FULL_COLS;
-        let r = await c.from('sessions').select(cols).eq('teacher_id', user.id).order('starts_at', { ascending: false }).limit(1000);
-        if (r.error && r.error.code === '42703' && cols.includes(PLACE_COLS)) { legacyCols(); r = null; }
-        if (r) return check(r);
-        return check(await c.from('sessions').select(FULL_COLS).eq('teacher_id', user.id)
-          .order('starts_at', { ascending: false }).limit(1000));
+        let used = FULL_COLS;
+        const go = () => c.from('sessions').select(used = FULL_COLS).eq('teacher_id', user.id).order('starts_at', { ascending: false }).limit(1000);
+        let r = await go();
+        while (r.error && r.error.code === '42703' && lowerFrom(used)) r = await go();
+        return check(r);
       },
       async createSessions(rows) {
         const c = await authed();
         const data = rows.map((r) => Object.assign({ teacher_id: user.id }, r));
         let r = await c.from('sessions').insert(data).select('id');
         // قاعدة بيانات لم تُحدَّث بعد: يُنشر الدرس بلا مكانه في الكتاب بدل أن يفشل
+        if (oldDb(r.error)) r = await c.from('sessions').insert(data.map(noV5)).select('id');
         if (oldDb(r.error)) r = await c.from('sessions').insert(data.map(noPlace)).select('id');
         return check(r);
       },
       async updateSession(id, patch) {
         const c = await authed();
         let q = await c.from('sessions').update(patch).eq('id', id).select('id');
+        if (oldDb(q.error)) q = await c.from('sessions').update(noV5(patch)).eq('id', id).select('id');
         if (oldDb(q.error)) q = await c.from('sessions').update(noPlace(patch)).eq('id', id).select('id');
         const r = check(q);
         if (!r || !r.length) throw new ApiError({ code: '42501' });
@@ -548,7 +570,7 @@
         && +new Date(s.starts_at) <= Date.now()).sort((a, b) => a.starts_at.localeCompare(b.starts_at)).map((s) => s.id);
       const paths = [
         { id: uid(), owner: 't-ali', grade: 'g10', title: 'استعد لاختبار الرياضيات — الفصل الأول', description: 'دروس مختارة بالترتيب، من التحليل إلى المعادلات التربيعية.',
-          items: pub('g10', 'math').concat(quad ? [quad.id] : []), published: true, created_at: iso(Date.now() - 5 * 864e5), updated_at: iso(Date.now() - 864e5) },
+          items: pub('g10', 'math').concat(quad ? [quad.id] : []).filter((x, i, a) => a.indexOf(x) === i), published: true, created_at: iso(Date.now() - 5 * 864e5), updated_at: iso(Date.now() - 864e5) },
         { id: uid(), owner: 't-eng', grade: 'skills', title: 'ابدأ في الذكاء الاصطناعي من الصفر', description: 'ثلاثة دروس قصيرة تعرّفك بالذكاء الاصطناعي وكيف تستخدمه بأمان.',
           items: kept.filter((s) => s.subject === 'sk_ai').map((s) => s.id), published: true, created_at: iso(Date.now() - 4 * 864e5), updated_at: iso(Date.now() - 2 * 864e5) },
       ];
@@ -576,11 +598,13 @@
       if (r.unit == null && r.grade !== 'skills') r.unit_title = null;
       return r;
     }
-    const CONTENT = ['title', 'description', 'video_url', 'recording_url', 'skill_name', 'quiz', 'attachments'];
+    const CONTENT = ['title', 'description', 'video_url', 'recording_url', 'skill_name', 'quiz', 'attachments', 'unit', 'unit_title', 'grade', 'subject', 'ages', 'level'];
+    // الدعوة صالحة ما دام صاحبها مشرفاً، والترشيح ما دام صاحبه موثوقاً (كما في invite_valid)
+    const inviteValid = (i) => { if (!i.created_by) return i.kind === 'invite'; const t = teacherOf(i.created_by) || {}; return t.status === 'approved' && (i.kind === 'invite' ? t.is_admin : t.trusted); };
     function trustAfterReview(teacherId) {
       const t = teacherOf(teacherId);
       if (!t || t.trusted || t.trust_lock || t.status !== 'approved') return;
-      if (db.sessions.filter((x) => x.teacher_id === teacherId && (x.review || 'ok') === 'ok').length >= (C.TRUST_AFTER || 3)) t.trusted = true;
+      if (db.sessions.filter((x) => x.teacher_id === teacherId && (x.review || 'ok') === 'ok' && !x.hidden).length >= (C.TRUST_AFTER || 3)) t.trusted = true;
     }
     const isAdmin = () => !!(user && (teacherOf(user.id) || {}).is_admin);
     const overlaps = (a, b) => a.starts_at < b.ends_at && b.starts_at < a.ends_at;
@@ -723,21 +747,22 @@
       async inviteInfo(code) {
         load();
         const c = String(code || '').toUpperCase().replace(/[\s-]/g, '');
-        const i = (db.invites || []).find((x) => x.code === c && x.active && x.uses_left > 0);
+        const i = (db.invites || []).find((x) => x.code === c && x.active && x.uses_left > 0 && inviteValid(x));
         return delay(i ? { label: i.label, kind: i.kind } : null);
       },
       async redeemInvite(code) {
         need(); load();
         const me = teacherOf(user.id);
         if (!me) throw new ApiError({ message: 'أكمل ملفك أولاً' });
+        if (me.status === 'suspended') throw new ApiError({ code: '42501', message: 'حسابك موقوف' });
         const c = String(code || '').toUpperCase().replace(/[\s-]/g, '');
         const i = (db.invites || []).find((x) => x.code === c);
-        if (!i || !i.active || i.uses_left < 1) throw new ApiError({ message: 'رابط الدعوة غير صالح أو انتهى' });
+        if (!i || !i.active || i.uses_left < 1 || !inviteValid(i)) throw new ApiError({ message: 'رابط الدعوة غير صالح أو انتهى' });
         if (i.created_by === user.id) throw new ApiError({ message: 'لا يمكنك استخدام رابط الترشيح الخاص بك' });
         db.inviteUses = db.inviteUses || [];
         if (db.inviteUses.some((u) => u.teacher_id === user.id)) return delay({ kind: i.kind, label: i.label, already: true });
         db.inviteUses.push({ code: c, teacher_id: user.id }); i.uses_left -= 1; i.used = (i.used || 0) + 1;
-        me.status = 'approved'; if (i.kind === 'invite') me.trusted = true;
+        me.status = 'approved'; if (i.kind === 'invite' && !me.trust_lock) me.trusted = true;
         me.vouch = (i.kind === 'invite' ? 'بدعوة من ' : 'رشّحه ') + i.label;
         save();
         return delay({ kind: i.kind, label: i.label });
@@ -747,7 +772,8 @@
         const me = teacherOf(user.id) || {};
         if (me.status !== 'approved' || !me.trusted) throw new ApiError({ code: '42501', message: 'يصبح رابط الترشيح متاحاً بعد أن تصبح معلماً موثوقاً' });
         db.invites = db.invites || [];
-        let i = db.invites.find((x) => x.created_by === user.id && x.kind === 'nominate' && x.active);
+        let i = db.invites.filter((x) => x.created_by === user.id && x.kind === 'nominate').pop();
+        if (i && !i.active) throw new ApiError({ code: '42501', message: 'أوقفت الإدارة رابط الترشيح الخاص بك' });
         if (!i) {
           const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
           i = { code: Array.from({ length: 10 }, () => A[Math.floor(Math.random() * 32)]).join(''), kind: 'nominate', label: me.display_name,
@@ -867,7 +893,7 @@
         });
         db.sessions.push(...made);
         made.forEach((m) => {
-          const q = m.request_id && db.requests.find((x) => x.id === m.request_id && x.status === 'open' && x.grade === m.grade && x.subject === m.subject);
+          const q = m.request_id && m.review === 'ok' && db.requests.find((x) => x.id === m.request_id && x.status === 'open' && x.grade === m.grade && x.subject === m.subject);
           if (q && me.status === 'approved') { q.status = 'done'; q.session_id = m.id; q.last_at = iso(Date.now()); }
         });
         save();
@@ -881,14 +907,18 @@
         if (!isAdmin()) {
           next.hidden = s.hidden; next.review = s.review; next.review_note = s.review_note;
           const me = teacherOf(user.id) || {};
-          if (!me.trusted && CONTENT.some((k) => JSON.stringify(next[k] == null ? null : next[k]) !== JSON.stringify(s[k] == null ? null : s[k]))) {
+          if ((!me.trusted || s.review === 'rejected') && CONTENT.some((k) => JSON.stringify(next[k] == null ? null : next[k]) !== JSON.stringify(s[k] == null ? null : s[k]))) {
             next.review = 'pending'; next.review_note = null;
           }
         }
         guardOverlap(next, id);
         const approved = next.review === 'ok' && (s.review || 'ok') !== 'ok';
         Object.assign(s, next);
-        if (approved) trustAfterReview(s.teacher_id);
+        if (approved) {
+          trustAfterReview(s.teacher_id);
+          const q = s.request_id && db.requests.find((x) => x.id === s.request_id && x.status === 'open' && x.grade === s.grade && x.subject === s.subject);
+          if (q) { q.status = 'done'; q.session_id = s.id; q.last_at = iso(Date.now()); }
+        }
         save();
         return delay({ id });
       },
