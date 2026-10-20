@@ -461,7 +461,7 @@
       <section class="cta">
         <h2>أنت معلم وتريد التطوع؟</h2>
         <p class="muted">سجّل بحساب Google، ثم سجّل درسك من شاشة حاسوبك بصوتك فقط، بلا كاميرا وبلا برامج، وارفعه إلى قناتك في يوتيوب. كل شيء مجاني.</p>
-        <div class="cta-row"><a class="btn btn-primary" href="#/volunteer">ابدأ التطوع</a><a class="btn" href="#/guide">كيف أسجّل درسي؟</a></div>
+        <div class="cta-row"><a class="btn btn-primary" href="#/teach">تطوّع بدرس واحد</a><a class="btn" href="#/volunteer">كيف يعمل التطوع؟</a></div>
       </section>`;
     const conts = Object.entries(watch.read().items).map(([id, w]) => Object.assign({ id }, w))
       .filter((w) => !w.done && w.p >= 30 && Date.now() - w.at < 60 * DAY).sort((a, b) => b.at - a.at).slice(0, 4);
@@ -782,6 +782,7 @@
   async function subjectView(tok, gradeId, subject, body, examOnly) {
     body.innerHTML = subjChips(gradeId, subject) + '<p class="loading">جارٍ تحميل الدروس…</p>';
     chipIntoView(body);
+    const toolsReq = getTools().catch(() => []);
     let rows;
     try { rows = remember(await subjectLessons(gradeId, subject)); }
     catch (e) {
@@ -791,6 +792,7 @@
       $('[data-retry]', body).addEventListener('click', route);
       return;
     }
+    const tools = toolsFor(await toolsReq, gradeId, subject);
     if (tok !== app.token) return;
     const key = gradeId + '|' + subject;
     // رابط «أسئلة الدبلوم» يعرض الامتحانات فقط دون أن يغيّر اختيار الطالب في صفحة المادة
@@ -862,6 +864,7 @@
               <div class="lrows">${g.items.map((r) => lessonRow(r)).join('')}</div></details>`;
           }).join('')}
         </div>
+        ${tools.length ? `<section class="section subj-tools"><h2>أدوات تفاعلية تساعدك</h2><div class="tool-grid">${tools.map(toolCard).join('')}</div></section>` : ''}
         ${requestHtml(gradeId, subject)}`;
       bindSearch(tok, gradeId, subject, (on) => { const m = $('#main-list'); if (m) m.hidden = on; });
       bindRequest(gradeId);
@@ -1117,7 +1120,7 @@
         </ul>
         <h2>ميثاق المتطوع باختصار</h2>
         <p>الشرح مجاني بالكامل، بلا إعلانات لدروس أو دورات مدفوعة، وبلا أي تواصل خاص مع الطلاب. <a href="#/about">اقرأ الميثاق كاملاً</a>.</p>
-        <div class="cta-row"><a class="btn btn-primary btn-lg" href="#/dashboard">اطلب الانضمام</a><a class="btn" href="#/guide">كيف أسجّل درسي؟</a></div>
+        <div class="cta-row"><a class="btn btn-primary btn-lg" href="#/teach">تطوّع بدرس واحد</a><a class="btn" href="#/dashboard">اطلب الانضمام</a><a class="btn" href="#/guide">كيف أسجّل درسي؟</a></div>
       </article>`;
   }
   function pageParents() {
@@ -2601,6 +2604,183 @@
   }
 
   // ------------------------------------------------------------------
+  //  «تطوّع بالشرح»: طريق قصير للمعلم المتردد، ينتهي برسالة واتساب للإدارة
+  //  (لا تحفظ المنصة أي بيانات تواصل)
+  // ------------------------------------------------------------------
+  const waLink = (text) => (C.WHATSAPP ? `https://wa.me/${String(C.WHATSAPP).replace(/\D/g, '')}?text=${encodeURIComponent(text)}` : '');
+  function pageTeach() {
+    setNav(''); setTitle('تطوّع بالشرح');
+    const gradeOpts = C.STAGES.map((st) => `<optgroup label="${esc(st.name)}">${st.grades.map((g) => `<option value="${esc(g.name)}">${esc(g.name)}</option>`).join('')}</optgroup>`).join('');
+    view.innerHTML = `
+      <header class="page-head teach-head"><h1>تطوّع بالشرح: كن من أوائل المساهمين في صدقة علمٍ جارية</h1>
+        <p class="muted">درس واحد، عشر دقائق من مادتك، يبقى على قناتك في يوتيوب وباسمك، وينتفع به طلاب في كل مكان. المنصة مجانية وبلا إعلانات.</p></header>
+      <ol class="steps3 teach-steps">
+        <li><b>صوّر درساً واحداً</b><span class="muted">بجوالك، أو سجّل شاشتك وصوتك من <a href="#/studio">استوديو المنصة</a> بلا برامج.</span></li>
+        <li><b>ارفعه على قناتك</b><span class="muted">في يوتيوب، حتى لو كانت قناتك جديدة. الدرس يبقى باسمك.</span></li>
+        <li><b>أرسله لنا</b><span class="muted">املأ النموذج، فنتواصل معك ونساعدك في نشره خطوة بخطوة.</span></li>
+      </ol>
+      <form class="form box" id="tf" novalidate>
+        <h2>أرغب في التطوع</h2>
+        <div class="grid2">
+          <div class="field"><label for="tf-name">الاسم</label><input class="input" id="tf-name" maxlength="60" autocomplete="name" placeholder="مثال: أ. سالم الهنائي"></div>
+          <div class="field"><label for="tf-subj">المادة أو التخصص</label><input class="input" id="tf-subj" maxlength="60" placeholder="مثال: رياضيات، أو تصميم جرافيكي"></div>
+        </div>
+        <div class="field"><label for="tf-grade">الصف (اختياري)</label><select class="input" id="tf-grade"><option value="">أكثر من صف أو غير محدد</option>${gradeOpts}<option value="المهارات">المهارات (خارج المنهج)</option></select></div>
+        <div class="field"><label for="tf-note">ملاحظة (اختياري)</label><textarea class="input" id="tf-note" maxlength="200" rows="2" placeholder="مثال: عندي درس جاهز عن الكسور"></textarea></div>
+        <div class="form-actions"><button class="btn btn-primary btn-lg wa-btn" type="submit">أرسل عبر واتساب</button>
+          <a class="btn" href="#/dashboard">جاهز الآن؟ ادخل وانشر بنفسك</a></div>
+        <p class="hint">يفتح واتساب برسالة جاهزة إلى إدارة المنصة. لا تحفظ المنصة أي بيانات تكتبها هنا.</p>
+      </form>
+      <section class="box" id="tf-next" hidden>
+        <h2>شكراً لك! هذه خطواتك التالية</h2>
+        <ol class="prose-list">
+          <li>اختر درساً قصيراً تحبه من مادتك (عشر دقائق تكفي).</li>
+          <li>سجّله بجوالك أو من <a href="#/studio">استوديو المنصة</a>، والصوت الواضح أهم من الصورة.</li>
+          <li>ارفعه على قناتك في يوتيوب بظهور «عام» أو «غير مدرج». <a href="#/guide">الشرح بالصور في دليل المعلم</a>.</li>
+          <li>ادخل المنصة بحساب Google والصق رابط الفيديو، أو أرسله لنا على واتساب وسنساعدك.</li>
+        </ol>
+      </section>
+      <p class="muted small">تريد معرفة المزيد قبل أن تبدأ؟ <a href="#/volunteer">كل ما يخص التطوع</a> · <a href="#/about">ميثاق المتطوع</a></p>`;
+    $('#tf').addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const name = $('#tf-name').value.trim(); const subj = $('#tf-subj').value.trim();
+      if (name.length < 2) { $('#tf-name').setAttribute('aria-invalid', 'true'); $('#tf-name').focus(); return toast('اكتب اسمك.', true); }
+      if (subj.length < 2) { $('#tf-subj').setAttribute('aria-invalid', 'true'); $('#tf-subj').focus(); return toast('اكتب مادتك أو تخصصك.', true); }
+      const grade = $('#tf-grade').value; const note = $('#tf-note').value.trim();
+      const text = [`السلام عليكم، أنا ${name}، وأرغب في التطوع بالشرح في ${C.SITE_NAME}.`, `المادة أو التخصص: ${subj}`, grade ? `الصف: ${grade}` : '', note ? `ملاحظة: ${note}` : ''].filter(Boolean).join('\n');
+      const url = waLink(text);
+      if (!url) return toast('لم تُضبط وسيلة التواصل بعد. ادخل المنصة وانشر درسك مباشرة.', true);
+      const w = window.open(url, '_blank', 'noopener');
+      if (!w) location.href = url;
+      $('#tf-next').hidden = false;
+      $('#tf-next').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  // ------------------------------------------------------------------
+  //  «أدوات للمعلم والطالب»: روابط لأدوات تفاعلية يضيفها المشرف من الإدارة
+  // ------------------------------------------------------------------
+  let toolsP = null;
+  const getTools = () => (toolsP || (toolsP = API.listTools().catch((e) => { toolsP = null; throw e; })));
+  const TOOL_URL = /^https:\/\/[A-Za-z0-9.-]+\.[A-Za-z]{2,}(:[0-9]+)?(\/[^\s<>"]*)?$/;
+  const toolTags = (t) => [t.grade ? gradeName(t.grade) : 'لكل الصفوف', t.subject ? subjectName(t.subject) : ''].filter(Boolean);
+  const toolHost = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
+  const toolCard = (t) => (TOOL_URL.test(t.url || '') ? `<a class="tool-card" href="${esc(t.url)}" target="_blank" rel="noopener noreferrer">
+      <b>${esc(t.title)}</b>${t.description ? `<span class="muted small">${esc(t.description)}</span>` : ''}
+      <span class="tool-tags">${toolTags(t).map((x) => `<span class="pill">${esc(x)}</span>`).join('')}</span>
+      <span class="tool-open">افتح الأداة <span aria-hidden="true">↗</span><span class="sr-only"> (تفتح في نافذة جديدة)</span> <span class="muted small">${esc(toolHost(t.url))}</span></span></a>` : '');
+  // الأدوات التي تخص صفاً ومادة: أداة المادة لكل الصفوف، أو أداة هذا الصف تحديداً
+  const toolsFor = (list, gradeId, subject) => list.filter((t) => (t.subject ? t.subject === subject : true) && (t.grade ? t.grade === gradeId : !!t.subject));
+  async function pageTools(tok) {
+    setNav('tools'); setTitle('أدوات للمعلم والطالب');
+    view.innerHTML = `<header class="page-head"><h1>أدوات للمعلم والطالب</h1>
+      <p class="muted">أدوات ومحاكاة تفاعلية مجانية تساعد على فهم الدروس وشرحها. تفتح في نافذة جديدة على موقعها.</p></header>
+      <div id="tools-box"><p class="loading">جارٍ التحميل…</p></div>`;
+    let list;
+    try { list = await getTools(); } catch (e) { if (tok === app.token) $('#tools-box').innerHTML = errorBox(e); return; }
+    if (tok !== app.token) return;
+    const subs = Array.from(new Set(list.map((t) => t.subject || ''))).filter(Boolean);
+    let cur = '';
+    const draw = () => {
+      const rows = list.filter((t) => !cur || t.subject === cur);
+      $('#tools-box').innerHTML = !list.length ? '<div class="empty"><b>تُضاف الأدوات هنا قريباً</b><span>تابعنا، أو اقترح أداة مفيدة على إدارة المنصة.</span></div>'
+        : `${subs.length > 1 ? `<div class="filters" role="group" aria-label="المادة"><button type="button" class="chip" data-ts="" aria-pressed="${!cur}">الكل</button>
+            ${subs.map((x) => `<button type="button" class="chip" data-ts="${esc(x)}" aria-pressed="${cur === x}">${esc(subjectName(x))}</button>`).join('')}</div>` : ''}
+          <div class="tool-grid">${rows.map(toolCard).join('')}</div>`;
+      $$('[data-ts]').forEach((b) => b.addEventListener('click', () => { cur = b.getAttribute('data-ts'); draw(); const f = $(`[data-ts="${cur}"]`); if (f) f.focus(); }));
+    };
+    draw();
+  }
+
+  // ------------------------------------------------------------------
+  //  مساعد المنصة: يجيب عن أسئلة المنصة فقط من إجابات مكتوبة مسبقاً،
+  //  بلا ذكاء اصطناعي خارجي ولا إرسال لأي نص إلى خادم
+  // ------------------------------------------------------------------
+  const nrm = (t) => String(t || '').toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[^\w؀-ۿ\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  const FAQ = [
+    { k: ['ما هي المنصه', 'ماهي المنصه', 'عن المنصه', 'فكره المنصه', 'ما هي مدرار', 'وش المنصه', 'ايش المنصه'], q: 'ما هي منصة مِدْرار العلم؟',
+      a: `${esc(C.SITE_NAME)} منصة تعليمية مجانية وتطوعية لدروس مسجّلة، يقدّمها معلمون متطوعون للطلاب من الصف الأول إلى الثاني عشر، وفيها قسم للمهارات. بلا رسوم وبلا إعلانات.`, l: [['#/about', 'عن المنصة']] },
+    { k: ['مجاني', 'مجانا', 'رسوم', 'فلوس', 'سعر', 'اشتراك', 'كم', 'بفلوس', 'مدفوع'], q: 'هل المنصة مجانية؟',
+      a: 'نعم، مجانية بالكامل للطلاب والمعلمين، بلا اشتراك وبلا إعلانات.' },
+    { k: ['تطوع', 'اتطوع', 'متطوع', 'انضم', 'انضمام', 'اشارك', 'مشاركه', 'اسجل كمعلم', 'معلم جديد', 'ابي اشرح', 'ابغى اشرح', 'اشرح'], q: 'كيف أتطوع بالشرح؟',
+      a: 'سجّل درساً واحداً (عشر دقائق تكفي)، وارفعه على قناتك في يوتيوب، ثم الصق رابطه في المنصة بعد الدخول بحساب Google. أو املأ نموذج «تطوّع بالشرح» فنتواصل معك عبر واتساب ونساعدك.', l: [['#/teach', 'تطوّع بالشرح'], ['#/volunteer', 'تفاصيل التطوع']] },
+    { k: ['اسجل الدرس', 'تسجيل', 'اصور', 'تصوير', 'استوديو', 'سجل الشاشه', 'برنامج', 'كاميرا', 'مايك', 'صوت'], q: 'كيف أسجّل درسي؟',
+      a: 'من «استوديو المنصة» تسجّل شاشتك وصوتك من المتصفح بلا برامج وبلا كاميرا، أو صوّر بجوالك. الصوت الواضح أهم من الصورة.', l: [['#/studio', 'استوديو المنصة'], ['#/guide', 'دليل المعلم']] },
+    { k: ['يوتيوب', 'قناه', 'قناتي', 'ارفع', 'رفع', 'غير مدرج', 'عام'], q: 'كيف أرفع الدرس على يوتيوب؟',
+      a: 'ارفع الفيديو على قناتك في يوتيوب بظهور «عام» أو «غير مدرج»، حتى لو كانت القناة جديدة، ثم انسخ رابطه والصقه في المنصة. الدرس يبقى على قناتك وباسمك.', l: [['#/guide', 'الشرح بالصور']] },
+    { k: ['الرابط', 'الصق', 'انشر', 'نشر', 'اضيف درس', 'اضافه درس'], q: 'كيف أنشر الدرس في المنصة؟',
+      a: 'ادخل بحساب Google، ثم من «لوحتي» اضغط «أضف درساً من يوتيوب»، واختر الصف والمادة والوحدة، والصق الرابط، ثم انشر.', l: [['#/dashboard', 'لوحتي']] },
+    { k: ['مراجعه', 'قيد المراجعه', 'يظهر', 'ما ظهر', 'اعتماد', 'معتمد', 'موافقه'], q: 'لماذا درسي «قيد المراجعة»؟',
+      a: `تراجع الإدارة أول ${fNum(C.TRUST_AFTER || 3)} دروس لكل متطوع جديد قبل ظهورها للطلاب، حمايةً لهم. بعد اعتمادها تُنشر دروسك مباشرة.` },
+    { k: ['دعوه', 'رابط دعوه', 'ترشيح', 'رشح', 'زميل', 'مدرستي'], q: 'ما رابط الدعوة والترشيح؟',
+      a: 'رابط الدعوة تنشئه الإدارة لمدرسة أو جهة موثوقة، ومن يسجّل عبره يُعتمد مباشرة. ورابط الترشيح ينشئه المعلم الموثوق لزملائه من «لوحتي».' },
+    { k: ['شهاده', 'شكر', 'تقدير'], q: 'هل يحصل المتطوع على شهادة؟',
+      a: 'نعم، تصدر المنصة شهادة شكر وتقدير برمز تحقق عند بلوغ 5 و10 و25 و50 و100 من الدروس، وتظهر في «لوحتي».' },
+    { k: ['طالب', 'ابحث عن درس', 'دروس صفي', 'الصف', 'ماده', 'اذاكر', 'اشوف الدروس', 'وين الدروس'], q: 'أنا طالب، كيف أجد دروسي؟',
+      a: 'من الصفحة الرئيسية اختر صفّك ثم المادة، فتظهر الدروس مرتبة كما في كتابك المدرسي. لا تحتاج إلى حساب.', l: [['#/', 'الدروس']] },
+    { k: ['اطلب', 'طلب درس', 'ما لقيت', 'ما وجدت', 'غير موجود'], q: 'لم أجد الدرس الذي أحتاجه',
+      a: 'في صفحة المادة اضغط «اطلب درساً» واكتب موضوعه، فيظهر طلبك للمعلمين المتطوعين في تلك المادة، دون اسمك.' },
+    { k: ['امان', 'حمايه', 'ولي امر', 'اولياء', 'ابني', 'بنتي', 'تواصل خاص'], q: 'هل المنصة آمنة للطلاب؟',
+      a: 'نعم: لا تواصل خاص داخل المنصة، ولا حسابات للطلاب، وتراجع الإدارة دروس المتطوعين الجدد، ويمكن الإبلاغ عن أي درس بزر «الإبلاغ عن مشكلة».', l: [['#/parents', 'لأولياء الأمور']] },
+    { k: ['خصوصيه', 'بياناتي', 'ايميل', 'بريد', 'رقم', 'جوال'], q: 'ماذا تحفظ المنصة عني؟',
+      a: 'لا تحفظ المنصة شيئاً عن الطلاب. وللمعلم: اسمه وقناته وتخصصه فقط، ولا يظهر بريده للعامة.', l: [['#/about', 'الميثاق والخصوصية']] },
+    { k: ['مهارات', 'ذكاء اصطناعي', 'تصميم', 'برمجه', 'خط عربي', 'مونتاج'], q: 'ما قسم المهارات؟',
+      a: 'دورات خارج المنهج يقدّمها متخصصون متطوعون، مثل الذكاء الاصطناعي والتصميم والبرمجة والخط العربي، مقسّمة إلى أجزاء ومستويات.', l: [['#/k', 'المهارات']] },
+    { k: ['ادوات', 'اداه', 'محاكاه', 'مختبر', 'تفاعلي', 'فيزياء', 'كيمياء'], q: 'ما قسم الأدوات؟',
+      a: 'أدوات ومحاكاة تفاعلية مجانية، مثل مختبر الفيزياء والكيمياء التفاعلية، تساعد الطالب على الفهم والمعلم على الشرح.', l: [['#/tools', 'أدوات للمعلم والطالب']] },
+    { k: ['مسار', 'مسارات'], q: 'ما المسارات؟',
+      a: 'مسار يجهزه معلم موثوق: دروس مختارة بالترتيب لهدف واحد، مثل الاستعداد لاختبار، ويرى الطالب تقدّمه فيه.' },
+    { k: ['بلاغ', 'ابلغ', 'مشكله', 'خطا', 'غلط', 'لا يعمل', 'ما يشتغل'], q: 'وجدت مشكلة في درس',
+      a: 'افتح الدرس واضغط «الإبلاغ عن مشكلة»، فيصل بلاغك إلى الإدارة.' },
+    { k: ['تواصل', 'اتواصل', 'الاداره', 'واتساب', 'رقم الاداره', 'مسؤول'], q: 'كيف أتواصل مع الإدارة؟',
+      a: 'إن كنت معلماً تريد التطوع فاستخدم نموذج «تطوّع بالشرح»، فيفتح واتساب برسالة جاهزة إلى الإدارة.', l: [['#/teach', 'تطوّع بالشرح']] },
+  ];
+  const FAQ_START = [2, 9, 0, 11];
+  function botAnswer(text) {
+    const q = ' ' + nrm(text) + ' ';
+    let best = null; let score = 0;
+    FAQ.forEach((f) => {
+      const s = f.k.reduce((n, k) => n + (q.includes(' ' + nrm(k)) ? nrm(k).length : 0), 0) + (nrm(f.q).split(' ').filter((w) => w.length > 2 && q.includes(' ' + w)).length);
+      if (s > score) { score = s; best = f; }
+    });
+    return score >= 3 ? best : null;
+  }
+  function initBot() {
+    if ($('#bot-btn')) return;
+    document.body.insertAdjacentHTML('beforeend', `
+      <button type="button" class="bot-btn" id="bot-btn" aria-expanded="false" aria-controls="bot"><span aria-hidden="true">💬</span><span>مساعد المنصة</span></button>
+      <section class="bot" id="bot" role="dialog" aria-label="مساعد المنصة" hidden>
+        <header class="bot-head"><b>مساعد ${esc(C.SITE_NAME)}</b><button type="button" class="btn btn-sm btn-ghost" id="bot-x" aria-label="إغلاق">✕</button></header>
+        <div class="bot-log" id="bot-log" aria-live="polite"></div>
+        <form class="bot-form" id="bot-form"><label class="sr-only" for="bot-in">سؤالك</label><input class="input" id="bot-in" maxlength="200" autocomplete="off" placeholder="اكتب سؤالك عن المنصة"><button class="btn btn-primary" type="submit">أرسل</button></form>
+      </section>`);
+    const box = $('#bot'); const log = $('#bot-log'); const btn = $('#bot-btn');
+    const say = (html, who) => { log.insertAdjacentHTML('beforeend', `<div class="bot-msg ${who === 'bot' ? 'from-bot' : 'from-me'}">${html}</div>`); log.scrollTop = log.scrollHeight; };
+    const chips = (ids) => `<div class="bot-chips">${ids.map((i) => `<button type="button" class="chip" data-faq="${i}">${esc(FAQ[i].q)}</button>`).join('')}</div>`;
+    const reply = (f) => say(`${f.a}${f.l ? `<div class="bot-links">${f.l.map(([h, n]) => `<a href="${h}">${esc(n)}</a>`).join('')}</div>` : ''}`, 'bot');
+    const ask = (text, f) => {
+      say(esc(text), 'me');
+      const hit = f || botAnswer(text);
+      if (hit) reply(hit);
+      else say(`أنا مساعد خاص بـ${esc(C.SITE_NAME)}، وأجيب عن أسئلة المنصة فقط: الدروس، والتطوع، والتسجيل، والنشر. جرّب أحد هذه الأسئلة:${chips(FAQ_START)}`, 'bot');
+    };
+    let opened = false;
+    const toggle = (on) => {
+      box.hidden = !on; btn.setAttribute('aria-expanded', String(on));
+      if (on && !opened) { opened = true; say(`أهلاً بك! أنا مساعد المنصة. اسألني عن الدروس أو التطوع أو طريقة النشر.${chips(FAQ_START)}`, 'bot'); }
+      if (on) $('#bot-in').focus(); else btn.focus();
+    };
+    btn.addEventListener('click', () => toggle(box.hidden));
+    $('#bot-x').addEventListener('click', () => toggle(false));
+    box.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggle(false); });
+    log.addEventListener('click', (e) => {
+      const c = e.target.closest('[data-faq]'); if (c) { const f = FAQ[Number(c.getAttribute('data-faq'))]; ask(f.q, f); return; }
+      if (e.target.closest('a') && window.matchMedia('(max-width: 640px)').matches) toggle(false);
+    });
+    $('#bot-form').addEventListener('submit', (e) => { e.preventDefault(); const v = $('#bot-in').value.trim(); if (!v) return; $('#bot-in').value = ''; ask(v); });
+  }
+
+  // ------------------------------------------------------------------
   //  لوحة الإدارة
   // ------------------------------------------------------------------
   async function pageAdmin(tok, tab) {
@@ -2609,7 +2789,7 @@
     if (!p) return;
     if (!p.is_admin) { view.innerHTML = '<div class="empty" style="margin-top:24px"><b>هذه الصفحة للمشرفين فقط</b><a class="btn" href="#/dashboard">لوحتي</a></div>'; return; }
     tab = tab || 'overview';
-    const tabs = [['overview', 'نظرة عامة'], ['review', 'المراجعة'], ['teachers', 'المعلمون'], ['invites', 'الدعوات'], ['requests', 'طلبات الطلاب'], ['reports', 'البلاغات'], ['settings', 'الإعدادات']];
+    const tabs = [['overview', 'نظرة عامة'], ['review', 'المراجعة'], ['teachers', 'المعلمون'], ['invites', 'الدعوات'], ['requests', 'طلبات الطلاب'], ['reports', 'البلاغات'], ['tools', 'الأدوات'], ['settings', 'الإعدادات']];
     view.innerHTML = `
       <header class="page-head"><nav class="crumbs"><a href="#/dashboard">لوحتي</a><span>›</span><span>الإدارة</span></nav><h1>إدارة المنصة</h1>
         <nav class="tabs">${tabs.map(([k, n]) => `<a href="#/admin/${k}"${tab === k ? ' aria-current="page"' : ''}>${n}</a>`).join('')}</nav>
@@ -2723,6 +2903,54 @@
           try { await API.adminSetInvite(b.getAttribute('data-act'), b.getAttribute('data-on') === '1'); route(); }
           catch (e) { toast(errMsg(e), true); b.disabled = false; }
         }));
+      } else if (tab === 'tools') {
+        const list = await API.adminTools();
+        if (tok !== app.token) return;
+        const gradeOpts = (sel) => `<option value="">كل الصفوف</option>${C.STAGES.map((st) => `<optgroup label="${esc(st.name)}">${st.grades.map((g) => `<option value="${esc(g.id)}"${g.id === sel ? ' selected' : ''}>${esc(g.name)}</option>`).join('')}</optgroup>`).join('')}<option value="skills"${sel === 'skills' ? ' selected' : ''}>المهارات</option>`;
+        const allSubs = Array.from(new Set(Object.keys(C.SUBJECTS).concat(SKILLS.map((k) => k.id))));
+        const subjOpts = (g, sel) => `<option value="">كل المواد</option>${(g ? subjectsOf(g) : allSubs).map((x) => `<option value="${esc(x)}"${x === sel ? ' selected' : ''}>${esc(subjectName(x))}</option>`).join('')}`;
+        box.innerHTML = `<p class="muted">أضف رابط أي أداة تفاعلية مجانية (مثل محاكاة أو مختبر افتراضي). تظهر في صفحة «الأدوات»، وفي صفحة المادة التي تختارها. يُفضّل أن تكون الأداة بلا تسجيل دخول وبلا إعلانات.</p>
+          <form class="box form" id="tl-form" novalidate><h2 id="tl-h">أداة جديدة</h2><input type="hidden" id="tl-id">
+            <div class="grid2"><div class="field"><label for="tl-title">اسم الأداة</label><input class="input" id="tl-title" maxlength="80" placeholder="مثال: مختبر الفيزياء التفاعلي"></div>
+              <div class="field"><label for="tl-url">الرابط</label><input class="input" id="tl-url" type="url" dir="ltr" maxlength="300" placeholder="https://www.kamirtyai.com/p/..."></div></div>
+            <div class="field"><label for="tl-desc">وصف قصير (اختياري)</label><input class="input" id="tl-desc" maxlength="200" placeholder="سطر واحد يوضح فائدة الأداة"></div>
+            <div class="grid2"><div class="field"><label for="tl-grade">الصف</label><select class="input" id="tl-grade">${gradeOpts('')}</select></div>
+              <div class="field"><label for="tl-subj">المادة</label><select class="input" id="tl-subj">${subjOpts('', '')}</select></div></div>
+            <div class="grid2"><div class="field"><label for="tl-sort">الترتيب (الأصغر أولاً)</label><input class="input" id="tl-sort" type="number" min="0" max="10000" value="100" inputmode="numeric"></div>
+              <label class="check" style="align-self:end"><input type="checkbox" id="tl-pub" checked><span>ظاهرة للزوار</span></label></div>
+            <div class="form-actions"><button class="btn btn-primary" type="submit" id="tl-save">أضف الأداة</button><button type="button" class="btn btn-ghost" id="tl-cancel" hidden>إلغاء التعديل</button></div></form>
+          ${list.length ? `<div class="list">${list.map((t) => `<div class="item" style="grid-template-columns:minmax(0,1fr) auto">
+            <div class="what"><b>${esc(t.title)}</b><div class="row">${toolTags(t).map((x) => `<span class="pill">${esc(x)}</span>`).join('')}${t.published ? '' : '<span class="pill pill-bad">مخفية</span>'}<span class="muted small">ترتيب ${fNum(t.sort)}</span></div>
+              <a class="email small" href="${TOOL_URL.test(t.url) ? esc(t.url) : '#'}" target="_blank" rel="noopener noreferrer" dir="ltr">${esc(t.url)}</a></div>
+            <div class="tools"><button type="button" class="btn btn-sm" data-tedit="${esc(t.id)}">تعديل</button>
+              <button type="button" class="btn btn-sm btn-ghost btn-danger" data-tdel="${esc(t.id)}">حذف</button></div></div>`).join('')}</div>`
+            : '<p class="muted">لا توجد أدوات بعد.</p>'}`;
+        $('#tl-grade').addEventListener('change', () => { $('#tl-subj').innerHTML = subjOpts($('#tl-grade').value, $('#tl-subj').value); });
+        const fill = (t) => {
+          $('#tl-id').value = t ? t.id : ''; $('#tl-title').value = t ? t.title : ''; $('#tl-url').value = t ? t.url : ''; $('#tl-desc').value = t ? t.description || '' : '';
+          $('#tl-grade').value = t ? t.grade || '' : ''; $('#tl-subj').innerHTML = subjOpts($('#tl-grade').value, t ? t.subject || '' : '');
+          $('#tl-sort').value = t ? t.sort : 100; $('#tl-pub').checked = t ? t.published !== false : true;
+          $('#tl-h').textContent = t ? 'تعديل الأداة' : 'أداة جديدة'; $('#tl-save').textContent = t ? 'حفظ التعديل' : 'أضف الأداة'; $('#tl-cancel').hidden = !t;
+        };
+        $('#tl-cancel').addEventListener('click', () => { fill(null); $('#tl-title').focus(); });
+        $$('[data-tedit]', box).forEach((b) => b.addEventListener('click', () => { fill(list.find((t) => t.id === b.getAttribute('data-tedit'))); $('#tl-form').scrollIntoView({ block: 'start' }); $('#tl-title').focus(); }));
+        $$('[data-tdel]', box).forEach((b) => b.addEventListener('click', async () => {
+          const t = list.find((x) => x.id === b.getAttribute('data-tdel'));
+          if (!t || !confirm(`حذف «${t.title}»؟`)) return;
+          b.disabled = true;
+          try { await API.adminDeleteTool(t.id); toolsP = null; toast('حُذفت الأداة'); route(); } catch (e) { toast(errMsg(e), true); b.disabled = false; }
+        }));
+        $('#tl-form').addEventListener('submit', async (ev) => {
+          ev.preventDefault();
+          const title = $('#tl-title').value.trim(); const url = $('#tl-url').value.trim();
+          if (title.length < 2) { $('#tl-title').setAttribute('aria-invalid', 'true'); $('#tl-title').focus(); return toast('اكتب اسم الأداة.', true); }
+          if (!TOOL_URL.test(url)) { $('#tl-url').setAttribute('aria-invalid', 'true'); $('#tl-url').focus(); return toast('اكتب رابطاً كاملاً يبدأ بـ https://', true); }
+          const b = $('#tl-save'); b.disabled = true;
+          try {
+            await API.adminSaveTool({ id: $('#tl-id').value || null, title, url, description: $('#tl-desc').value.trim(), grade: $('#tl-grade').value, subject: $('#tl-subj').value, sort: $('#tl-sort').value, published: $('#tl-pub').checked });
+            toolsP = null; toast($('#tl-id').value ? 'حُفظت الأداة' : 'أُضيفت الأداة'); route();
+          } catch (e) { toast(errMsg(e), true); b.disabled = false; }
+        });
       } else if (tab === 'teachers') {
         const list = await API.adminTeachers();
         if (tok !== app.token) return;
@@ -3325,6 +3553,8 @@
     [/^#\/p\/([\w-]+)$/, (t, m) => pagePath(t, m[1])],
     [/^#\/join\/([A-Za-z0-9-]{8,16})$/, (t, m) => pageJoin(t, m[1])],
     [/^#\/volunteer$/, () => pageVolunteer()],
+    [/^#\/teach$/, () => pageTeach()],
+    [/^#\/tools$/, (t) => pageTools(t)],
     [/^#\/parents$/, () => pageParents()],
     [/^#\/dashboard\/path\/(new|[\w-]+)$/, (t, m) => pagePathForm(t, m[1])],
     [/^#\/c\/([A-Za-z0-9-]{10,16})(?:\/([mf]))?$/, (t, m) => pageCertificate(t, m[1], m[2])],
@@ -3336,7 +3566,7 @@
     [/^#\/dashboard\/edit\/([\w-]+)$/, (t, m) => pageSessionForm(t, 'edit', m[1])],
     [/^#\/dashboard\/copy\/([\w-]+)$/, (t, m) => pageSessionForm(t, 'copy', m[1])],
     [/^#\/profile$/, (t) => pageProfile(t, false)],
-    [/^#\/admin(?:\/(overview|review|teachers|invites|requests|reports|settings))?$/, (t, m) => pageAdmin(t, m[1])],
+    [/^#\/admin(?:\/(overview|review|teachers|invites|requests|reports|tools|settings))?$/, (t, m) => pageAdmin(t, m[1])],
   ];
   let lastHash = null;
   let booted = false;
@@ -3347,6 +3577,8 @@
     if (player.s) stopPlayer();
     if (micTest && !onStudio()) { micTest.stop(); micTest = null; }
     syncStudio();
+    // زر المساعد لا يظهر في الاستوديو حتى لا يدخل في تسجيل شاشة المعلم
+    document.body.classList.toggle('on-studio', onStudio());
     const h = location.hash || '#/';
     const changed = h !== lastHash;
     lastHash = h;
@@ -3399,6 +3631,7 @@
     renderBanners();
     document.querySelector('.skip').addEventListener('click', (e) => { e.preventDefault(); view.focus(); });
     window.addEventListener('hashchange', route);
+    initBot();
     route();
   }
   boot();

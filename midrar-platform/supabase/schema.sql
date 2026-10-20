@@ -1374,6 +1374,47 @@ grant  execute on function public.admin_badge()                    to authentica
 revoke execute on function public.sessions_review_trust() from public, anon, authenticated;
 
 -- =====================================================================
+--  11) «أدوات للمعلم والطالب»: روابط لأدوات تفاعلية يضيفها المشرف من لوحة الإدارة
+-- =====================================================================
+create table if not exists public.tools (
+  id          uuid primary key default gen_random_uuid(),
+  title       text not null check (char_length(btrim(title)) between 2 and 80),
+  description text check (char_length(description) <= 200),
+  url         text not null check (char_length(url) <= 300 and url ~ '^https://[A-Za-z0-9.-]+\.[A-Za-z]{2,}(:[0-9]+)?(/[^[:space:]<>"]*)?$'),
+  grade       text check (grade is null or grade ~ '^[a-z0-9_-]{1,20}$'),
+  subject     text check (subject is null or subject ~ '^[a-z0-9_-]{1,30}$'),
+  sort        int not null default 100 check (sort between 0 and 10000),
+  published   boolean not null default true,
+  created_at  timestamptz not null default now()
+);
+alter table public.tools enable row level security;
+
+create or replace function public.tools_guard() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  new.title       := btrim(new.title);
+  new.description := nullif(btrim(new.description), '');
+  new.url         := btrim(new.url);
+  if tg_op = 'UPDATE' then new.id := old.id; new.created_at := old.created_at; end if;
+  return new;
+end $$;
+drop trigger if exists tools_guard on public.tools;
+create trigger tools_guard before insert or update on public.tools
+  for each row execute function public.tools_guard();
+
+drop policy if exists tools_read   on public.tools;
+drop policy if exists tools_insert on public.tools;
+drop policy if exists tools_update on public.tools;
+drop policy if exists tools_delete on public.tools;
+create policy tools_read   on public.tools for select to anon, authenticated using (published or public.is_admin());
+create policy tools_insert on public.tools for insert to authenticated with check (public.is_admin());
+create policy tools_update on public.tools for update to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy tools_delete on public.tools for delete to authenticated using (public.is_admin());
+revoke all on public.tools from anon, authenticated;
+grant select on public.tools to anon, authenticated;
+grant insert, update, delete on public.tools to authenticated;
+
+-- =====================================================================
 --  بعد أول دخول لك كمعلم من الموقع، اجعل نفسك مشرفاً بتشغيل هذا السطر
 --  (ضع بريدك بدل المثال):
 --

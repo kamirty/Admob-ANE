@@ -17,6 +17,18 @@
   const strip = (o, keys) => { const x = Object.assign({}, o); keys.forEach((k) => delete x[k]); return x; };
   const noV5 = (o) => strip(o, V5_KEYS);
   const noPlace = (o) => strip(o, PLACE_KEYS);
+  const TOOL_COLS = 'id,title,description,url,grade,subject,sort';
+  const NEED_SCHEMA = 'قاعدة البيانات تحتاج تحديثاً: شغّل ملف supabase/schema.sql في Supabase.';
+  const noTable = (e) => !!e && (e.code === 'PGRST205' || e.code === '42P01' || e.status === 404);
+  // رابط الأداة: https فقط، ومن دون مسافات أو رموز تكسر الصفحة (يطابق قيد قاعدة البيانات)
+  const toolUrlOk = (u) => /^https:\/\/[A-Za-z0-9.-]+\.[A-Za-z]{2,}(:[0-9]+)?(\/[^\s<>"]*)?$/.test(u) && u.length <= 300;
+  function toolRow(t) {
+    const row = { title: String(t.title || '').trim(), description: String(t.description || '').trim() || null, url: String(t.url || '').trim(),
+      grade: t.grade || null, subject: t.subject || null, sort: Math.max(0, Math.min(10000, Number(t.sort) || 100)), published: t.published !== false };
+    if (row.title.length < 2) throw new ApiError({ message: 'اكتب اسم الأداة.' });
+    if (!toolUrlOk(row.url)) throw new ApiError({ message: 'رابط الأداة يجب أن يبدأ بـ https://' });
+    return row;
+  }
   const oldDb = (e) => !!e && (e.code === 'PGRST204' || e.code === '42703');
   let colTier = 2;
   let LIST_COLS = BASE_COLS + V4_COLS + V5_COLS;
@@ -440,6 +452,27 @@
         const r = check(await c.from('settings').update({ featured_session: id || null }).eq('id', 1).select('id'));
         if (!r || !r.length) throw new ApiError({ code: '42501' });
       },
+      // أدوات للمعلم والطالب: يضيفها المشرف؛ وقاعدة لم تُحدَّث بعد تعني «لا أدوات» لا خطأ
+      async listTools() {
+        try { return await rest('tools', [['select', TOOL_COLS], ['published', 'eq.true'], ['order', 'sort.asc,created_at.asc'], ['limit', '200']]); }
+        catch (e) { if (noTable(e)) return []; throw e; }
+      },
+      async adminTools() {
+        const c = await authed();
+        const r = await c.from('tools').select(TOOL_COLS + ',published').order('sort', { ascending: true }).order('created_at', { ascending: true });
+        if (noTable(r.error)) throw new ApiError({ message: NEED_SCHEMA });
+        return check(r);
+      },
+      async adminSaveTool(t) {
+        const c = await authed();
+        const row = toolRow(t);
+        const r = t.id ? await c.from('tools').update(row).eq('id', t.id).select('id') : await c.from('tools').insert(row).select('id');
+        if (noTable(r.error)) throw new ApiError({ message: NEED_SCHEMA });
+        const d = check(r);
+        if (!d || !d.length) throw new ApiError({ code: '42501' });
+        return d[0];
+      },
+      async adminDeleteTool(id) { const c = await authed(); check(await c.from('tools').delete().eq('id', id)); },
     };
   }
 
@@ -575,13 +608,20 @@
           items: kept.filter((s) => s.subject === 'sk_ai').map((s) => s.id), published: true, created_at: iso(Date.now() - 4 * 864e5), updated_at: iso(Date.now() - 2 * 864e5) },
       ];
       const invites = [{ code: 'KHWDSCHL26', kind: 'invite', label: 'مدرسة الخوض', created_by: null, uses_left: 8, active: true, created_at: iso(Date.now() - 10 * 864e5), used: 2 }];
-      return { v: 5, teachers, sessions: kept, reports: [], requests, stats, certificates: [], paths, invites, inviteUses: [],
+      return { v: 6, tools: seedTools(), teachers, sessions: kept, reports: [], requests, stats, certificates: [], paths, invites, inviteUses: [],
         settings: { auto_approve: true, site_notice: '', requests_on: true, views_on: true, request_min_votes: 2, featured_session: quad ? quad.id : null }, me: null };
+    }
+    function seedTools() {
+      return [
+        { id: uid(), title: 'مختبر الفيزياء التفاعلي', description: 'تجارب فيزياء تفاعلية تغيّر فيها القيم وترى النتيجة فوراً.', url: 'https://www.kamirtyai.com/p/physics-laboratory.html', grade: null, subject: 'physics', sort: 10, published: true, created_at: iso(Date.now() - 3 * 864e5) },
+        { id: uid(), title: 'الكيمياء التفاعلية', description: 'تفاعلات كيميائية ومحاكاة للمفاهيم بطريقة مرئية.', url: 'https://www.kamirtyai.com/p/reactive-chemistry.html', grade: null, subject: 'chemistry', sort: 20, published: true, created_at: iso(Date.now() - 2 * 864e5) },
+      ];
     }
     function load() {
       if (db) return db;
       try { db = JSON.parse(storeGet(KEY) || 'null'); } catch (e) { db = null; }
-      if (!db || db.v !== 5) { db = seed(); save(); }
+      if (db && db.v === 5) { db.tools = seedTools(); db.v = 6; save(); }
+      if (!db || db.v !== 6) { db = seed(); save(); }
       return db;
     }
     function save() { storeSet(KEY, JSON.stringify(db)); }
@@ -1020,6 +1060,22 @@
       async adminInvites() { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); return delay((db.invites || []).map((i) => Object.assign({ used: 0 }, clone(i)))); },
       async adminSetInvite(code, active) { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); const i = (db.invites || []).find((x) => x.code === code); if (i) i.active = !!active; save(); return delay(); },
       async setFeatured(id) { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); db.settings.featured_session = id || null; save(); return delay(); },
+      async listTools() {
+        load();
+        return delay((db.tools || []).filter((t) => t.published).sort((a, b) => a.sort - b.sort || a.created_at.localeCompare(b.created_at)).map(clone));
+      },
+      async adminTools() {
+        need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' });
+        return delay((db.tools || []).slice().sort((a, b) => a.sort - b.sort || a.created_at.localeCompare(b.created_at)).map(clone));
+      },
+      async adminSaveTool(t) {
+        need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' });
+        const row = toolRow(t);
+        db.tools = db.tools || [];
+        if (t.id) { const x = db.tools.find((y) => y.id === t.id); if (!x) throw new ApiError({ code: '42501' }); Object.assign(x, row); save(); return delay({ id: x.id }); }
+        const x = Object.assign({ id: uid(), created_at: iso(Date.now()) }, row); db.tools.push(x); save(); return delay({ id: x.id });
+      },
+      async adminDeleteTool(id) { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); db.tools = (db.tools || []).filter((t) => t.id !== id); save(); return delay(); },
       async adminSetCertificate(code, revoked) { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); const c = db.certificates.find((x) => x.code === code); if (c) c.revoked = revoked; save(); return delay(); },
       async adminTeachers() {
         need(); load();

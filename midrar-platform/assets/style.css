@@ -674,3 +674,40 @@ h1 .verified { font-size: .8rem; }
 .pick > span { display: grid; min-width: 0; }
 .pick b { overflow-wrap: anywhere; }
 @media (max-width: 560px) { .nav a { font-size: .88rem; padding-inline: 2px; } }
+
+/* ===== تطوّع بالشرح ===== */
+.teach-head h1 { max-width: 860px; }
+.teach-steps { margin: 4px 0 18px; }
+.wa-btn { background: #1F8F55; border-color: #1F8F55; }
+.wa-btn:hover { background: #18774A; border-color: #18774A; }
+.prose-list { padding-inline-start: 22px; display: grid; gap: 8px; line-height: 1.8; }
+
+/* ===== أدوات للمعلم والطالب ===== */
+.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.tool-card { display: grid; gap: 8px; align-content: start; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: var(--shadow); min-width: 0; }
+.tool-card:hover { border-color: var(--board); background: var(--board-soft); }
+.tool-card:focus-visible { outline: 3px solid var(--board); outline-offset: 2px; }
+.tool-card b { font-size: 1.08rem; overflow-wrap: anywhere; }
+.tool-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tool-open { font-weight: 700; color: var(--board); display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+.subj-tools h2 { font-size: 1.15rem; }
+
+/* ===== مساعد المنصة ===== */
+.bot-btn { position: fixed; inset-inline-end: 16px; bottom: 16px; z-index: 60; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border: 0; border-radius: 999px; background: var(--board); color: var(--board-ink); font: 700 .95rem var(--font-body); box-shadow: 0 6px 20px rgba(0,0,0,.2); cursor: pointer; }
+.bot-btn:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
+.bot { position: fixed; inset-inline-end: 16px; bottom: 72px; z-index: 61; width: min(380px, calc(100vw - 32px)); max-height: min(560px, calc(100vh - 100px)); display: flex; flex-direction: column; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,.25); overflow: hidden; }
+.bot[hidden] { display: none; }
+.bot-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px 10px 14px; background: var(--board); color: var(--board-ink); }
+.bot-head .btn { color: inherit; }
+.bot-log { flex: 1; overflow-y: auto; padding: 12px; display: grid; gap: 10px; align-content: start; }
+.bot-msg { max-width: 92%; padding: 9px 12px; border-radius: 14px; line-height: 1.7; font-size: .95rem; overflow-wrap: anywhere; }
+.bot-msg.from-bot { justify-self: start; background: var(--sunk); border-start-start-radius: 4px; }
+.bot-msg.from-me { justify-self: end; background: var(--board-soft); border-start-end-radius: 4px; }
+.bot-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.bot-chips .chip { font-size: .85rem; text-align: start; white-space: normal; }
+.bot-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; font-weight: 700; }
+.bot-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
+.bot-form .input { flex: 1; min-width: 0; }
+@media (max-width: 640px) { .bot-btn span:last-child { display: none; } .bot-btn { padding: 12px 14px; } }
+@media print { .bot-btn, .bot { display: none !important; } }
+.on-studio .bot-btn, .on-studio .bot { display: none !important; }
