@@ -3,8 +3,8 @@
 
 Blogger rewrites non-ASCII characters inside <script> and <style> as HTML
 entities (e.g. &#1617;), which then show up literally on the page. This
-escapes them to \\uXXXX (JS) and \\XXXXXX (CSS) so the output is pure ASCII
-inside those blocks. Usage: python3 build.py
+escapes them to \\uXXXX (JS) and \\XXXXXX (CSS), and the rest of the page to
+&#NNNN; entities, so the output file is pure ASCII. Usage: python3 build.py
 """
 import pathlib, re
 
@@ -30,8 +30,10 @@ def build(src):
     s = src.read_text(encoding='utf-8')
     s = re.sub(r'(<script>)(.*?)(</script>)', lambda m: m.group(1) + js_escape(m.group(2)) + m.group(3), s, flags=re.S)
     s = re.sub(r'(<style>)(.*?)(</style>)', lambda m: m.group(1) + css_escape(m.group(2)) + m.group(3), s, flags=re.S)
-    for block in re.findall(r'<(?:script|style)>.*?</(?:script|style)>', s, flags=re.S):
-        assert block.isascii()
+    # Everything else (HTML text, comments) becomes numeric entities, so the
+    # whole file is ASCII and Blogger has nothing left to rewrite.
+    s = ''.join(ch if ord(ch) < 128 else '&#%d;' % ord(ch) for ch in s)
+    assert s.isascii()
     out = HERE / src.name
     out.write_text(s, encoding='utf-8')
     print('built', out.name)
