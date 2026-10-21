@@ -711,3 +711,46 @@ h1 .verified { font-size: .8rem; }
 @media (max-width: 640px) { .bot-btn span:last-child { display: none; } .bot-btn { padding: 12px 14px; } }
 @media print { .bot-btn, .bot { display: none !important; } }
 .on-studio .bot-btn, .on-studio .bot { display: none !important; }
+
+/* ===== مواعيد الدروس: القادم و«يُعرض الآن» ===== */
+.badge.b-premiere { background: var(--chalk); color: #fff; }
+.badge.b-premiere .dot-live { background: #fff; }
+.card.s-premiere { border-color: color-mix(in srgb, var(--chalk) 60%, var(--line)); }
+.card.s-upcoming .when-at, .card.s-premiere .when-at { color: var(--board); font-weight: 700; }
+.note.live-note { background: var(--chalk-soft); }
+.player .ph-up .up-when { font-weight: 700; }
+.player .ph-up .up-btns { justify-content: center; }
+.player .ph-up .small { opacity: .8; }
+.up-strip { margin: 14px 0 6px; display: grid; gap: 8px; }
+.up-strip h2 { font-size: 1.05rem; }
+
+/* ===== الإرسال للمنصة وموعد العرض ===== */
+.src-pick, .when { border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px 14px; margin: 0; display: grid; gap: 8px; min-width: 0; background: var(--surface); }
+.src-pick legend, .when legend { font-weight: 700; padding-inline: 6px; }
+.src-opt, .when-opt { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; min-width: 0; }
+.src-opt:has(input:checked), .when-opt:has(input:checked) { border-color: var(--board); background: var(--board-soft); }
+.src-opt input, .when-opt input { accent-color: var(--board); width: 20px; height: 20px; flex: none; margin-top: 3px; }
+.src-opt span, .when-opt span { display: grid; gap: 2px; min-width: 0; }
+.src-opt small, .when-opt small { color: var(--muted); font-size: .86rem; line-height: 1.6; }
+.when-at { margin-top: 2px; }
+.when-hint b { color: var(--board); }
+.warn-t { color: var(--warn); font-weight: 700; }
+.consent { margin-top: 4px; }
+.up-prog { display: grid; gap: 6px; padding: 12px 14px; border-radius: 10px; background: var(--board-soft); }
+.up-prog .bar { height: 12px; border-radius: 999px; background: var(--surface); overflow: hidden; border: 1px solid var(--line); }
+.up-prog .bar span { display: block; height: 100%; width: 0; background: var(--board); transition: width .3s; }
+.send-box { display: grid; gap: 10px; border-color: var(--board); }
+.send-box h2 { font-size: 1.15rem; }
+.own-ch > summary { font-weight: 700; }
+.own-ch .steps { margin-top: 10px; }
+.note.ok-note { background: var(--ok-soft); }
+
+/* ===== الإدارة: الرفع على القناة ===== */
+.up-item { display: grid; gap: 8px; margin-bottom: 12px; }
+.up-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.up-when { font-size: .92rem; }
+.up-when.soon b { color: var(--warn); }
+.up-when.late { color: var(--live-text); font-weight: 700; }
+.up-steps { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.up-steps li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.up-pub .input { flex: 1 1 220px; min-width: 0; }

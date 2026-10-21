@@ -738,7 +738,7 @@ end $$;
 create or replace function public.sessions_fulfil_request() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  if new.request_id is not null and new.review = 'ok' then
+  if new.request_id is not null and new.review = 'ok' and (new.video_url is not null or new.recording_url is not null) then
     update public.lesson_requests q set status = 'done', session_id = new.id, last_at = now()
      where q.id = new.request_id and q.status = 'open' and q.grade = new.grade and q.subject = new.subject
        and exists (select 1 from public.teachers t where t.id = new.teacher_id and t.status = 'approved');
@@ -746,7 +746,8 @@ begin
   return null;
 end $$;
 drop trigger if exists sessions_fulfil_request on public.sessions;
-create trigger sessions_fulfil_request after insert on public.sessions
+-- عند الإضافة، أو حين يُعتمد الدرس، أو حين يُضاف فيديو درس أُرسل للمنصة
+create trigger sessions_fulfil_request after insert or update of review, video_url, recording_url on public.sessions
   for each row execute function public.sessions_fulfil_request();
 
 -- حذف الدرس يعيد طلبه مفتوحاً ليراه المعلمون من جديد
@@ -952,7 +953,9 @@ begin
     'requests_done',     (select count(*) from public.lesson_requests where status = 'done'),
     'certificates',      (select count(*) from public.certificates where not revoked),
     'reports_week',      (select count(*) from public.reports where created_at > now() - interval '7 days'),
-    'review_pending',    (select count(*) from public.sessions where review = 'pending' and status = 'scheduled'),
+    'review_pending',    (select count(*) from public.sessions where review = 'pending' and status = 'scheduled' and upload_state is null),
+    'uploads_waiting',   (select count(*) from public.sessions where upload_state = 'waiting'),
+    'uploads_bytes',     (select coalesce(sum(upload_bytes), 0) from public.sessions where upload_state is not null),
     'teachers_trusted',  (select count(*) from public.teachers where status = 'approved' and trusted),
     'skills_lessons',    (select count(*) from public.sessions where grade = 'skills' and status = 'scheduled' and review = 'ok' and starts_at <= now()),
     'paths',             (select count(*) from public.paths where published)
@@ -1111,7 +1114,7 @@ alter table public.sessions add constraint sessions_extra check (
   and (review_note is null or char_length(review_note) <= 200)
   and (skill_name is null or char_length(skill_name) between 2 and 40)
   and (level is null or level between 1 and 3)
-  and (ages is null or ages in ('c1', 'c2', 'all'))
+  and (ages is null or ages in ('c1', 'c2', 'c3', 'all'))
   and public.quiz_ok(quiz) and public.links_ok(attachments)
 );
 create index if not exists sessions_review_idx on public.sessions (review) where review <> 'ok';
@@ -1124,11 +1127,7 @@ begin
     update public.teachers t set trusted = true
      where t.id = new.teacher_id and not t.trusted and not t.trust_lock and t.status = 'approved'
        and (select count(*) from public.sessions s where s.teacher_id = new.teacher_id and s.review = 'ok' and not s.hidden) >= 3;
-    -- درس سُجّل لطلب: يصبح الطلب «تم» عند اعتماد الدرس فقط
-    if new.request_id is not null then
-      update public.lesson_requests q set status = 'done', session_id = new.id, last_at = now()
-       where q.id = new.request_id and q.status = 'open' and q.grade = new.grade and q.subject = new.subject;
-    end if;
+    -- (الطلب المرتبط بالدرس يصبح «تم» من sessions_fulfil_request عند الاعتماد ووجود الفيديو)
   end if;
   return null;
 end $$;
@@ -1293,7 +1292,8 @@ language plpgsql stable security definer set search_path = public as $$
 begin
   if not public.is_admin() then return 0; end if;
   return (select count(*) from public.teachers where status = 'pending')
-       + (select count(*) from public.sessions where review = 'pending' and status = 'scheduled')
+       + (select count(*) from public.sessions where review = 'pending' and status = 'scheduled' and upload_state is null)
+       + (select count(*) from public.sessions where upload_state = 'waiting')
        + (select count(*) from public.reports);
 end $$;
 
@@ -1413,6 +1413,99 @@ create policy tools_delete on public.tools for delete to authenticated using (pu
 revoke all on public.tools from anon, authenticated;
 grant select on public.tools to anon, authenticated;
 grant insert, update, delete on public.tools to authenticated;
+
+-- =====================================================================
+--  12) «أرسل الدرس للمنصة»: المعلم يرسل ملف الفيديو، والإدارة ترفعه على قناة
+--      المنصة في يوتيوب ثم تلصق رابطه، فيُنشر الدرس باسم المعلم.
+--      يُقسَّم الملف في المتصفح إلى أجزاء من 10 ميغابايت في تخزين مؤقت خاص
+--      (lesson-videos) لا يقرؤه إلا صاحبه والمشرف، ويُحذف بعد النشر.
+--      السعة المؤقتة محدودة (900 ميغابايت) حتى تبقى ضمن المساحة المجانية.
+-- =====================================================================
+alter table public.sessions add column if not exists upload_state text;
+alter table public.sessions add column if not exists upload_parts smallint;
+alter table public.sessions add column if not exists upload_bytes bigint;
+alter table public.sessions add column if not exists upload_ext text;
+alter table public.sessions drop constraint if exists sessions_upload;
+alter table public.sessions add constraint sessions_upload check (
+  (upload_state is null and upload_parts is null and upload_bytes is null and upload_ext is null)
+  or (upload_state in ('uploading', 'waiting') and kind = 'recorded'
+      and upload_bytes between 1 and 524288000
+      and upload_parts = ceil(upload_bytes / 10485760.0)::int
+      and upload_ext ~ '^[a-z0-9]{2,5}$')
+);
+create index if not exists sessions_upload_idx on public.sessions (starts_at) where upload_state is not null;
+
+-- حدود الإرسال للمعلم (المشرف وتشغيل الملف من Supabase بلا حدود)
+create or replace function public.sessions_upload_guard() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  used bigint;
+  mine int;
+begin
+  if new.upload_state is null or auth.uid() is null or public.is_admin() then return new; end if;
+  if tg_op = 'INSERT' or old.upload_state is null or old.upload_bytes is distinct from new.upload_bytes then
+    if new.upload_state <> 'uploading' then
+      raise exception 'ابدأ إرسال الفيديو من جديد' using errcode = '22023';
+    end if;
+    select coalesce(sum(s.upload_bytes), 0) into used from public.sessions s where s.upload_state is not null and s.id <> new.id;
+    if used + new.upload_bytes > 943718400 then
+      raise exception 'مساحة الإرسال المؤقتة ممتلئة الآن. حاول بعد ساعات، أو انشر الدرس برابط من قناتك.' using errcode = '54000';
+    end if;
+    select count(*) into mine from public.sessions s
+     where s.teacher_id = new.teacher_id and s.upload_state is not null and s.id <> new.id;
+    if mine >= 3 then
+      raise exception 'لديك 3 دروس بانتظار النشر. انتظر حتى تنشرها الإدارة ثم أرسل غيرها.' using errcode = '54000';
+    end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists sessions_upload_guard on public.sessions;
+create trigger sessions_upload_guard before insert or update of upload_state, upload_bytes on public.sessions
+  for each row execute function public.sessions_upload_guard();
+revoke execute on function public.sessions_upload_guard() from public, anon, authenticated;
+
+-- هل يحق لهذا المعلم رفع هذا الجزء؟ المسار: <المعلم>/<الدرس>/<رقم الجزء 000>
+create or replace function public.lesson_upload_ok(p_name text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce((
+    select split_part(p_name, '/', 1) = auth.uid()::text
+       and split_part(p_name, '/', 4) = ''
+       and (case when split_part(p_name, '/', 3) ~ '^[0-9]{3}$' then split_part(p_name, '/', 3)::int else 99999 end) < s.upload_parts
+       and public.my_status() in ('pending', 'approved')
+      from public.sessions s
+     where s.id::text = split_part(p_name, '/', 2) and s.teacher_id = auth.uid() and s.upload_state = 'uploading'
+  ), false);
+$$;
+revoke execute on function public.lesson_upload_ok(text) from public, anon;
+grant  execute on function public.lesson_upload_ok(text) to authenticated;
+
+-- الدرج الخاص وسياساته (يتخطاه بأمان إن لم يكن تخزين Supabase متاحاً)
+do $do$
+begin
+  if to_regclass('storage.buckets') is null or to_regclass('storage.objects') is null then
+    raise notice 'لا يوجد تخزين Supabase هنا: لم يُعدّ إرسال الفيديو';
+    return;
+  end if;
+  insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+  values ('lesson-videos', 'lesson-videos', false, 11534336, array['video/*', 'application/octet-stream'])
+  on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit,
+                                 allowed_mime_types = excluded.allowed_mime_types;
+  execute 'drop policy if exists midrar_videos_insert on storage.objects';
+  execute 'drop policy if exists midrar_videos_update on storage.objects';
+  execute 'drop policy if exists midrar_videos_select on storage.objects';
+  execute 'drop policy if exists midrar_videos_delete on storage.objects';
+  execute $p$create policy midrar_videos_insert on storage.objects for insert to authenticated
+    with check (bucket_id = 'lesson-videos' and public.lesson_upload_ok(name))$p$;
+  execute $p$create policy midrar_videos_update on storage.objects for update to authenticated
+    using (bucket_id = 'lesson-videos' and public.lesson_upload_ok(name))
+    with check (bucket_id = 'lesson-videos' and public.lesson_upload_ok(name))$p$;
+  execute $p$create policy midrar_videos_select on storage.objects for select to authenticated
+    using (bucket_id = 'lesson-videos' and (split_part(name, '/', 1) = auth.uid()::text or public.is_admin()))$p$;
+  execute $p$create policy midrar_videos_delete on storage.objects for delete to authenticated
+    using (bucket_id = 'lesson-videos' and (split_part(name, '/', 1) = auth.uid()::text or public.is_admin()))$p$;
+exception when insufficient_privilege then
+  raise warning 'تعذّر إعداد تخزين الفيديو تلقائياً: %', sqlerrm;
+end $do$;
 
 -- =====================================================================
 --  بعد أول دخول لك كمعلم من الموقع، اجعل نفسك مشرفاً بتشغيل هذا السطر

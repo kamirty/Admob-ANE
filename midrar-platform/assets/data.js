@@ -7,11 +7,36 @@
   const C = window.APP_CONFIG;
   const LIVE = !!(C.SUPABASE_URL && C.SUPABASE_ANON_KEY);
   const AUTH_KEY = 'midrar-auth';
-  const BASE_COLS = 'id,grade,subject,title,kind,starts_at,ends_at,video_url,recording_url,status,hidden,teacher_id,teacher:teachers(id,display_name,avatar_url)';
-  // الأعمدة على مراحل: v4 (مكان الدرس في الكتاب) ثم v5 (المهارات والاختبار والمراجعة)
+  const BASE_COLS = 'id,grade,subject,title,kind,starts_at,ends_at,video_url,recording_url,status,hidden,teacher_id,created_at,teacher:teachers(id,display_name,avatar_url)';
+  // الأعمدة على مراحل: v4 (مكان الدرس في الكتاب) ثم v5 (المهارات والاختبار والمراجعة) ثم v5.2 (الإرسال للمنصة)
   const V4_COLS = ',term,unit,unit_title,lesson_type,exam_year,exam_round';
   const V5_COLS = ',skill_name,level,ages';
   const EXTRA_COLS = ',quiz,attachments,review,review_note';
+  const UP_COLS = ',upload_state,upload_parts,upload_bytes,upload_ext';
+  // إرسال الفيديو للمنصة: أجزاء من 10 ميغابايت، وحد أقصى 500 ميغابايت (يطابق قاعدة البيانات)
+  const VBUCKET = 'lesson-videos';
+  const PART = 10485760;
+  const UPLOAD_MAX = 524288000;
+  const partsOf = (n) => Math.ceil(n / PART);
+  const pad3 = (i) => String(i).padStart(3, '0');
+  const EXT_MIME = { mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', m4v: 'video/x-m4v', mkv: 'video/x-matroska', '3gp': 'video/3gpp', avi: 'video/x-msvideo' };
+  function fileExt(f) {
+    const m = /\.([a-z0-9]{2,5})$/i.exec((f && f.name) || '');
+    const e = m ? m[1].toLowerCase() : '';
+    if (EXT_MIME[e]) return e;
+    const t = (f && f.type) || '';
+    return /webm/.test(t) ? 'webm' : /quicktime/.test(t) ? 'mov' : /matroska/.test(t) ? 'mkv' : /3gpp/.test(t) ? '3gp' : 'mp4';
+  }
+  const mimeOf = (f) => (/^video\/[\w.+-]+/.test((f && f.type) || '') ? f.type.split(';')[0] : EXT_MIME[fileExt(f)] || 'application/octet-stream');
+  const NEED_UPLOAD = 'إرسال الفيديو للمنصة غير مفعّل بعد في قاعدة البيانات. تواصل مع إدارة المنصة، أو انشر الدرس برابط من قناتك.';
+  const UPLOAD_BIG = 'حجم الفيديو أكبر من 500 ميغابايت. سجّله بدقة 720p أو قسّمه إلى جزأين، أو سجّله من استوديو المنصة فحجمه أصغر.';
+  function uploadRow(row, file) {
+    if (!file || !file.size) throw new ApiError({ message: 'اختر ملف الفيديو أولاً.' });
+    if (file.size > UPLOAD_MAX) throw new ApiError({ message: UPLOAD_BIG });
+    return Object.assign({}, row, { kind: 'recorded', video_url: null, recording_url: null, upload_state: 'uploading',
+      upload_parts: partsOf(file.size), upload_bytes: file.size, upload_ext: fileExt(file) });
+  }
+  const UP_DONE = { upload_state: null, upload_parts: null, upload_bytes: null, upload_ext: null };
   const PLACE_KEYS = ['term', 'unit', 'unit_title', 'lesson_type', 'exam_year', 'exam_round', 'request_id', 'skill_name', 'level', 'ages', 'quiz', 'attachments'];
   const V5_KEYS = ['skill_name', 'level', 'ages', 'quiz', 'attachments'];
   const strip = (o, keys) => { const x = Object.assign({}, o); keys.forEach((k) => delete x[k]); return x; };
@@ -30,18 +55,21 @@
     return row;
   }
   const oldDb = (e) => !!e && (e.code === 'PGRST204' || e.code === '42703');
-  let colTier = 2;
-  let LIST_COLS = BASE_COLS + V4_COLS + V5_COLS;
-  let FULL_COLS = LIST_COLS + ',description,created_at' + EXTRA_COLS;
+  // 3 = v5.2، 2 = v5، 1 = v4، 0 = الأقدم
+  const listFor = (t) => BASE_COLS + (t ? V4_COLS : '') + (t > 1 ? V5_COLS : '');
+  const fullFor = (t) => listFor(t) + ',description' + (t > 1 ? EXTRA_COLS : '') + (t > 2 ? UP_COLS : '');
+  let colTier = 3;
+  let LIST_COLS = listFor(3);
+  let FULL_COLS = fullFor(3);
   // إن رُفع الموقع قبل تحديث قاعدة البيانات: نعمل بالأعمدة الأقدم خطوة خطوة بدل أن تتعطل الصفحات
   function legacyCols() {
     if (colTier === 0) return false;
     colTier--;
-    LIST_COLS = BASE_COLS + (colTier ? V4_COLS : '');
-    FULL_COLS = LIST_COLS + ',description,created_at';
+    LIST_COLS = listFor(colTier);
+    FULL_COLS = fullFor(colTier);
     return true;
   }
-  const ALL_COLS = [2, 1, 0].flatMap((t) => { const l = BASE_COLS + (t ? V4_COLS : '') + (t > 1 ? V5_COLS : ''); return [l, l + ',description,created_at' + (t > 1 ? EXTRA_COLS : '')]; });
+  const ALL_COLS = [3, 2, 1, 0].flatMap((t) => [listFor(t), fullFor(t)]);
   // طلب فشل بأعمدة used: إن خفّض طلبٌ آخر الأعمدة في الأثناء نعيد المحاولة بالحالية دون خفض جديد
   const lowerFrom = (used) => (used === LIST_COLS || used === FULL_COLS ? legacyCols() : ALL_COLS.includes(used));
   const iso = (d) => new Date(d).toISOString();
@@ -169,6 +197,21 @@
       return sb;
     }
     function check(r) { if (r.error) throw new ApiError(r.error); return r.data; }
+    function storageError(e) {
+      const code = Number(e && (e.statusCode || e.status)) || 0;
+      const msg = String((e && e.message) || '');
+      if (code === 413 || /maximum allowed size|too large/i.test(msg)) return new ApiError({ message: 'جزء من الملف أكبر من المسموح في التخزين. تواصل مع إدارة المنصة.' });
+      if (code === 415 || /mime/i.test(msg)) return new ApiError({ message: 'نوع الملف غير مدعوم. أرسل فيديو بصيغة mp4 أو webm أو mov.' });
+      if (code === 403 || /row-level security|Unauthorized/i.test(msg)) return new ApiError({ message: 'لا يمكن الرفع لهذا الدرس الآن (ربما أُلغي أو اكتمل إرساله). حدّث الصفحة وحاول مرة أخرى.' });
+      if (code === 404 || /bucket not found/i.test(msg)) return new ApiError({ message: NEED_UPLOAD });
+      return new ApiError({ message: /fetch|network|load failed/i.test(msg) ? 'Failed to fetch' : msg });
+    }
+    async function removeUpload(c, teacherId, id) {
+      const st = c.storage.from(VBUCKET);
+      const r = await st.list(`${teacherId}/${id}`, { limit: 1000 });
+      const names = ((r && r.data) || []).filter((o) => o.id).map((o) => `${teacherId}/${id}/${o.name}`);
+      if (names.length) await st.remove(names);
+    }
     async function authed() {
       const c = await client();
       if (!user) throw new ApiError({ code: 'PGRST301' });
@@ -237,6 +280,17 @@
       listSchedule(grade, from, to) {
         return rest('sessions', [['select', LIST_COLS], ['grade', 'eq.' + grade], ['starts_at', 'gte.' + iso(from)],
           ['starts_at', 'lt.' + iso(to)], ['order', 'starts_at.asc'], ['limit', '600']]);
+      },
+      // الدروس القادمة بموعد (ومنها ما يُعرض الآن): لصف أو مادة أو معلم
+      listUpcoming(o) {
+        o = o || {};
+        const now = Date.now();
+        const p = [['select', LIST_COLS], ['status', 'eq.scheduled'], ['starts_at', 'gt.' + iso(now - 6 * 3600e3)],
+          ['starts_at', 'lt.' + iso(now + (C.DAYS_AHEAD || 14) * 864e5)], ['order', 'starts_at.asc'], ['limit', String(o.limit || 60)]];
+        if (o.grade) p.push(['grade', 'eq.' + o.grade]);
+        if (o.subject) p.push(['subject', 'eq.' + o.subject]);
+        if (o.teacher) p.push(['teacher_id', 'eq.' + o.teacher]);
+        return rest('sessions', p);
       },
       listLiveNow() {
         const now = Date.now();
@@ -391,6 +445,8 @@
         const c = await authed();
         const data = rows.map((r) => Object.assign({ teacher_id: user.id }, r));
         let r = await c.from('sessions').insert(data).select('id');
+        // الدرس المرسل للمنصة لا يُنشأ بلا حالة الإرسال
+        if (oldDb(r.error) && data.some((x) => x.upload_state)) throw new ApiError({ message: NEED_UPLOAD });
         // قاعدة بيانات لم تُحدَّث بعد: يُنشر الدرس بلا مكانه في الكتاب بدل أن يفشل
         if (oldDb(r.error)) r = await c.from('sessions').insert(data.map(noV5)).select('id');
         if (oldDb(r.error)) r = await c.from('sessions').insert(data.map(noPlace)).select('id');
@@ -405,11 +461,51 @@
         if (!r || !r.length) throw new ApiError({ code: '42501' });
         return r[0];
       },
-      async deleteSession(id) {
+      async deleteSession(id, teacherId) {
         const c = await authed();
         check(await c.from('sessions').delete().eq('id', id));
+        // ملفات درس أُرسل للمنصة ولم يُنشر بعد
+        removeUpload(c, teacherId || user.id, id).catch(() => {});
       },
 
+      // ---------- إرسال الفيديو إلى المنصة ----------
+      uploadLimit: UPLOAD_MAX,
+      async startUpload(row, file) {
+        const made = await this.createSessions([uploadRow(row, file)]);
+        return made[0];
+      },
+      // يرفع الأجزاء الناقصة فقط (يكمل إرسالاً انقطع)، ثم يجعل الدرس «بانتظار النشر»
+      async uploadParts(id, file, onProgress) {
+        const c = await authed();
+        const st = c.storage.from(VBUCKET);
+        const dir = `${user.id}/${id}`;
+        const n = partsOf(file.size);
+        const sizeOf = (i) => Math.min(PART, file.size - i * PART);
+        const ls = await st.list(dir, { limit: 1000 });
+        const have = new Set(((ls && ls.data) || []).filter((o) => o.id && /^\d{3}$/.test(o.name) && o.metadata && +o.metadata.size === sizeOf(+o.name)).map((o) => o.name));
+        let done = 0;
+        for (let i = 0; i < n; i++) if (have.has(pad3(i))) done += sizeOf(i);
+        if (onProgress) onProgress(done, file.size);
+        const type = mimeOf(file);
+        for (let i = 0; i < n; i++) {
+          if (have.has(pad3(i))) continue;
+          const buf = await file.slice(i * PART, i * PART + sizeOf(i)).arrayBuffer();
+          let err = null;
+          for (let k = 0; k < 4; k++) {
+            const r = await st.upload(`${dir}/${pad3(i)}`, buf, { contentType: type, upsert: true, cacheControl: '3600' });
+            err = r.error;
+            if (!err) break;
+            const code = Number(err.statusCode || err.status) || 0;
+            if (code === 403 || code === 413 || code === 415 || code === 400) break;
+            await new Promise((ok) => setTimeout(ok, 1500 * (k + 1)));
+          }
+          if (err) throw storageError(err);
+          done += sizeOf(i);
+          if (onProgress) onProgress(done, file.size);
+        }
+        const q = check(await c.from('sessions').update({ upload_state: 'waiting' }).eq('id', id).select('id'));
+        if (!q || !q.length) throw new ApiError({ code: '42501' });
+      },
       async teacherRequests(keys) { const c = await authed(); return check(await c.rpc('teacher_requests', { p_keys: keys })); },
       async flagRequest(id) { const c = await authed(); check(await c.rpc('flag_request', { p_id: id })); },
       async myLessonStats() { const c = await authed(); return check(await c.rpc('my_lesson_stats')); },
@@ -424,7 +520,71 @@
       async adminBadge() { const c = await authed(); return check(await c.rpc('admin_badge')) || 0; },
       async adminReviewQueue() {
         const c = await authed();
-        return check(await c.from('sessions').select(FULL_COLS).eq('review', 'pending').eq('status', 'scheduled').order('created_at', { ascending: true }).limit(200));
+        // الدروس المرسلة للمنصة لها قائمة «الرفع» الخاصة
+        let r = await c.from('sessions').select(FULL_COLS).eq('review', 'pending').eq('status', 'scheduled').is('upload_state', null).order('created_at', { ascending: true }).limit(200);
+        if (oldDb(r.error)) r = await c.from('sessions').select(FULL_COLS).eq('review', 'pending').eq('status', 'scheduled').order('created_at', { ascending: true }).limit(200);
+        return check(r);
+      },
+      async adminUploads() {
+        const c = await authed();
+        const r = await c.from('sessions').select(FULL_COLS).not('upload_state', 'is', null).order('starts_at', { ascending: true }).limit(200);
+        if (oldDb(r.error)) throw new ApiError({ message: NEED_SCHEMA });
+        return check(r);
+      },
+      // ينزّل الأجزاء بالترتيب ويجمعها في ملف واحد
+      async adminDownloadUpload(s, onProgress) {
+        const c = await authed();
+        const st = c.storage.from(VBUCKET);
+        const parts = [];
+        for (let i = 0; i < s.upload_parts; i++) {
+          const r = await st.download(`${s.teacher_id}/${s.id}/${pad3(i)}`);
+          if (r.error || !r.data) throw new ApiError({ message: `تعذّر تنزيل الجزء ${i + 1} من ${s.upload_parts}. إن تكرر ذلك فاطلب من المعلم إعادة الإرسال.` });
+          parts.push(r.data);
+          if (onProgress) onProgress(i + 1, s.upload_parts);
+        }
+        return new Blob(parts, { type: EXT_MIME[s.upload_ext] || 'video/mp4' });
+      },
+      async adminFinishUpload(s, url) {
+        await this.updateSession(s.id, Object.assign({ video_url: url, recording_url: null, review: 'ok', review_note: null }, UP_DONE));
+        const c = await authed();
+        await removeUpload(c, s.teacher_id, s.id).catch(() => {});
+      },
+      async adminRejectUpload(s, note) {
+        await this.updateSession(s.id, Object.assign({ review: 'rejected', review_note: note || null }, UP_DONE));
+        const c = await authed();
+        await removeUpload(c, s.teacher_id, s.id).catch(() => {});
+      },
+      // التخزين المؤقت: الحجم الكلي، والملفات التي لم يعد لها درس بانتظار النشر
+      async adminStorage() {
+        const c = await authed();
+        const st = c.storage.from(VBUCKET);
+        const folders = async (prefix) => {
+          const r = await st.list(prefix, { limit: 1000 });
+          if (r.error) throw storageError(r.error);
+          return r.data || [];
+        };
+        const items = [];
+        for (const t of (await folders('')).filter((x) => !x.id)) {
+          for (const d of (await folders(t.name)).filter((x) => !x.id)) {
+            const files = (await folders(`${t.name}/${d.name}`)).filter((x) => x.id);
+            items.push({ teacher: t.name, id: d.name, files: files.map((f) => `${t.name}/${d.name}/${f.name}`), bytes: files.reduce((n, f) => n + ((f.metadata && +f.metadata.size) || 0), 0) });
+          }
+        }
+        const ids = items.map((x) => x.id).filter((x) => /^[0-9a-f-]{36}$/.test(x));
+        let alive = new Set();
+        if (ids.length) {
+          const r = await c.from('sessions').select('id').in('id', ids).not('upload_state', 'is', null);
+          alive = new Set((check(r) || []).map((x) => x.id));
+        }
+        const orphans = items.filter((x) => !alive.has(x.id));
+        return { bytes: items.reduce((n, x) => n + x.bytes, 0), orphanBytes: orphans.reduce((n, x) => n + x.bytes, 0), orphans: orphans.reduce((a, x) => a.concat(x.files), []) };
+      },
+      async adminCleanStorage(paths) {
+        const c = await authed();
+        for (let i = 0; i < paths.length; i += 100) {
+          const r = await c.storage.from(VBUCKET).remove(paths.slice(i, i + 100));
+          if (r.error) throw storageError(r.error);
+        }
       },
       async adminReview(id, ok, note) { return this.updateSession(id, { review: ok ? 'ok' : 'rejected', review_note: ok ? null : (note || null) }); },
       async adminCreateInvite(label, uses) { const c = await authed(); return check(await c.rpc('admin_create_invite', { p_label: label, p_uses: uses })); },
@@ -488,6 +648,7 @@
     const uid = () => 'd' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
     const delay = (v) => new Promise((r) => setTimeout(() => r(v), 120));
     const clone = (v) => JSON.parse(JSON.stringify(v));
+    const files = new Map(); // فيديوهات الدروس المرسلة للمنصة في الوضع التجريبي
 
     function seed() {
       const teachers = [
@@ -516,7 +677,8 @@
           lesson_type: 'lesson', exam_year: null, exam_round: null,
           description: 'شرح مبسّط مع أمثلة وحل أسئلة امتحانات سابقة. جهّز دفترك وقلمك.',
           starts_at: iso(start), ends_at: iso(+start + mins * 60000), video_url: 'https://youtu.be/demo-video',
-          recording_url: null, status: 'scheduled', hidden: false, created_at: iso(Date.now() - 864e5),
+          // الدرس المنشور أُضيف وقت نشره، والقادم أُضيف الآن بموعد (فيظهر «يُعرض الآن» في موعده)
+          recording_url: null, status: 'scheduled', hidden: false, created_at: iso(Math.min(+start, Date.now())),
         }, extra || {}));
       };
       const now = new Date();
@@ -572,6 +734,11 @@
       add('t-new', 'g10', 'arabic', 'كتابة التقرير بطريقة منظمة', at(-1, 20), 22, { review: 'pending' });
       // حصة ملغاة
       add('t-noor', 'g10', 'english', 'Listening practice', at(1, 21), 45, { status: 'cancelled' });
+      // درس بموعد يُعرض الآن، ودرس أرسلته معلمة للمنصة وينتظر الرفع على القناة
+      add('t-zainab', 'g11', 'physics', 'الحركة الدائرية المنتظمة', new Date(now.getTime() - 8 * 60000), 30,
+        { term: 1, unit: 1, unit_title: 'الحركة', created_at: iso(Date.now() - 2 * 864e5) });
+      add('t-new', 'g10', 'arabic', 'الإملاء: الهمزة المتوسطة', at(2, 18), 24,
+        { video_url: null, review: 'pending', created_at: iso(Date.now() - 3 * 3600e3), upload_state: 'waiting', upload_parts: 4, upload_bytes: 38273024, upload_ext: 'webm' });
       // إزالة الحجوزات المزدوجة لنفس المعلم
       const kept = [];
       sessions.sort((a, b) => a.starts_at.localeCompare(b.starts_at)).forEach((s) => {
@@ -608,7 +775,7 @@
           items: kept.filter((s) => s.subject === 'sk_ai').map((s) => s.id), published: true, created_at: iso(Date.now() - 4 * 864e5), updated_at: iso(Date.now() - 2 * 864e5) },
       ];
       const invites = [{ code: 'KHWDSCHL26', kind: 'invite', label: 'مدرسة الخوض', created_by: null, uses_left: 8, active: true, created_at: iso(Date.now() - 10 * 864e5), used: 2 }];
-      return { v: 6, tools: seedTools(), teachers, sessions: kept, reports: [], requests, stats, certificates: [], paths, invites, inviteUses: [],
+      return { v: 7, tools: seedTools(), teachers, sessions: kept, reports: [], requests, stats, certificates: [], paths, invites, inviteUses: [],
         settings: { auto_approve: true, site_notice: '', requests_on: true, views_on: true, request_min_votes: 2, featured_session: quad ? quad.id : null }, me: null };
     }
     function seedTools() {
@@ -620,8 +787,7 @@
     function load() {
       if (db) return db;
       try { db = JSON.parse(storeGet(KEY) || 'null'); } catch (e) { db = null; }
-      if (db && db.v === 5) { db.tools = seedTools(); db.v = 6; save(); }
-      if (!db || db.v !== 6) { db = seed(); save(); }
+      if (!db || db.v !== 7) { db = seed(); save(); }
       return db;
     }
     function save() { storeSet(KEY, JSON.stringify(db)); }
@@ -683,6 +849,15 @@
         load();
         const a = iso(from), b = iso(to);
         return delay(db.sessions.filter((s) => s.grade === grade && s.starts_at >= a && s.starts_at < b && visible(s)).map(withTeacher));
+      },
+      async listUpcoming(o) {
+        load();
+        o = o || {};
+        const now = Date.now();
+        const a = iso(now - 6 * 3600e3); const b = iso(now + (C.DAYS_AHEAD || 14) * 864e5);
+        return delay(db.sessions.filter((x) => x.status === 'scheduled' && visible(x) && x.starts_at > a && x.starts_at < b
+          && (!o.grade || x.grade === o.grade) && (!o.subject || x.subject === o.subject) && (!o.teacher || x.teacher_id === o.teacher))
+          .sort((x, y) => x.starts_at.localeCompare(y.starts_at)).slice(0, o.limit || 60).map(withTeacher));
       },
       async listLiveNow() {
         load();
@@ -924,7 +1099,7 @@
         if (!me || me.status === 'suspended') throw new ApiError({ code: '42501' });
         const made = rows.map((r) => cleanRow(Object.assign({
           id: uid(), teacher_id: user.id, status: 'scheduled', hidden: false, recording_url: null, created_at: iso(Date.now()),
-        }, r, { review: me.trusted || me.is_admin ? 'ok' : 'pending', review_note: null })));
+        }, r, { teacher_id: me.is_admin && r.teacher_id ? r.teacher_id : user.id, review: me.trusted || me.is_admin ? 'ok' : 'pending', review_note: null })));
         const staged = [];
         made.forEach((m) => {
           guardOverlap(m);
@@ -933,8 +1108,8 @@
         });
         db.sessions.push(...made);
         made.forEach((m) => {
-          const q = m.request_id && m.review === 'ok' && db.requests.find((x) => x.id === m.request_id && x.status === 'open' && x.grade === m.grade && x.subject === m.subject);
-          if (q && me.status === 'approved') { q.status = 'done'; q.session_id = m.id; q.last_at = iso(Date.now()); }
+          const q = m.request_id && m.review === 'ok' && (m.video_url || m.recording_url) && db.requests.find((x) => x.id === m.request_id && x.status === 'open' && x.grade === m.grade && x.subject === m.subject);
+          if (q && (teacherOf(m.teacher_id) || {}).status === 'approved') { q.status = 'done'; q.session_id = m.id; q.last_at = iso(Date.now()); }
         });
         save();
         return delay(made.map((m) => ({ id: m.id })));
@@ -953,9 +1128,11 @@
         }
         guardOverlap(next, id);
         const approved = next.review === 'ok' && (s.review || 'ok') !== 'ok';
+        const gotVideo = !!(next.video_url || next.recording_url) && !(s.video_url || s.recording_url);
         Object.assign(s, next);
-        if (approved) {
-          trustAfterReview(s.teacher_id);
+        if (approved) trustAfterReview(s.teacher_id);
+        // الطلب يصبح «تم» حين يُعتمد الدرس ويكون له فيديو (كما في sessions_fulfil_request)
+        if ((approved || gotVideo) && (s.review || 'ok') === 'ok' && (s.video_url || s.recording_url)) {
           const q = s.request_id && db.requests.find((x) => x.id === s.request_id && x.status === 'open' && x.grade === s.grade && x.subject === s.subject);
           if (q) { q.status = 'done'; q.session_id = s.id; q.last_at = iso(Date.now()); }
         }
@@ -968,6 +1145,7 @@
         if (!s || (s.teacher_id !== user.id && !isAdmin())) throw new ApiError({ code: '42501' });
         db.sessions = db.sessions.filter((x) => x.id !== id);
         db.reports = db.reports.filter((r) => r.session_id !== id);
+        files.delete(id);
         // الطلب الذي سُجّل بهذا الدرس يعود مفتوحاً
         db.requests.forEach((q) => { if (q.session_id === id && q.status === 'done') { q.status = 'open'; q.session_id = null; } });
         save();
@@ -1025,7 +1203,9 @@
           views: sum('views'), views_week: sum('views7'), thanks: sum('thanks') + sum('understood'),
           requests_open: db.requests.filter((q) => q.status === 'open').length, requests_done: db.requests.filter((q) => q.status === 'done').length,
           certificates: db.certificates.filter((c) => !c.revoked).length, reports_week: db.reports.length,
-          review_pending: db.sessions.filter((s) => s.review === 'pending' && s.status === 'scheduled').length,
+          review_pending: db.sessions.filter((s) => s.review === 'pending' && s.status === 'scheduled' && !s.upload_state).length,
+          uploads_waiting: db.sessions.filter((s) => s.upload_state === 'waiting').length,
+          uploads_bytes: db.sessions.filter((s) => s.upload_state).reduce((n, s) => n + (s.upload_bytes || 0), 0),
           teachers_trusted: db.teachers.filter((t) => t.status === 'approved' && t.trusted).length,
           skills_lessons: pub.filter((s) => s.grade === 'skills' && (s.review || 'ok') === 'ok').length,
           paths: (db.paths || []).filter((x) => x.published).length,
@@ -1041,12 +1221,57 @@
       async adminCertificates() { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); return delay(db.certificates.map(clone)); },
       async adminBadge() {
         need(); load(); if (!isAdmin()) return delay(0);
-        return delay(db.teachers.filter((t) => t.status === 'pending').length + db.sessions.filter((s) => s.review === 'pending' && s.status === 'scheduled').length + db.reports.length);
+        return delay(db.teachers.filter((t) => t.status === 'pending').length + db.sessions.filter((s) => s.review === 'pending' && s.status === 'scheduled' && !s.upload_state).length
+          + db.sessions.filter((s) => s.upload_state === 'waiting').length + db.reports.length);
       },
       async adminReviewQueue() {
         need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' });
-        return delay(db.sessions.filter((s) => s.review === 'pending' && s.status === 'scheduled').sort((a, b) => a.created_at.localeCompare(b.created_at)).map(withTeacher));
+        return delay(db.sessions.filter((s) => s.review === 'pending' && s.status === 'scheduled' && !s.upload_state).sort((a, b) => a.created_at.localeCompare(b.created_at)).map(withTeacher));
       },
+
+      // ---------- إرسال الفيديو إلى المنصة (الملف في ذاكرة هذه الصفحة فقط) ----------
+      uploadLimit: UPLOAD_MAX,
+      async startUpload(row, file) {
+        need(); load();
+        const r = uploadRow(row, file);
+        if (!isAdmin()) {
+          const pending = db.sessions.filter((x) => x.upload_state);
+          if (pending.filter((x) => x.teacher_id === user.id).length >= 3) throw new ApiError({ message: 'لديك 3 دروس بانتظار النشر. انتظر حتى تنشرها الإدارة ثم أرسل غيرها.' });
+          if (pending.reduce((n, x) => n + (x.upload_bytes || 0), 0) + r.upload_bytes > 943718400) throw new ApiError({ message: 'مساحة الإرسال المؤقتة ممتلئة الآن. حاول بعد ساعات، أو انشر الدرس برابط من قناتك.' });
+        }
+        return (await this.createSessions([r]))[0];
+      },
+      async uploadParts(id, file, onProgress) {
+        need(); load();
+        const x = db.sessions.find((y) => y.id === id && y.teacher_id === user.id);
+        if (!x || x.upload_state !== 'uploading') throw new ApiError({ message: 'لا يمكن الرفع لهذا الدرس الآن (ربما أُلغي أو اكتمل إرساله). حدّث الصفحة وحاول مرة أخرى.' });
+        const n = partsOf(file.size);
+        for (let i = 1; i <= n; i++) { await new Promise((ok) => setTimeout(ok, 30)); if (onProgress) onProgress(Math.min(file.size, i * PART), file.size); }
+        files.set(id, file);
+        x.upload_state = 'waiting';
+        save();
+      },
+      async adminUploads() {
+        need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' });
+        return delay(db.sessions.filter((x) => x.upload_state).sort((a, b) => a.starts_at.localeCompare(b.starts_at)).map(withTeacher));
+      },
+      async adminDownloadUpload(x, onProgress) {
+        need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' });
+        const f = files.get(x.id);
+        if (!f) throw new ApiError({ message: 'في الوضع التجريبي يبقى الفيديو المرسل في هذه الصفحة فقط ويُفقد عند إعادة تحميلها. في المنصة الحقيقية يبقى محفوظاً حتى تنشره.' });
+        for (let i = 1; i <= x.upload_parts; i++) { await new Promise((ok) => setTimeout(ok, 20)); if (onProgress) onProgress(i, x.upload_parts); }
+        return f;
+      },
+      async adminFinishUpload(x, url) { await this.updateSession(x.id, Object.assign({ video_url: url, recording_url: null, review: 'ok', review_note: null }, UP_DONE)); files.delete(x.id); },
+      async adminRejectUpload(x, note) { await this.updateSession(x.id, Object.assign({ review: 'rejected', review_note: note || null }, UP_DONE)); files.delete(x.id); },
+      async adminStorage() {
+        need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' });
+        const alive = new Set(db.sessions.filter((x) => x.upload_state).map((x) => x.id));
+        let bytes = 0; let orphanBytes = 0; const orphans = [];
+        files.forEach((f, id) => { bytes += f.size; if (!alive.has(id)) { orphanBytes += f.size; orphans.push(id); } });
+        return delay({ bytes, orphanBytes, orphans });
+      },
+      async adminCleanStorage(paths) { need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' }); paths.forEach((p) => files.delete(p)); return delay(); },
       async adminReview(id, ok, note) { return this.updateSession(id, { review: ok ? 'ok' : 'rejected', review_note: ok ? null : (note || null) }); },
       async adminCreateInvite(label, uses) {
         need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' });
