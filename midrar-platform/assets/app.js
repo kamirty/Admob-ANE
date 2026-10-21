@@ -426,6 +426,10 @@
   async function pageHome(tok) {
     setNav('home'); setTitle('');
     const mine = store.get('grade');
+    const upSec = `<section class="section" id="up-sec" hidden>
+        <div class="section-head"><h2>الدروس القادمة</h2><span class="muted" id="up-for"></span><span class="spacer"></span><a class="btn btn-ghost btn-sm" id="up-all" hidden>كل مواعيد صفّي</a></div>
+        <div id="up-list"></div>
+      </section>`;
     view.innerHTML = `
       <section class="hero">
         <div class="hero-text">
@@ -448,10 +452,7 @@
         <div class="section-head"><span class="dot-live"></span><h2>مباشر الآن</h2><span class="muted" id="live-count"></span></div>
         <div class="live-strip" id="live-list"></div>
       </section>
-      <section class="section" id="up-sec" hidden>
-        <div class="section-head"><h2>الدروس القادمة</h2><span class="muted" id="up-for"></span><span class="spacer"></span><a class="btn btn-ghost btn-sm" id="up-all" hidden>كل مواعيد صفّي</a></div>
-        <div id="up-list"></div>
-      </section>
+      ${mine && GRADES[mine] ? upSec : ''}
       <section class="section">
         <div class="section-head"><h2>اختر صفّك</h2><span class="muted">صف دبلوم التعليم العام عليه علامة «${esc(C.EXAM_TAG)}»</span></div>
         <div class="stages">${C.STAGES.map((st) => `
@@ -460,6 +461,7 @@
           </div>`).join('')}
         </div>
       </section>
+      ${mine && GRADES[mine] ? '' : upSec}
       <section class="section">
         <div class="section-head"><h2>مهارات المستقبل</h2><span class="muted">دورات مجانية خارج المنهج</span><span class="spacer"></span><a class="btn btn-ghost btn-sm" href="#/k">كل المهارات</a></div>
         <div class="skill-grid">${SKILLS.map((k) => `<a class="skill-chip" href="#/k/${esc(k.id)}"><span class="sk-ic" aria-hidden="true">${esc(k.icon || '✨')}</span><span>${esc(k.name)}</span></a>`).join('')}</div>
@@ -524,7 +526,7 @@
     (async () => {
       try {
         const g = mine && GRADES[mine] ? mine : '';
-        const rows = remember(upNow(await API.listUpcoming({ grade: g, limit: 30 }))).slice(0, 6);
+        const rows = remember(upNow(await API.listUpcoming({ grade: g, limit: 30 }))).slice(0, g ? 4 : 3);
         const sec = document.getElementById('up-sec');
         if (tok !== app.token || !rows.length || !sec) return;
         sec.hidden = false;
@@ -2477,8 +2479,8 @@
   // ------------------------------------------------------------------
   const dateVal = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const timeVal = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  // اقتراح الموعد: غداً الساعة 7 مساءً
-  const nextShow = () => { const d = addDays(new Date(), 1); d.setHours(19, 0, 0, 0); return d; };
+  // اقتراح الموعد: السابعة مساءً بعد يوم على الأقل (وقت كافٍ لرفع الفيديو على القناة)
+  const nextShow = () => { const d = addDays(new Date(), 1); d.setHours(19, 0, 0, 0); if (+d - Date.now() < DAY) d.setDate(d.getDate() + 1); return d; };
   function whenHtml(p, at, published) {
     const fut = !!at && +at > Date.now();
     const d = fut ? at : nextShow();
@@ -3162,7 +3164,7 @@
             <li><span>٢. ارفعه على قناة المنصة:</span> <button type="button" class="btn btn-sm" data-ct>نسخ العنوان</button> <button type="button" class="btn btn-sm" data-cd>نسخ الوصف</button>
               <a class="btn btn-sm btn-ghost" href="https://studio.youtube.com" target="_blank" rel="noopener">افتح YouTube Studio</a></li>
             <li class="up-pub"><label class="sr-only" for="u-${esc(s.id)}">رابط الفيديو على قناة المنصة</label>
-              <input class="input" id="u-${esc(s.id)}" type="url" inputmode="url" maxlength="300" placeholder="٣. الصق رابط الفيديو من قناة المنصة" data-url>
+              <input class="input" id="u-${esc(s.id)}" type="url" inputmode="url" maxlength="300" placeholder="٣. الصق رابط الفيديو" data-url>
               <button type="button" class="btn btn-sm btn-primary" data-pub>انشر الدرس</button></li>
           </ol>
           <details class="more"><summary>رفض الدرس</summary><div class="row">
