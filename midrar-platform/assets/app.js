@@ -70,8 +70,11 @@
     const m = Math.round(ms / MIN);
     if (Math.abs(m) < 60) return rtf.format(m, 'minute');
     const h = Math.round(m / 60);
-    if (Math.abs(h) < 24) return rtf.format(h, 'hour');
-    return rtf.format(Math.round(h / 24), 'day');
+    // الأيام بالتقويم: درس مساء الغد «غداً» حتى لو بقي عليه 36 ساعة
+    const now = new Date();
+    const d = Math.round((startOfDay(+now + ms) - startOfDay(now)) / 864e5);
+    if (Math.abs(h) < 12 || d === 0) return rtf.format(h, 'hour');
+    return rtf.format(d, 'day');
   }
   function dayLabel(d) {
     const k = dayKey(d);
@@ -1357,13 +1360,15 @@
     const notPublic = s.hidden || (mine && app.profile && app.profile.status !== 'approved');
     const sk = isSkills(s.grade);
     const review = s.review || 'ok';
+    // موعد العرض (بالساعة) لدرس قادم أو يُعرض الآن، وإلا تاريخ النشر
+    const showAt = s.kind === 'recorded' && (['upcoming', 'premiere'].includes(stateOf(s).key) || (isPremiere(s) && !videoOf(s)));
     view.innerHTML = `
       <header class="page-head">
         <nav class="crumbs" aria-label="مسار التنقل"><a href="#/">${sk ? 'الرئيسية' : 'الصفوف'}</a><span>›</span><a href="${esc(gradeHref(s.grade))}">${esc(gradeName(s.grade))}</a><span>›</span><a href="${esc(subjHref(s.grade, s.subject))}">${esc(subjOf(s))}</a>${sk ? (s.unit_title ? `<span>›</span><span>${esc(s.unit_title)}</span>` : '') : s.unit ? `<span>›</span><span>${esc('الوحدة ' + fNum(s.unit))}</span>` : ''}</nav>
         <div class="title-row"><h1>${esc(s.title)}</h1><span data-sid="${esc(s.id)}"><span data-badge>${badgeHtml(s)}</span></span></div>
         ${stateOf(s).key === 'premiere' ? '<div class="note live-note"><b>يُعرض الآن في موعده</b><span>حدّد المعلم هذا الوقت ليشاهد الطلاب الدرس معاً. شاهده الآن، ويبقى متاحاً بعد ذلك.</span></div>' : ''}
         ${review === 'pending' ? `<div class="note warn"><b>هذا الدرس بانتظار مراجعة الإدارة.</b><span>لا يراه الطلاب حتى تعتمده الإدارة.${mine ? ` بعد اعتماد ${fNum(C.TRUST_AFTER || 3)} دروس لك تصبح متطوعاً موثوقاً وتُنشر دروسك مباشرة.` : ''}</span></div>` : ''}
-        ${review === 'rejected' ? `<div class="note bad"><b>لم تعتمد الإدارة هذا الدرس.</b>${s.review_note ? `<span>السبب: ${esc(s.review_note)}</span>` : ''}${mine ? '<span>عدّل الدرس فيعود إلى المراجعة.</span>' : ''}</div>` : ''}
+        ${review === 'rejected' ? `<div class="note bad"><b>لم تعتمد الإدارة هذا الدرس.</b>${s.review_note ? `<span>السبب: ${esc(s.review_note)}</span>` : ''}${mine ? `<span>${s.kind === 'recorded' && !videoOf(s) && !s.upload_state ? 'أرسل الفيديو من جديد من «تعديل الدرس»، فيعود إلى المراجعة.' : 'عدّل الدرس فيعود إلى المراجعة.'}</span>` : ''}</div>` : ''}
         ${notPublic ? `<div class="note warn">${s.hidden ? `${s.kind === 'recorded' ? 'هذا الدرس مخفي' : 'هذه الحصة مخفية'} عن الطلاب بقرار من إدارة المنصة.` : `${s.kind === 'recorded' ? 'هذا الدرس لا يظهر' : 'هذه الحصة لا تظهر'} للطلاب حتى تعتمد إدارة المنصة حسابك.`}</div>` : ''}
       </header>
       <div class="sess">
@@ -1392,7 +1397,7 @@
                 ${s.level ? `<dt>المستوى</dt><dd>${esc(LEVELS[s.level] || '')}</dd>` : ''}${s.ages ? `<dt>يناسب</dt><dd>${esc(AGES[s.ages] || '')}</dd>` : ''}`
               : `<dt>الصف</dt><dd><a href="#/g/${esc(s.grade)}">${esc(gradeName(s.grade))}</a></dd>
               <dt>المادة</dt><dd>${esc(subjectName(s.subject))}</dd>`}
-              <dt>${s.kind === 'recorded' ? (+new Date(s.starts_at) > Date.now() || isPremiere(s) ? 'موعد العرض' : 'نُشر') : 'الموعد'}</dt><dd>${esc(fFull.format(new Date(s.starts_at)))}${s.kind === 'recorded' && (+new Date(s.starts_at) > Date.now() || isPremiere(s)) ? ' · ' + esc(time(s.starts_at)) : ''}</dd>
+              <dt>${s.kind === 'recorded' ? (showAt ? 'موعد العرض' : 'نُشر') : 'الموعد'}</dt><dd>${esc(fFull.format(new Date(s.starts_at)))}${showAt ? ' · ' + esc(time(s.starts_at)) : ''}</dd>
               ${s.kind === 'recorded' ? '' : `<dt>الوقت</dt><dd>${esc(time(s.starts_at))} – ${esc(time(s.ends_at))}</dd>`}
               <dt>المدة</dt><dd>${esc(minsTxt(minutes(s)))}</dd>
               <dt>النوع</dt><dd>${s.kind === 'recorded' ? (s.lesson_type && s.lesson_type !== 'lesson' ? esc(typeName(s.lesson_type, s.grade)) : 'درس مسجّل') : 'بث مباشر'}</dd>
@@ -1499,7 +1504,7 @@
       const box = $('#watchrow');
       if (!box) return;
       const k = stateOf(s).key;
-      if (!['recorded', 'replay', 'live'].includes(k) || !ytId(watchUrl(s))) { box.innerHTML = ''; return; }
+      if (!['recorded', 'premiere', 'replay', 'live'].includes(k) || !ytId(watchUrl(s))) { box.innerHTML = ''; return; }
       const w = watch.get(s.id) || {};
       const mounted = player.s && player.s.id === s.id;
       box.innerHTML = `${!mounted && w.p >= 30 && !w.done ? `<button type="button" class="btn btn-primary" data-resume>تابع من الدقيقة ${esc(mmss(w.p))}</button><button type="button" class="btn" data-restart>ابدأ من البداية</button>` : ''}
@@ -1529,9 +1534,11 @@
     drawWatchRow();
 
     // «هل أفادك الدرس؟» شكر مجهول يصل إلى المعلم كرقم فقط
-    const thanked = store.json('thanked', {});
-    const canThank = !mine && s.kind === 'recorded' && stateOf(s).key === 'recorded' && app.settings.views_on !== false && API.thankLesson;
-    if (canThank) {
+    function drawThanks() {
+      const tb = $('#thanks');
+      const canThank = !mine && s.kind === 'recorded' && ['recorded', 'premiere'].includes(stateOf(s).key) && app.settings.views_on !== false && API.thankLesson;
+      if (!tb || !canThank || tb.firstChild) return;
+      const thanked = store.json('thanked', {});
       const done = thanked[s.id] || '';
       $('#thanks').innerHTML = `<div class="thanks"><b>هل أفادك الدرس؟</b>
         <button type="button" class="btn btn-sm" data-thank="thanks" aria-pressed="${done.includes('t')}">${done.includes('t') ? 'جزاك الله خيراً ✓' : 'جزاك الله خيراً'}</button>
@@ -1549,6 +1556,7 @@
         API.thankLesson(s.id, kind).catch(() => { /* الشكر اختياري */ });
       }));
     }
+    drawThanks();
 
     // الدرس السابق والتالي في ترتيب الكتاب
     if (s.kind === 'recorded') {
@@ -1606,6 +1614,7 @@
         lastKey = k;
         const p = $('#player');
         if (p && p.dataset.h !== 'mounted') { const h = playerHtml(s); if (p.dataset.h !== h) { p.innerHTML = h; p.dataset.h = h; bindFacade(); drawWatchRow(); } }
+        drawThanks();
       }
     };
 
@@ -2402,11 +2411,11 @@
           <div class="row"><span>${esc(gradeName(s.grade))}</span><span>·</span><span>${esc(subjOf(s))}</span><span>·</span>${badgeHtml(s)}
             ${s.upload_state === 'uploading' ? '<span class="pill pill-warn">لم يكتمل الإرسال</span>' : s.upload_state === 'waiting' ? '<span class="pill">وصل للإدارة · بانتظار النشر على القناة</span>'
               : s.status === 'scheduled' ? `<span class="linkflag ${hasLink ? 'ok' : 'no'}">${hasLink ? 'الرابط موجود' : 'بلا رابط'}</span>` : ''}${s.hidden ? '<span class="pill pill-bad">مخفية</span>' : ''}${s.review === 'pending' ? '<span class="pill pill-warn">بانتظار المراجعة</span>' : s.review === 'rejected' ? '<span class="pill pill-bad">لم يُعتمد</span>' : ''}<span class="rs" data-rs="${esc(s.id)}"></span></div>
-          ${s.review === 'rejected' ? `<span class="small reject-note">${s.review_note ? 'السبب: ' + esc(s.review_note) + ' — ' : ''}عدّل الدرس فيعود إلى المراجعة.</span>` : ''}</div>
+          ${s.review === 'rejected' ? `<span class="small reject-note">${s.review_note ? 'السبب: ' + esc(s.review_note) + ' — ' : ''}${s.kind === 'recorded' && !hasLink && !s.upload_state ? 'أرسل الفيديو من جديد بعد تصحيحه، فيعود إلى المراجعة.' : 'عدّل الدرس فيعود إلى المراجعة.'}</span>` : ''}</div>
         <div class="tools">
           ${s.upload_state === 'uploading' ? `<a class="btn btn-sm btn-primary" href="#/dashboard/resume/${esc(s.id)}">أكمل الإرسال</a>` : ''}
           ${s.status === 'scheduled' && +new Date(s.starts_at) > now && (s.review || 'ok') === 'ok' ? `<a class="btn btn-sm btn-ghost" href="${esc(whatsappUrl(s))}" target="_blank" rel="noopener">شارك الموعد</a>` : ''}
-          <a class="btn btn-sm" href="#/dashboard/edit/${esc(s.id)}">${!s.upload_state && (st.key === 'ended' || (!hasLink && s.status === 'scheduled')) ? 'أضف الرابط' : 'تعديل'}</a>
+          <a class="btn btn-sm" href="#/dashboard/edit/${esc(s.id)}">${!s.upload_state && s.kind === 'recorded' && !hasLink && s.status === 'scheduled' ? 'أضف الفيديو' : !s.upload_state && (st.key === 'ended' || (!hasLink && s.status === 'scheduled')) ? 'أضف الرابط' : 'تعديل'}</a>
           ${s.kind === 'recorded' ? '' : `<a class="btn btn-sm btn-ghost" href="#/dashboard/copy/${esc(s.id)}">نسخ</a>`}
           ${!isDone(s) ? `<button type="button" class="btn btn-sm btn-ghost" data-toggle="${esc(s.id)}">${s.status === 'cancelled' ? 'إعادة إلى الجدول' : s.kind === 'recorded' ? 'إلغاء النشر' : 'إلغاء الحصة'}</button>` : ''}
           <button type="button" class="btn btn-sm btn-ghost btn-danger" data-del="${esc(s.id)}">حذف</button>
@@ -2548,8 +2557,9 @@
     });
   }
   // إرسال الملف مع شريط تقدّم. key يربط الملف بالدرس المنشأ، فإن انقطع الإرسال أكمل من حيث توقف
-  async function sendLesson(base, file, box, key) {
+  async function sendLesson(base, file, box, key, editId) {
     let id = key ? store.get(key) : null;
+    if (editId && id !== editId) id = null;
     if (id) {
       const old = await API.getSession(id).catch(() => null);
       if (old && old.upload_state === 'uploading' && old.upload_bytes === file.size) {
@@ -2558,13 +2568,34 @@
       } else { id = null; store.del(key); }
     }
     const paint = progressBox(box);
-    if (!id) {
-      id = (await API.startUpload(base, file)).id;
-      if (key) store.set(key, id);
-    }
-    await API.uploadParts(id, file, paint);
+    app.sending = (app.sending || 0) + 1;
+    try {
+      if (!id && editId) {
+        await API.resendUpload(editId, base, file);
+        id = editId;
+        if (key) store.set(key, id);
+      } else if (!id) {
+        id = (await API.startUpload(base, file)).id;
+        if (key) store.set(key, id);
+      }
+      await API.uploadParts(id, file, paint);
+    } finally { app.sending -= 1; }
     if (key) store.del(key);
     return id;
+  }
+  window.addEventListener('beforeunload', (e) => { if (app.sending > 0) { e.preventDefault(); e.returnValue = ''; } });
+  // اكتمل الإرسال: إلى «لوحتي» مع رسالة الوصول. وإن انتقل المعلم أثناءه إلى صفحة أخرى فلا ننقله منها
+  function sentDone(tok, title, at) {
+    app.flash = sentFlash(title, at);
+    if (tok === app.token) { location.hash = '#/dashboard'; return; }
+    if (location.hash === '#/dashboard') { route(); return; }
+    app.flash = null;
+    toast(`وصل درسك «${title}». تجده في «لوحتي».`);
+  }
+  // توقف الإرسال: الرسالة في مكانها، أو تنبيه إن كان المعلم في صفحة أخرى
+  function sentFailed(tok, box, e, key) {
+    if (tok === app.token && box && box.isConnected) { box.hidden = false; box.innerHTML = sendFail(e, key); return; }
+    toast(`${store.get(key) ? 'توقف إرسال الدرس، أكمله من «لوحتي»' : 'لم يُرسل الدرس'}: ${errMsg(e)}`, true);
   }
   // شريط تقدّم الإرسال
   function progressBox(box) {
@@ -2604,11 +2635,13 @@
       if (f.size !== s.upload_bytes) { inp.setAttribute('aria-invalid', 'true'); inp.focus(); return toast('هذا ليس الملف نفسه: حجمه يختلف عن الملف الذي بدأت إرساله.', true); }
       const btn = $('#rf button[type=submit]'); btn.disabled = true;
       try {
-        await API.uploadParts(s.id, f, progressBox($('#rf-prog')));
-        app.flash = sentFlash(s.title, +new Date(s.starts_at) > Date.now() + 10 * MIN ? s.starts_at : null);
-        location.hash = '#/dashboard';
+        app.sending = (app.sending || 0) + 1;
+        try { await API.uploadParts(s.id, f, progressBox($('#rf-prog'))); } finally { app.sending -= 1; }
+        sentDone(tok, s.title, +new Date(s.starts_at) > Date.now() + 10 * MIN ? s.starts_at : null);
       } catch (e) {
-        $('#rf-prog').innerHTML = `<div class="note bad" role="alert"><b>توقف الإرسال</b><span>${esc(errMsg(e))}</span><span>اضغط «أكمل الإرسال» مرة أخرى.</span></div>`;
+        const pg = $('#rf-prog');
+        if (tok === app.token && pg) pg.innerHTML = `<div class="note bad" role="alert"><b>توقف الإرسال</b><span>${esc(errMsg(e))}</span><span>اضغط «أكمل الإرسال» مرة أخرى.</span></div>`;
+        else toast('توقف إرسال الدرس، أكمله من «لوحتي»: ' + errMsg(e), true);
         btn.disabled = false;
       }
     });
@@ -2653,10 +2686,12 @@
     const isPast = editing && +new Date(src.ends_at) <= Date.now();
     // مصدر الفيديو للدرس الجديد: ملف يُرسل للمنصة (الافتراضي)، أو رابط من قناة المعلم
     const presetFile = pre && pre._file ? pre._file : null;
-    const srcPick = rec0 && !editing;
+    // درس بلا فيديو (مثل درس رُفض فحُذف ملفه): يختار المعلم من جديد ملفاً يرسله أو رابطاً
+    const needVideo = editing && rec0 && !src.upload_state && !src.video_url && !src.recording_url;
+    const srcPick = rec0 && (!editing || needVideo);
     let srcMode = srcPick ? (pre && pre.video_url ? 'link' : presetFile ? 'file' : store.get('t-src') === 'link' ? 'link' : 'file') : 'link';
     const upPending = editing && !!src.upload_state;
-    const published = editing && rec0 && +new Date(src.starts_at) <= Date.now();
+    const published = editing && rec0 && !needVideo && +new Date(src.starts_at) <= Date.now();
 
     view.innerHTML = `
       <header class="page-head"><nav class="crumbs"><a href="#/dashboard">لوحتي</a><span>›</span><span>${editing ? 'تعديل' : mode === 'copy' ? 'نسخ حصة' : 'درس جديد'}</span></nav>
@@ -2711,7 +2746,7 @@
           <span class="hint">اتركه فارغاً إذا بقي التسجيل على نفس رابط البث.</span></div>
         <div id="sf-prog" hidden></div>
         <div class="form-actions">
-          <button class="btn btn-primary" type="submit" id="sf-go">${editing ? 'حفظ التعديلات' : srcPick && srcMode === 'file' ? 'أرسل الدرس' : rec0 ? 'نشر الدرس' : 'نشر الحصة'}</button>
+          <button class="btn btn-primary" type="submit" id="sf-go">${srcPick && srcMode === 'file' ? 'أرسل الدرس' : editing ? 'حفظ التعديلات' : rec0 ? 'نشر الدرس' : 'نشر الحصة'}</button>
           <a class="btn" href="#/dashboard">إلغاء</a>
         </div>
       </form>`;
@@ -2773,7 +2808,7 @@
       srcMode = m;
       const fb = $('#sf-file-box'); if (fb) fb.hidden = m !== 'file';
       $('#sf-link-box').hidden = m !== 'link' || upPending;
-      $('#sf-go').textContent = editing ? 'حفظ التعديلات' : m === 'file' ? 'أرسل الدرس' : 'نشر الدرس';
+      $('#sf-go').textContent = m === 'file' ? 'أرسل الدرس' : editing ? 'حفظ التعديلات' : 'نشر الدرس';
       if (whenCtl) whenCtl.paint();
     };
     $$('input[name=sf-src]').forEach((r) => r.addEventListener('change', () => setSrc(r.value)));
@@ -2850,16 +2885,15 @@
       if (file) {
         // الإرسال للمنصة: الدرس يُنشأ ثم تُرفع أجزاء الفيديو، وإن انقطع نكمل بالضغط مرة أخرى
         const key = pre && pre._rec ? 'up-rec-' + pre._rec.id : 'up-file-' + [file.name, file.size, file.lastModified].join('|');
+        const box = $('#sf-prog');
         try {
-          await sendLesson(base, file, $('#sf-prog'), key);
+          await sendLesson(base, file, box, key, editing ? id : null);
           store.set('t-src', 'file');
           if (base.request_id && req) store.del('st-req');
           if (pre && pre._rec && ST) { if (pre._rec.saved) ST.remove(pre._rec.id).catch(() => {}); else ST.discard(); }
-          app.flash = sentFlash(base.title, tm.at ? base.starts_at : null);
-          location.hash = '#/dashboard';
+          sentDone(tok, base.title, tm.at ? base.starts_at : null);
         } catch (e) {
-          const pg = $('#sf-prog');
-          if (pg) { pg.hidden = false; pg.innerHTML = sendFail(e, key); }
+          sentFailed(tok, box, e, key);
           btn.disabled = false;
         }
         return;
@@ -3712,14 +3746,13 @@
         if (!$('#st-consent').checked) { $('#st-consent').focus(); return toast('وافق على نشر الدرس في قناة «مدرار العلم» أولاً.', true); }
         if (r.bytes > API.uploadLimit) return toast('التسجيل أكبر من 500 ميغابايت. سجّل الدرس على جزأين.', true);
         const btn = $('#st-send'); btn.disabled = true;
+        const box = $('#st-prog');
         try {
-          await sendLesson(baseRow(w.start), fileOf(), $('#st-prog'), 'up-rec-' + r.id);
-          app.flash = sentFlash(info.title, w.at ? w.start : null);
+          await sendLesson(baseRow(w.start), fileOf(), box, 'up-rec-' + r.id);
           if (r.saved) ST.remove(r.id).catch(() => {}); else ST.discard();
-          location.hash = '#/dashboard';
+          sentDone(tok, info.title, w.at ? w.start : null);
         } catch (e) {
-          const pg = $('#st-prog');
-          if (pg) { pg.hidden = false; pg.innerHTML = sendFail(e, 'up-rec-' + r.id); }
+          sentFailed(tok, box, e, 'up-rec-' + r.id);
           btn.disabled = false;
         }
       });

@@ -1447,6 +1447,8 @@ begin
     if new.upload_state <> 'uploading' then
       raise exception 'ابدأ إرسال الفيديو من جديد' using errcode = '22023';
     end if;
+    -- إرسالان في اللحظة نفسها يُفحصان بالتتابع، فلا يتجاوزان الحد معاً
+    perform pg_advisory_xact_lock(hashtext('midrar-lesson-uploads'));
     select coalesce(sum(s.upload_bytes), 0) into used from public.sessions s where s.upload_state is not null and s.id <> new.id;
     if used + new.upload_bytes > 943718400 then
       raise exception 'مساحة الإرسال المؤقتة ممتلئة الآن. حاول بعد ساعات، أو انشر الدرس برابط من قناتك.' using errcode = '54000';
@@ -1456,6 +1458,11 @@ begin
     if mine >= 3 then
       raise exception 'لديك 3 دروس بانتظار النشر. انتظر حتى تنشرها الإدارة ثم أرسل غيرها.' using errcode = '54000';
     end if;
+    -- إعادة إرسال فيديو درس مرفوض تعيده إلى المراجعة
+    if tg_op = 'UPDATE' and old.review = 'rejected' then
+      new.review := 'pending';
+      new.review_note := null;
+    end if;
   end if;
   return new;
 end $$;
@@ -1463,6 +1470,17 @@ drop trigger if exists sessions_upload_guard on public.sessions;
 create trigger sessions_upload_guard before insert or update of upload_state, upload_bytes on public.sessions
   for each row execute function public.sessions_upload_guard();
 revoke execute on function public.sessions_upload_guard() from public, anon, authenticated;
+
+-- الطلاب يرون الدرس المرسل للمنصة بعد نشره على القناة. قبل ذلك يظهر فقط إن اكتمل إرساله
+-- وله موعد عرض حدده المعلم (في «الدروس القادمة»)
+drop policy if exists sessions_read on public.sessions;
+create policy sessions_read on public.sessions for select using (
+  (not hidden and review = 'ok'
+     and (upload_state is null or (upload_state = 'waiting' and starts_at > created_at + interval '10 minutes'))
+     and exists (select 1 from public.teachers t where t.id = sessions.teacher_id and t.status = 'approved'))
+  or teacher_id = auth.uid()
+  or public.is_admin()
+);
 
 -- هل يحق لهذا المعلم رفع هذا الجزء؟ المسار: <المعلم>/<الدرس>/<رقم الجزء 000>
 create or replace function public.lesson_upload_ok(p_name text) returns boolean

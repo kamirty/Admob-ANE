@@ -282,15 +282,20 @@
           ['starts_at', 'lt.' + iso(to)], ['order', 'starts_at.asc'], ['limit', '600']]);
       },
       // الدروس القادمة بموعد (ومنها ما يُعرض الآن): لصف أو مادة أو معلم
-      listUpcoming(o) {
+      async listUpcoming(o) {
         o = o || {};
         const now = Date.now();
-        const p = [['select', LIST_COLS], ['status', 'eq.scheduled'], ['starts_at', 'gt.' + iso(now - 6 * 3600e3)],
-          ['starts_at', 'lt.' + iso(now + (C.DAYS_AHEAD || 14) * 864e5)], ['order', 'starts_at.asc'], ['limit', String(o.limit || 60)]];
+        const p = [['select', LIST_COLS], ['status', 'eq.scheduled']];
         if (o.grade) p.push(['grade', 'eq.' + o.grade]);
         if (o.subject) p.push(['subject', 'eq.' + o.subject]);
         if (o.teacher) p.push(['teacher_id', 'eq.' + o.teacher]);
-        return rest('sessions', p);
+        const end = [['order', 'starts_at.asc'], ['limit', String(o.limit || 60)]];
+        // ما يُعرض الآن، ثم القادم (طلبان منفصلان فلا تزاحم الدروسُ المنشورة للتو القادمةَ)
+        const [cur, next] = await Promise.all([
+          rest('sessions', p.concat([['kind', 'eq.recorded'], ['starts_at', 'gt.' + iso(now - 6 * 3600e3)], ['starts_at', 'lte.' + iso(now)], ['ends_at', 'gt.' + iso(now)]], end)),
+          rest('sessions', p.concat([['starts_at', 'gt.' + iso(now)], ['starts_at', 'lt.' + iso(now + (C.DAYS_AHEAD || 14) * 864e5)]], end)),
+        ]);
+        return (cur || []).concat(next || []);
       },
       listLiveNow() {
         const now = Date.now();
@@ -474,6 +479,8 @@
         const made = await this.createSessions([uploadRow(row, file)]);
         return made[0];
       },
+      // درس موجود بلا فيديو (مثل درس رُفض فحُذف ملفه): يُرسل له فيديو جديد
+      async resendUpload(id, row, file) { return this.updateSession(id, uploadRow(row, file)); },
       // يرفع الأجزاء الناقصة فقط (يكمل إرسالاً انقطع)، ثم يجعل الدرس «بانتظار النشر»
       async uploadParts(id, file, onProgress) {
         const c = await authed();
@@ -796,7 +803,9 @@
       const t = teacherOf(s.teacher_id);
       return Object.assign(clone(s), { teacher: t ? { id: t.id, display_name: t.display_name, avatar_url: t.avatar_url } : null });
     }
-    const visible = (s) => !s.hidden && (s.review || 'ok') === 'ok' && (teacherOf(s.teacher_id) || {}).status === 'approved';
+    // كما في sessions_read: الدرس المرسل للمنصة يظهر بعد نشره، أو قبله إن اكتمل إرساله وله موعد عرض
+    const sentOk = (s) => !s.upload_state || (s.upload_state === 'waiting' && +new Date(s.starts_at) - +new Date(s.created_at) > 600000);
+    const visible = (s) => !s.hidden && (s.review || 'ok') === 'ok' && sentOk(s) && (teacherOf(s.teacher_id) || {}).status === 'approved';
     // نفس قواعد sessions_guard: حقول المهارات، ومراجعة دروس المعلم غير الموثوق
     function cleanRow(r) {
       if (r.grade !== 'skills') { r.level = null; r.ages = null; }
@@ -854,10 +863,13 @@
         load();
         o = o || {};
         const now = Date.now();
-        const a = iso(now - 6 * 3600e3); const b = iso(now + (C.DAYS_AHEAD || 14) * 864e5);
-        return delay(db.sessions.filter((x) => x.status === 'scheduled' && visible(x) && x.starts_at > a && x.starts_at < b
+        const a = iso(now - 6 * 3600e3); const n = iso(now); const b = iso(now + (C.DAYS_AHEAD || 14) * 864e5);
+        const rows = db.sessions.filter((x) => x.status === 'scheduled' && visible(x)
           && (!o.grade || x.grade === o.grade) && (!o.subject || x.subject === o.subject) && (!o.teacher || x.teacher_id === o.teacher))
-          .sort((x, y) => x.starts_at.localeCompare(y.starts_at)).slice(0, o.limit || 60).map(withTeacher));
+          .sort((x, y) => x.starts_at.localeCompare(y.starts_at));
+        const cur = rows.filter((x) => x.kind === 'recorded' && x.starts_at > a && x.starts_at <= n && +new Date(x.ends_at) > now).slice(0, o.limit || 60);
+        const next = rows.filter((x) => x.starts_at > n && x.starts_at < b).slice(0, o.limit || 60);
+        return delay(cur.concat(next).map(withTeacher));
       },
       async listLiveNow() {
         load();
@@ -1240,6 +1252,19 @@
           if (pending.reduce((n, x) => n + (x.upload_bytes || 0), 0) + r.upload_bytes > 943718400) throw new ApiError({ message: 'مساحة الإرسال المؤقتة ممتلئة الآن. حاول بعد ساعات، أو انشر الدرس برابط من قناتك.' });
         }
         return (await this.createSessions([r]))[0];
+      },
+      async resendUpload(id, row, file) {
+        need(); load();
+        const s = db.sessions.find((x) => x.id === id && x.teacher_id === user.id);
+        if (!s) throw new ApiError({ code: '42501' });
+        const r = uploadRow(row, file);
+        const pending = db.sessions.filter((x) => x.upload_state && x.id !== id);
+        if (pending.filter((x) => x.teacher_id === user.id).length >= 3) throw new ApiError({ message: 'لديك 3 دروس بانتظار النشر. انتظر حتى تنشرها الإدارة ثم أرسل غيرها.' });
+        if (pending.reduce((n, x) => n + (x.upload_bytes || 0), 0) + r.upload_bytes > 943718400) throw new ApiError({ message: 'مساحة الإرسال المؤقتة ممتلئة الآن. حاول بعد ساعات، أو انشر الدرس برابط من قناتك.' });
+        const rejected = s.review === 'rejected';
+        await this.updateSession(id, r);
+        if (rejected) { s.review = 'pending'; s.review_note = null; save(); }
+        return s;
       },
       async uploadParts(id, file, onProgress) {
         need(); load();
