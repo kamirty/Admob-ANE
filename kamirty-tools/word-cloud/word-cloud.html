@@ -6,6 +6,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
 
 <div id="kwc" dir="rtl" lang="ar">
+  <div class="kwc-boot">⚠ لم يعمل كود الأداة على هذه الصفحة. تأكد من لصق الكود في «عرض HTML» ثم النشر مباشرة دون الرجوع إلى «عرض الإنشاء».</div>
 
   <!-- ====== الشعار ====== -->
   <div class="kwc-brand">
@@ -19,6 +20,36 @@
     </svg>
     <span class="kwc-brand-name">Kamirty<b>.ai</b></span>
     <button type="button" class="kwc-help-btn" data-js="helpBtn">؟ التعليمات والإرشادات</button>
+  </div>
+
+  <!-- ====== التعليمات (تظهر عند الضغط على الزر) ====== -->
+  <div class="kwc-help" data-js="helpPanel" hidden>
+    <button type="button" class="kwc-help-x" data-js="helpX" aria-label="إغلاق">✕</button>
+    <h3>التعليمات والإرشادات</h3>
+    <h4>كيف تعمل؟</h4>
+    <ol>
+      <li>اكتب سؤالك واضغط «ابدأ الجلسة المباشرة».</li>
+      <li>يمسح المشاركون رمز QR بجوالاتهم، أو يدخلون الرمز المكوّن من 6 خانات.</li>
+      <li>تظهر الكلمات فوراً، وتكبر الكلمة كلما تكررت.</li>
+    </ol>
+    <h4>للمقدّم / المعلّم</h4>
+    <ul>
+      <li>أبقِ صفحتك مفتوحة طوال الجلسة؛ فجهازك هو الذي يستقبل الإجابات. إن حدّثتها اضغط «استئناف الجلسة».</li>
+      <li>اضغط على أي كلمة في السحابة لإخفائها، ويمكنك إرجاعها من «كلمات مخفية».</li>
+      <li>«إيقاف الاستقبال» يجمّد الإجابات مؤقتاً، و«ملء الشاشة» مناسب لجهاز العرض.</li>
+      <li>«الإضافة اليدوية» للإجابات الشفهية أو للصق قائمة: كل سطر أو فاصلة = إجابة.</li>
+      <li>نزّل النتيجة صورةً PNG أو ملف CSV يُفتح في Excel.</li>
+    </ul>
+    <h4>للمشارك</h4>
+    <ul>
+      <li>امسح رمز QR أو اضغط «انضمام» وأدخل الرمز الظاهر على الشاشة، ثم اكتب إجابتك.</li>
+    </ul>
+    <h4>ملاحظات</h4>
+    <ul>
+      <li>تُدمج الكلمات المتشابهة إملائياً تلقائياً (أ/إ/ا، ة/ه، التشكيل).</li>
+      <li>بعض شبكات المدارس والشركات تمنع الاتصال المباشر؛ عندها استخدم بيانات الجوال.</li>
+      <li>لا تسجيل ولا خادم: الإجابات تُحفظ على جهاز المقدّم فقط.</li>
+    </ul>
   </div>
 
   <!-- ====== الواجهة الرئيسية ====== -->
@@ -210,38 +241,6 @@
     </div>
   </div>
 
-  <!-- ====== نافذة التعليمات ====== -->
-  <div class="kwc-modal" data-js="help" hidden>
-    <div class="kwc-modal-box kwc-help">
-      <button type="button" class="kwc-modal-x" data-js="helpX" aria-label="إغلاق">✕</button>
-      <h3>التعليمات والإرشادات</h3>
-      <h4>كيف تعمل؟</h4>
-      <ol>
-        <li>اكتب سؤالك واضغط «ابدأ الجلسة المباشرة».</li>
-        <li>يمسح المشاركون رمز QR بجوالاتهم، أو يدخلون الرمز المكوّن من 6 خانات.</li>
-        <li>تظهر الكلمات فوراً، وتكبر الكلمة كلما تكررت.</li>
-      </ol>
-      <h4>للمقدّم / المعلّم</h4>
-      <ul>
-        <li>أبقِ صفحتك مفتوحة طوال الجلسة؛ فجهازك هو الذي يستقبل الإجابات. إن حدّثتها اضغط «استئناف الجلسة».</li>
-        <li>اضغط على أي كلمة في السحابة لإخفائها، ويمكنك إرجاعها من «كلمات مخفية».</li>
-        <li>«إيقاف الاستقبال» يجمّد الإجابات مؤقتاً، و«ملء الشاشة» مناسب لجهاز العرض.</li>
-        <li>«الإضافة اليدوية» للإجابات الشفهية أو للصق قائمة: كل سطر أو فاصلة = إجابة.</li>
-        <li>نزّل النتيجة صورةً PNG أو ملف CSV يُفتح في Excel.</li>
-      </ul>
-      <h4>للمشارك</h4>
-      <ul>
-        <li>امسح رمز QR أو اضغط «انضمام» وأدخل الرمز الظاهر على الشاشة، ثم اكتب إجابتك.</li>
-      </ul>
-      <h4>ملاحظات</h4>
-      <ul>
-        <li>تُدمج الكلمات المتشابهة إملائياً تلقائياً (أ/إ/ا، ة/ه، التشكيل).</li>
-        <li>بعض شبكات المدارس والشركات تمنع الاتصال المباشر؛ عندها استخدم بيانات الجوال.</li>
-        <li>لا تسجيل ولا خادم: الإجابات تُحفظ على جهاز المقدّم فقط.</li>
-      </ul>
-    </div>
-  </div>
-
   <div class="kwc-toast" data-js="toast" hidden></div>
   <div class="kwc-credit">أداة مجانية من <a href="https://www.kamirtyai.com" target="_blank" rel="noopener">Kamirty.ai</a></div>
 </div>
@@ -254,7 +253,7 @@
   font-family:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
   background:var(--ink);color:var(--txt);border-radius:18px;padding:22px;
   max-width:1200px;margin:0 auto;line-height:1.7;text-align:right;
-  border:1px solid var(--line);position:relative;overflow:hidden;
+  border:1px solid var(--line);position:relative;
 }
 #kwc *,#kwc *::before,#kwc *::after{box-sizing:border-box}
 #kwc [hidden]{display:none !important}
@@ -332,6 +331,7 @@
 #kwc .kwc-show-join{display:flex;align-items:center;gap:8px;color:var(--sub);font-size:12px;text-align:center}
 #kwc .kwc-show-join b{display:block;color:var(--c1);font-size:18px;letter-spacing:3px}
 #kwc .kwc-mini-qr{display:none;width:84px;background:#fff;padding:4px;border-radius:6px;border:1px solid #e3ddd0}
+#kwc .kwc-qr-msg{color:#333;font-size:12px;padding:20px 4px;margin:0;text-align:center}
 #kwc .kwc-mini-qr svg,#kwc .kwc-qr svg,#kwc .kwc-qr-big svg{display:block;width:100%;height:auto}
 #kwc .kwc-stage{position:relative;width:100%;aspect-ratio:16/9;min-height:300px;overflow:hidden;margin-top:6px}
 #kwc .kwc-word{position:absolute;left:0;top:0;white-space:nowrap;line-height:1;font-weight:700;cursor:pointer;user-select:none;
@@ -404,15 +404,19 @@
 #kwc .kwc-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111114;color:#fff;font-weight:600;padding:10px 20px;border-radius:10px;z-index:2147483647;box-shadow:0 8px 30px rgba(0,0,0,.4);font-size:14px;max-width:90vw;text-align:center}
 #kwc .kwc-credit{text-align:center;font-size:12px;color:var(--mute);margin-top:20px}
 #kwc .kwc-credit a{text-decoration:none}
-#kwc .kwc-help{text-align:right;width:min(640px,100%);max-height:86vh;overflow-y:auto}
-#kwc .kwc-help h3{font-size:20px;margin-bottom:6px}
-#kwc .kwc-help h4{font-size:15px;color:var(--gold);margin:14px 0 4px}
+#kwc .kwc-help{background:var(--ink2);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin:0 0 18px;position:relative}
+#kwc .kwc-help h3{font-size:19px;margin-bottom:4px}
+#kwc .kwc-help h4{font-size:15px;color:var(--gold);margin:12px 0 4px}
 #kwc .kwc-help ol,#kwc .kwc-help ul{margin:0;padding-inline-start:20px;padding-inline-end:0}
 #kwc .kwc-help li{margin:3px 0;font-size:14px;color:var(--txt);list-style-position:outside}
-#kwc .kwc-help .kwc-modal-x{left:10px}
+#kwc .kwc-help-x{position:absolute;top:10px;left:12px;background:none;border:0;color:var(--mute);font-size:18px;cursor:pointer;padding:4px;margin:0}
+#kwc .kwc-help-x:hover{color:var(--txt)}
+#kwc .kwc-boot{display:block;opacity:0;animation:kwcShow .3s 5s forwards;background:#fff4e5;border:1px solid #f0c27a;color:#7a4b00;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:14px}
+html.kwc-js #kwc .kwc-boot{display:none}
 
 @keyframes kwcSpin{to{transform:rotate(360deg)}}
 @keyframes kwcPulse{50%{opacity:.25}}
+@keyframes kwcShow{to{opacity:1}}
 
 @media (max-width:860px){
   #kwc .kwc-present{grid-template-columns:1fr}
@@ -429,23 +433,39 @@
 }
 </style>
 
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script>
 //<![CDATA[
 (function(){
   'use strict';
-  var root = document.getElementById('kwc');
-  if (!root || root.dataset.ready) return;
-  root.dataset.ready = '1';
+  if (window.__kwcLoaded) return;
+  window.__kwcLoaded = true;
+
+  /* ---------- الجذر والعناصر ----------
+     بعض قوالب بلوجر تعيد بناء محتوى التدوينة بعد التحميل (innerHTML) فتضيع المستمعات المربوطة بالعناصر،
+     لذلك نجلب العناصر في كل مرة ونستمع للنقرات على مستوى المستند. */
+  var active = null;
+  function isShown(el){ return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); }
+  function R(){
+    if (active && document.documentElement.contains(active)) return active;
+    var all = document.querySelectorAll('#kwc'), pick = all[0] || null;
+    for (var i=0;i<all.length;i++) if (isShown(all[i])){ pick = all[i]; break; }
+    return (active = pick);
+  }
+  function $(n){
+    var r = R();
+    return (r && r.querySelector('[data-js="'+n+'"]')) || document.createElement('div');
+  }
+  function $$(sel){ var r = R(); return r ? r.querySelectorAll(sel) : []; }
 
   /* ---------- أدوات عامة ---------- */
-  // إن حذف المحرر عنصراً ما، نعيد عنصراً وهمياً بدل أن يتوقف السكربت كله
-  function $(n){ return root.querySelector('[data-js="'+n+'"]') || document.createElement('div'); }
   var PREFIX = 'kamirtywc-v1-';
   var ALPH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   var MAXLEN = 30, MAX_SHOWN = 120;
   var FONT = '"IBM Plex Sans Arabic", Tahoma, "Segoe UI", sans-serif';
+  var LIBS = {
+    Peer:   'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js',
+    qrcode: 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js'
+  };
   var store = {
     get:function(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
     set:function(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
@@ -460,13 +480,29 @@
   function hash(s){ var h=2166136261; for (var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
   function isArabic(s){ return /[؀-ۿ]/.test(s); }
 
+  // تحميل مكتبة خارجية عند الحاجة
+  var libWait = {};
+  function lib(name, cb){
+    if (window[name]) return cb(true);
+    if (libWait[name]) return libWait[name].push(cb);
+    var cbs = libWait[name] = [cb];
+    var done = function(){ delete libWait[name]; cbs.forEach(function(f){ f(!!window[name]); }); };
+    var s = document.createElement('script');
+    s.src = LIBS[name]; s.async = true; s.onload = done; s.onerror = done;
+    (document.head || document.documentElement).appendChild(s);
+  }
+
   var toastTimer;
   function toast(msg){
     var t = $('toast'); t.textContent = msg; t.hidden = false;
-    clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.hidden = true; }, 2600);
+    clearTimeout(toastTimer); toastTimer = setTimeout(function(){ $('toast').hidden = true; }, 2600);
   }
   function show(view){
-    root.querySelectorAll('.kwc-view').forEach(function(v){ v.hidden = v.getAttribute('data-view') !== view; });
+    $$('.kwc-view').forEach(function(v){ v.hidden = v.getAttribute('data-view') !== view; });
+  }
+  function current(){
+    var v = R() && R().querySelector('.kwc-view:not([hidden])');
+    return v ? v.getAttribute('data-view') : '';
   }
   function download(name, blob){
     var a = document.createElement('a');
@@ -583,12 +619,22 @@
   }
 
   /* ---------- رسم السحابة ---------- */
-  var stage = $('stage'), spans = {}, lastLayout = [], renderTimer = null;
+  var spans = {}, spansStage = null, lastLayout = [], renderTimer = null, ro = null;
   function scheduleRender(){ clearTimeout(renderTimer); renderTimer = setTimeout(render, 120); }
   function colorClass(p){ return p.rank === 0 ? 'kwc-c0' : 'kwc-c' + (1 + hash(p.key) % 5); }
 
   function render(){
     if (!S) return;
+    var stage = $('stage');
+    if (stage !== spansStage){
+      // المسرح أُعيد إنشاؤه: نبدأ من جديد ونراقب حجمه
+      spans = {}; spansStage = stage;
+      stage.querySelectorAll('.kwc-word').forEach(function(el){ el.remove(); });
+      if (window.ResizeObserver){
+        if (ro) ro.disconnect();
+        ro = new ResizeObserver(scheduleRender); ro.observe(stage);
+      }
+    }
     var items = aggregate();
     var W = stage.clientWidth, H = stage.clientHeight;
     var lay = computeLayout(items.slice(0, MAX_SHOWN), W, H);
@@ -601,7 +647,7 @@
         el = document.createElement('span');
         el.className = 'kwc-word kwc-new';
         el.setAttribute('dir','auto');
-        el.dataset.key = p.key;
+        el.setAttribute('data-key', p.key);
         stage.appendChild(el);
         spans[p.key] = el;
       }
@@ -637,14 +683,14 @@
     $('stLive').textContent = conns.length;
   }
 
-  stage.addEventListener('click', function(e){
-    var el = e.target.closest('.kwc-word'); if (!el || !S) return;
-    var k = el.dataset.key;
+  function hideWord(el){
+    if (!S) return;
+    var k = el.getAttribute('data-key');
     if (confirm('إخفاء «' + el.textContent + '» من السحابة؟\n(يمكنك إظهارها لاحقاً من قائمة الكلمات المخفية)')){
       if (S.hidden.indexOf(k) < 0) S.hidden.push(k);
       save(); render(); renderHidden();
     }
-  });
+  }
   function renderHidden(){
     var box = $('hiddenList'); box.textContent = '';
     $('hiddenPanel').hidden = !S.hidden.length;
@@ -652,22 +698,12 @@
       var form = k;
       for (var i=0;i<S.entries.length;i++) if (S.entries[i].k === k){ form = S.entries[i].w; break; }
       var b = document.createElement('button'); b.type = 'button';
+      b.setAttribute('data-js','unhide'); b.setAttribute('data-k', k);
       var s = document.createElement('s'); s.textContent = form;
       b.appendChild(s); b.appendChild(document.createTextNode(' ↺'));
       b.title = 'إظهار مرة أخرى';
-      b.onclick = function(){ S.hidden = S.hidden.filter(function(x){ return x !== k; }); save(); render(); renderHidden(); };
       box.appendChild(b);
     });
-  }
-
-  if (window.ResizeObserver){
-    var lastW = 0, lastH = 0;
-    new ResizeObserver(function(){
-      if (stage.clientWidth === lastW && stage.clientHeight === lastH) return;
-      lastW = stage.clientWidth; lastH = stage.clientHeight; scheduleRender();
-    }).observe(stage);
-  } else {
-    window.addEventListener('resize', scheduleRender);
   }
 
   /* ---------- رابط ورمز QR ---------- */
@@ -676,33 +712,39 @@
     u.hash = ''; u.searchParams.delete('wc'); u.searchParams.set('wc', code);
     return u.toString();
   }
-  function qrSvg(text){
-    if (!window.qrcode) return '';
-    var q = window.qrcode(0, 'M'); q.addData(text); q.make();
-    return q.createSvgTag({ cellSize:4, margin:1, scalable:true });
-  }
+  function setQr(html){ ['qr','qrBig','miniQr'].forEach(function(n){ $(n).innerHTML = html; }); }
   function paintJoin(){
-    var url = joinUrl(S.code), svg = qrSvg(url);
+    var url = joinUrl(S.code);
     $('code').textContent = S.code; $('codeBig').textContent = S.code; $('showCode').textContent = S.code;
     $('joinLink').value = url;
-    ['qr','qrBig','miniQr'].forEach(function(n){
-      $(n).innerHTML = svg || '<p style="color:#333;font-size:12px;padding:20px 4px">تعذّر تحميل مولّد QR — استخدم الرابط أو الرمز</p>';
-    });
+    if (!window.qrcode){
+      setQr('<p class="kwc-qr-msg">جارٍ تحميل رمز QR…</p>');
+      lib('qrcode', function(ok){
+        if (ok && S) paintJoin();
+        else setQr('<p class="kwc-qr-msg">تعذّر تحميل رمز QR — استخدم الرابط أو الرمز</p>');
+      });
+      return;
+    }
+    var q = window.qrcode(0, 'M'); q.addData(url); q.make();
+    setQr(q.createSvgTag({ cellSize:4, margin:1, scalable:true }));
   }
 
   /* ---------- شاشة المقدّم ---------- */
   function openPresent(){
     show('present');
     $('showQ').textContent = S.question;
-    $('show').classList.toggle('kwc-dark', !!S.dark);
-    $('themeBtn').textContent = S.dark ? '◐ خلفية فاتحة' : '◑ خلفية داكنة';
+    paintTheme();
     paintOpen();
     paintJoin();
     renderHidden();
-    var go = function(){ render(); };
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else go();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ render(); });
+    render();
     setTimeout(render, 600);
     startHost();
+  }
+  function paintTheme(){
+    $('show').classList.toggle('kwc-dark', !!S.dark);
+    $('themeBtn').textContent = S.dark ? '◐ خلفية فاتحة' : '◑ خلفية داكنة';
   }
   function paintOpen(){
     $('toggleOpen').textContent = S.open ? '⏸ إيقاف الاستقبال' : '▶ استئناف الاستقبال';
@@ -715,7 +757,9 @@
     conns.forEach(function(c){ try{ c.send(stateMsg(c._pid)); }catch(e){} });
   }
 
+  var netState = ['wait','جارٍ التجهيز…'];
   function setNet(state, text){
+    netState = [state, text];
     var n = $('net'); n.className = 'kwc-net kwc-' + state;
     var sp = n.querySelector('span'); if (sp) sp.textContent = text;
   }
@@ -727,12 +771,17 @@
   }
   function retryHost(ms){
     clearTimeout(hostTimer);
-    hostTimer = setTimeout(function(){ if (S && !root.querySelector('[data-view="present"]').hidden) startHost(); }, ms);
+    hostTimer = setTimeout(function(){ if (S && current() === 'present') startHost(); }, ms);
   }
   function startHost(){
     stopHost();
     if (!window.Peer){
-      setNet('off','تعذّر تحميل مكتبة الاتصال — الإضافة اليدوية متاحة');
+      setNet('wait','جارٍ تحميل مكتبة الاتصال…');
+      lib('Peer', function(ok){
+        if (!S || current() !== 'present') return;
+        if (ok) startHost();
+        else { setNet('off','تعذّر تحميل مكتبة الاتصال — الإضافة اليدوية متاحة'); retryHost(8000); }
+      });
       return;
     }
     setNet('wait','جارٍ تجهيز الجلسة…');
@@ -793,52 +842,7 @@
     reply({ ok:true, multi:S.multi });
   }
 
-  /* ---------- أزرار المقدّم ---------- */
-  $('toggleOpen').onclick = function(){
-    S.open = !S.open; save(); paintOpen(); broadcast();
-    toast(S.open ? 'تم استئناف استقبال الإجابات' : 'تم إيقاف استقبال الإجابات');
-  };
-  $('editQ').onclick = function(){
-    var q = prompt('عدّل نص السؤال:', S.question);
-    if (q == null) return;
-    q = q.replace(/\s+/g,' ').trim().slice(0, 140);
-    if (!q) return;
-    S.question = q; save(); $('showQ').textContent = q; broadcast();
-  };
-  $('themeBtn').onclick = function(){
-    S.dark = !S.dark; save();
-    $('show').classList.toggle('kwc-dark', S.dark);
-    this.textContent = S.dark ? '◐ خلفية فاتحة' : '◑ خلفية داكنة';
-  };
-  $('newBtn').onclick = function(){
-    if (S.entries.length && !confirm('ستُحذف السحابة الحالية نهائياً (يمكنك تنزيلها كصورة أو CSV قبل ذلك). متابعة؟')) return;
-    stopHost(); store.del(SKEY); S = null;
-    Object.keys(spans).forEach(function(k){ spans[k].remove(); }); spans = {};
-    openSetup();
-  };
-  $('copyLink').onclick = function(){
-    var inp = $('joinLink');
-    var done = function(){ toast('تم نسخ رابط المشاركة'); };
-    if (navigator.clipboard) navigator.clipboard.writeText(inp.value).then(done, function(){ inp.select(); document.execCommand('copy'); done(); });
-    else { inp.select(); document.execCommand('copy'); done(); }
-  };
-  $('bigQr').onclick = $('qr').onclick = function(){ $('modal').hidden = false; };
-  $('modalX').onclick = function(){ $('modal').hidden = true; };
-  $('helpBtn').onclick = function(){ $('help').hidden = false; };
-  $('helpX').onclick = function(){ $('help').hidden = true; };
-  ['modal','help'].forEach(function(n){
-    $(n).addEventListener('click', function(e){ if (e.target === this) this.hidden = true; });
-  });
-
-  $('manualAdd').onclick = function(){
-    var parts = $('manual').value.split(/[\n,،;؛]+/), n = 0;
-    parts.forEach(function(p){ if (addEntry(p, 'host')) n++; });
-    if (!n) return toast('اكتب كلمة واحدة على الأقل');
-    $('manual').value = ''; save(); render();
-    toast('أُضيفت ' + n + (n === 1 ? ' إجابة' : ' إجابات'));
-  };
-
-  // ملء الشاشة
+  /* ---------- ملء الشاشة والتصدير ---------- */
   function setFs(on){
     var s = $('show');
     s.classList.toggle('kwc-fs', on);
@@ -847,30 +851,17 @@
     if (!on && document.fullscreenElement) document.exitFullscreen().catch(function(){});
     scheduleRender();
   }
-  $('fsBtn').onclick = function(){ setFs(true); };
-  $('fsExit').onclick = function(){ setFs(false); };
-  document.addEventListener('fullscreenchange', function(){
-    if (!document.fullscreenElement && $('show').classList.contains('kwc-fs')) setFs(false);
-  });
-  document.addEventListener('keydown', function(e){
-    if (e.key === 'Escape'){
-      if (!$('help').hidden) $('help').hidden = true;
-      else if (!$('modal').hidden) $('modal').hidden = true;
-      else if ($('show').classList.contains('kwc-fs')) setFs(false);
-    }
-  });
-
-  // تصدير صورة
-  $('pngBtn').onclick = function(){
+  function exportPng(){
     if (!lastLayout.length) return toast('لا توجد كلمات بعد');
+    var stage = $('stage');
     var W = stage.clientWidth, H = stage.clientHeight, k = 2, head = 90, foot = 46;
     var cv = document.createElement('canvas');
     cv.width = W*k; cv.height = (H + head + foot)*k;
     var g = cv.getContext('2d'); g.scale(k, k);
     var cs = getComputedStyle($('show'));
-    var bg = cs.getPropertyValue('--bg').trim() || '#0a0a0c';
-    var fg = cs.getPropertyValue('--fg').trim() || '#ece7da';
-    var sub = cs.getPropertyValue('--sub').trim() || '#8e8879';
+    var bg = cs.getPropertyValue('--bg').trim() || '#ffffff';
+    var fg = cs.getPropertyValue('--fg').trim() || '#111114';
+    var sub = cs.getPropertyValue('--sub').trim() || '#6e6757';
     g.fillStyle = bg; g.fillRect(0, 0, W, H + head + foot);
     g.textAlign = 'center'; g.textBaseline = 'middle';
     g.direction = 'rtl';
@@ -887,44 +878,17 @@
     g.fillStyle = sub; g.font = '400 13px ' + FONT;
     g.fillText('صُنعت بأداة سحابة الكلمات من Kamirty.ai — kamirtyai.com', W/2, head + H + foot/2);
     cv.toBlob(function(b){ download('word-cloud-' + S.code + '.png', b); });
-  };
-  // تصدير CSV
-  $('csvBtn').onclick = function(){
+  }
+  function exportCsv(){
     var items = aggregate();
     if (!items.length) return toast('لا توجد كلمات بعد');
     var q = function(s){ return '"' + String(s).replace(/"/g,'""') + '"'; };
     var rows = ['الكلمة,العدد'].concat(items.map(function(m){ return q(m.text) + ',' + m.count; }));
     rows.push('', q('السؤال: ' + S.question));
     download('word-cloud-' + S.code + '.csv', new Blob(['﻿' + rows.join('\r\n')], { type:'text/csv;charset=utf-8' }));
-  };
-
-  /* ---------- الإعداد ---------- */
-  function openSetup(){
-    show('setup');
-    setTimeout(function(){ $('setupQ').focus(); }, 50);
   }
-  $('goSetup').onclick = openSetup;
-  $('backHome').onclick = openHome;
-  $('chips').addEventListener('click', function(e){
-    if (e.target.tagName === 'BUTTON'){ $('setupQ').value = e.target.textContent; $('setupQ').focus(); }
-  });
-  $('startBtn').onclick = function(){
-    var q = $('setupQ').value.replace(/\s+/g,' ').trim();
-    if (!q){ $('setupQ').focus(); return toast('اكتب السؤال أولاً'); }
-    newSession(q, +$('setupMax').value, $('setupMulti').checked);
-    openPresent();
-  };
-  $('demoBtn').onclick = function(){
-    newSession('ما أول كلمة تخطر ببالك عند سماع «الذكاء الاصطناعي»؟', 3, true);
-    var demo = ('مستقبل مستقبل مستقبل مستقبل مستقبل مستقبل إبداع إبداع إبداع إبداع إبداع تقنية تقنية تقنية تقنية ' +
-      'روبوت روبوت روبوت سرعة سرعة سرعة فرص فرص فرص خوف خوف تعلم تعلم تعلم تعلم بيانات بيانات ذكاء ذكاء ' +
-      'ابتكار ابتكار وظائف وظائف مساعد مساعد ChatGPT ChatGPT دقة أتمتة أخلاقيات خيال تطور تحدي فضول ' +
-      'إنتاجية مستقبل تطور برمجة برمجة لغة ترجمة تعليم تعليم تعليم ثورة ثورة').split(' ');
-    demo.forEach(function(w, i){ addEntry(w, 'demo' + (i % 23)); });
-    save(); openPresent();
-  };
 
-  /* ---------- الرئيسية ---------- */
+  /* ---------- الرئيسية والإعداد ---------- */
   function openHome(){
     show('home');
     var saved = store.get(SKEY);
@@ -932,19 +896,11 @@
     $('resume').hidden = !ok;
     if (ok) $('resumeQ').textContent = '«' + saved.question + '» — ' + saved.entries.length + ' إجابة';
   }
-  $('resumeBtn').onclick = function(){
-    S = store.get(SKEY);
-    if (!S || !S.code) return openHome();
-    S.hidden = S.hidden || []; S.entries = S.entries || [];
-    openPresent();
-  };
+  function openSetup(){
+    show('setup');
+    setTimeout(function(){ $('setupQ').focus(); }, 50);
+  }
   function readCode(v){ return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g,''); }
-  $('homeJoin').onclick = function(){
-    var c = readCode($('homeCode').value);
-    if (c.length !== 6) return toast('الرمز يتكوّن من 6 خانات');
-    startJoin(c);
-  };
-  $('homeCode').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('homeJoin').click(); });
 
   /* ---------- المشارك ---------- */
   var PID = store.get('kwc_pid');
@@ -952,7 +908,11 @@
   var J = { code:'', peer:null, conn:null, state:null, timer:null, live:false };
 
   function jShow(name){
-    root.querySelectorAll('.kwc-jstate').forEach(function(s){ s.hidden = s.getAttribute('data-jstate') !== name; });
+    $$('.kwc-jstate').forEach(function(s){ s.hidden = s.getAttribute('data-jstate') !== name; });
+  }
+  function jCurrent(){
+    var s = R() && R().querySelector('.kwc-jstate:not([hidden])');
+    return s ? s.getAttribute('data-jstate') : '';
   }
   function jFail(msg){
     clearTimeout(J.timer);
@@ -963,8 +923,15 @@
   function startJoin(code){
     J.code = code; J.live = false; J.state = null;
     show('join'); jShow('connecting'); $('jCode').textContent = code;
-    if (J.peer){ try{ J.peer.destroy(); }catch(e){} }
-    if (!window.Peer) return jFail('تعذّر تحميل مكتبة الاتصال. تحقّق من الإنترنت ثم أعد المحاولة.');
+    if (J.peer){ try{ J.peer.destroy(); }catch(e){} J.peer = null; }
+    if (!window.Peer){
+      lib('Peer', function(ok){
+        if (J.code !== code || current() !== 'join') return;
+        if (ok) startJoin(code);
+        else jFail('تعذّر تحميل مكتبة الاتصال. تحقّق من الإنترنت ثم أعد المحاولة.');
+      });
+      return;
+    }
     var p = J.peer = new window.Peer({ debug:0 });
     clearTimeout(J.timer);
     J.timer = setTimeout(function(){ if (!J.live) jFail('استغرق الاتصال وقتاً طويلاً. تأكد من الرمز ومن أن صفحة المقدّم مفتوحة، ثم أعد المحاولة.'); }, 20000);
@@ -989,10 +956,10 @@
       var inp = document.createElement('input');
       inp.type = 'text'; inp.className = 'kwc-input'; inp.maxLength = MAXLEN; inp.dir = 'auto';
       inp.placeholder = n === 1 ? 'اكتب إجابتك هنا' : 'الإجابة ' + (i+1) + (i ? ' (اختياري)' : '');
-      inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') $('jSend').click(); });
       box.appendChild(inp);
     }
   }
+  function focusFirst(){ var f = $('jInputs').querySelector('input'); if (f) f.focus(); }
   function onJoinData(d){
     if (!d || typeof d !== 'object') return;
     if (d.t === 'state'){
@@ -1000,13 +967,11 @@
       J.live = true; clearTimeout(J.timer); J.state = d;
       $('jQ').textContent = d.q;
       buildInputs(Math.max(1, Math.min(5, d.max|0)));
-      var cur = root.querySelector('.kwc-jstate:not([hidden])');
-      var curName = cur && cur.getAttribute('data-jstate');
+      var cur = jCurrent();
       if (d.done) jShow('thanks');
       else if (!d.open) jShow('paused');
-      else if (first || curName === 'paused' || curName === 'connecting'){
-        jShow('form'); $('jMsg').textContent = '';
-        var f = $('jInputs').querySelector('input'); if (f) f.focus();
+      else if (first || cur === 'paused' || cur === 'connecting'){
+        jShow('form'); $('jMsg').textContent = ''; focusFirst();
       }
       $('jAgain').hidden = !d.multi;
     } else if (d.t === 'ack'){
@@ -1022,27 +987,176 @@
       }
     }
   }
-  $('jSend').onclick = function(){
-    var words = [];
-    $('jInputs').querySelectorAll('input').forEach(function(i){ var c = clean(i.value); if (c) words.push(c); });
-    if (!words.length){ $('jMsg').textContent = 'اكتب كلمة واحدة على الأقل.'; return; }
-    if (!J.conn || !J.conn.open) return jFail('انقطع الاتصال بجهاز المقدّم.');
-    $('jMsg').textContent = ''; this.disabled = true;
-    var btn = this; setTimeout(function(){ btn.disabled = false; }, 5000);
-    J.conn.send({ t:'words', words:words });
+
+  /* ---------- الأوامر (تُنفَّذ حسب data-js للعنصر المضغوط) ---------- */
+  var A = {
+    helpBtn: function(){ var p = $('helpPanel'); p.hidden = !p.hidden; },
+    helpX: function(){ $('helpPanel').hidden = true; },
+
+    goSetup: openSetup,
+    backHome: openHome,
+    chips: function(e){
+      var b = e.target.closest('button');
+      if (b){ $('setupQ').value = b.textContent; $('setupQ').focus(); }
+    },
+    startBtn: function(){
+      var q = $('setupQ').value.replace(/\s+/g,' ').trim();
+      if (!q){ $('setupQ').focus(); return toast('اكتب السؤال أولاً'); }
+      newSession(q, +$('setupMax').value || 3, !!$('setupMulti').checked);
+      openPresent();
+    },
+    demoBtn: function(){
+      newSession('ما أول كلمة تخطر ببالك عند سماع «الذكاء الاصطناعي»؟', 3, true);
+      var demo = ('مستقبل مستقبل مستقبل مستقبل مستقبل مستقبل إبداع إبداع إبداع إبداع إبداع تقنية تقنية تقنية تقنية ' +
+        'روبوت روبوت روبوت سرعة سرعة سرعة فرص فرص فرص خوف خوف تعلم تعلم تعلم تعلم بيانات بيانات ذكاء ذكاء ' +
+        'ابتكار ابتكار وظائف وظائف مساعد مساعد ChatGPT ChatGPT دقة أتمتة أخلاقيات خيال تطور تحدي فضول ' +
+        'إنتاجية مستقبل تطور برمجة برمجة لغة ترجمة تعليم تعليم تعليم ثورة ثورة').split(' ');
+      demo.forEach(function(w, i){ addEntry(w, 'demo' + (i % 23)); });
+      save(); openPresent();
+    },
+    resumeBtn: function(){
+      S = store.get(SKEY);
+      if (!S || !S.code) return openHome();
+      S.hidden = S.hidden || []; S.entries = S.entries || [];
+      openPresent();
+    },
+    homeJoin: function(){
+      var c = readCode($('homeCode').value);
+      if (c.length !== 6) return toast('الرمز يتكوّن من 6 خانات');
+      startJoin(c);
+    },
+
+    toggleOpen: function(){
+      S.open = !S.open; save(); paintOpen(); broadcast();
+      toast(S.open ? 'تم استئناف استقبال الإجابات' : 'تم إيقاف استقبال الإجابات');
+    },
+    editQ: function(){
+      var q = prompt('عدّل نص السؤال:', S.question);
+      if (q == null) return;
+      q = q.replace(/\s+/g,' ').trim().slice(0, 140);
+      if (!q) return;
+      S.question = q; save(); $('showQ').textContent = q; broadcast();
+    },
+    themeBtn: function(){ S.dark = !S.dark; save(); paintTheme(); },
+    newBtn: function(){
+      if (S.entries.length && !confirm('ستُحذف السحابة الحالية نهائياً (يمكنك تنزيلها كصورة أو CSV قبل ذلك). متابعة؟')) return;
+      stopHost(); store.del(SKEY); S = null;
+      Object.keys(spans).forEach(function(k){ spans[k].remove(); }); spans = {};
+      openSetup();
+    },
+    copyLink: function(){
+      var inp = $('joinLink');
+      var done = function(){ toast('تم نسخ رابط المشاركة'); };
+      var legacy = function(){ inp.select(); try{ document.execCommand('copy'); }catch(e){} done(); };
+      if (navigator.clipboard) navigator.clipboard.writeText(inp.value).then(done, legacy); else legacy();
+    },
+    bigQr: function(){ $('modal').hidden = false; },
+    qr: function(){ $('modal').hidden = false; },
+    modalX: function(){ $('modal').hidden = true; },
+    manualAdd: function(){
+      var parts = $('manual').value.split(/[\n,،;؛]+/), n = 0;
+      parts.forEach(function(p){ if (addEntry(p, 'host')) n++; });
+      if (!n) return toast('اكتب كلمة واحدة على الأقل');
+      $('manual').value = ''; save(); render();
+      toast('أُضيفت ' + n + (n === 1 ? ' إجابة' : ' إجابات'));
+    },
+    unhide: function(e, el){
+      var k = el.getAttribute('data-k');
+      S.hidden = S.hidden.filter(function(x){ return x !== k; });
+      save(); render(); renderHidden();
+    },
+    fsBtn: function(){ setFs(true); },
+    fsExit: function(){ setFs(false); },
+    pngBtn: exportPng,
+    csvBtn: exportCsv,
+
+    jSend: function(){
+      var words = [];
+      $('jInputs').querySelectorAll('input').forEach(function(i){ var c = clean(i.value); if (c) words.push(c); });
+      if (!words.length){ $('jMsg').textContent = 'اكتب كلمة واحدة على الأقل.'; return; }
+      if (!J.conn || !J.conn.open) return jFail('انقطع الاتصال بجهاز المقدّم.');
+      $('jMsg').textContent = ''; $('jSend').disabled = true;
+      setTimeout(function(){ $('jSend').disabled = false; }, 5000);
+      J.conn.send({ t:'words', words:words });
+    },
+    jAgain: function(){ jShow('form'); focusFirst(); },
+    jRetry: function(){ startJoin(J.code); },
+    jHome: function(){
+      if (J.peer){ try{ J.peer.destroy(); }catch(e){} J.peer = null; }
+      J.code = '';
+      try{ var u = new URL(location.href); u.searchParams.delete('wc'); history.replaceState(null, '', u.toString()); }catch(e){}
+      openHome(); $('homeCode').focus();
+    }
   };
-  $('jAgain').onclick = function(){ jShow('form'); var f = $('jInputs').querySelector('input'); if (f) f.focus(); };
-  $('jRetry').onclick = function(){ startJoin(J.code); };
-  $('jHome').onclick = function(){
-    if (J.peer){ try{ J.peer.destroy(); }catch(e){} J.peer = null; }
-    try{ var u = new URL(location.href); u.searchParams.delete('wc'); history.replaceState(null, '', u.toString()); }catch(e){}
-    openHome(); $('homeCode').focus();
-  };
+  // أوامر شاشة المقدّم تحتاج جلسة قائمة
+  var NEEDS_S = ['toggleOpen','editQ','themeBtn','newBtn','manualAdd','unhide','pngBtn','csvBtn'];
+
+  function run(name, e, el){
+    var f = A[name];
+    if (!f) return false;
+    if (NEEDS_S.indexOf(name) >= 0 && !S) return true;
+    try{ f(e, el); }
+    catch(err){ toast('حدث خطأ: ' + (err && err.message || err)); if (window.console) console.error(err); }
+    return true;
+  }
+
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var r = t.closest('#kwc');
+    if (!r) return;
+    active = r;
+    var word = t.closest('.kwc-word');
+    if (word) return hideWord(word);
+    if (t.classList.contains('kwc-modal')){ t.hidden = true; return; }
+    var el = t.closest('[data-js]');
+    if (el && run(el.getAttribute('data-js'), e, el) && el.tagName === 'A') e.preventDefault();
+  });
+
+  document.addEventListener('keydown', function(e){
+    var t = e.target;
+    if (e.key === 'Enter' && t && t.closest && t.closest('#kwc')){
+      active = t.closest('#kwc');
+      if (t.getAttribute('data-js') === 'homeCode'){ e.preventDefault(); run('homeJoin', e, t); }
+      else if (t.closest('[data-js="jInputs"]')){ e.preventDefault(); run('jSend', e, t); }
+      else if (t.getAttribute('data-js') === 'setupQ'){ e.preventDefault(); run('startBtn', e, t); }
+    }
+    if (e.key === 'Escape'){
+      if (!$('modal').hidden) $('modal').hidden = true;
+      else if ($('show').classList.contains('kwc-fs')) setFs(false);
+    }
+  });
+
+  document.addEventListener('fullscreenchange', function(){
+    if (!document.fullscreenElement && $('show').classList.contains('kwc-fs')) setFs(false);
+  });
+  window.addEventListener('resize', scheduleRender);
 
   /* ---------- البدء ---------- */
-  var urlCode = readCode(new URLSearchParams(location.search).get('wc'));
-  if (urlCode.length === 6) startJoin(urlCode);
-  else openHome();
+  function boot(){
+    if (!R()) return;
+    document.documentElement.classList.add('kwc-js');
+    lib('qrcode', function(){});
+    lib('Peer', function(){});
+    var urlCode = readCode(new URLSearchParams(location.search).get('wc'));
+    if (urlCode.length === 6) startJoin(urlCode);
+    else openHome();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+
+  // إن أعاد القالب بناء المحتوى بعد البدء، نعيد رسم ما يلزم
+  var lastRoot = null;
+  setInterval(function(){
+    var r = R();
+    if (!r || r === lastRoot) return;
+    var first = !lastRoot;
+    lastRoot = r;
+    if (first) return;
+    if (S && current() === 'present'){
+      paintJoin(); renderHidden(); setNet(netState[0], netState[1]); render();
+    }
+  }, 1000);
 })();
 //]]>
 </script>
