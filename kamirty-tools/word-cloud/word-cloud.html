@@ -1,7 +1,7 @@
 <!-- ===================================================================
   Kamirty.ai — سحابة الكلمات التفاعلية (Live Word Cloud)
   الصق هذا الكود كاملاً في تدوينة/صفحة بلوجر عبر «عرض HTML».
-  يعمل دون خادم: المشاركون يتصلون بجهاز المقدّم مباشرة (WebRTC عبر PeerJS).
+  يعمل دون خادم: المشاركون يتصلون بجهاز صاحب الجلسة مباشرة (WebRTC عبر PeerJS).
 =================================================================== -->
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -32,9 +32,11 @@
       <li>يمسح المشاركون رمز QR بجوالاتهم، أو يدخلون الرمز المكوّن من 6 خانات.</li>
       <li>تظهر الكلمات فوراً، وتكبر الكلمة كلما تكررت.</li>
     </ol>
-    <h4>للمقدّم / المعلّم</h4>
+    <h4>لصاحب الجلسة</h4>
     <ul>
-      <li>أبقِ صفحتك مفتوحة طوال الجلسة؛ فجهازك هو الذي يستقبل الإجابات. إن حدّثتها اضغط «استئناف الجلسة».</li>
+      <li>أبقِ صفحتك مفتوحة طوال الجلسة؛ فجهازك هو الذي يستقبل الإجابات. إن أغلقتها أو حدّثتها اضغط «استئناف الجلسة»، فالرمز والرابط لا يتغيّران.</li>
+      <li>اختر مدة الجلسة عند إنشائها (ساعة، يوم، أسبوع، أو بلا حد)، فيُغلق الاستقبال تلقائياً عند انتهائها، ويمكنك تمديدها متى شئت من «تغيير مدة الجلسة».</li>
+      <li>للجلسات الطويلة (يوم أو أسبوع): تصل الإجابات فقط وصفحتك مفتوحة، فاتركها مفتوحة على جهاز متصل بالإنترنت.</li>
       <li>اضغط على أي كلمة في السحابة لإخفائها، ويمكنك إرجاعها من «كلمات مخفية».</li>
       <li>«إيقاف الاستقبال» يجمّد الإجابات مؤقتاً، و«ملء الشاشة» مناسب لجهاز العرض.</li>
       <li>«الإضافة اليدوية» للإجابات الشفهية أو للصق قائمة: كل سطر أو فاصلة = إجابة.</li>
@@ -48,7 +50,7 @@
     <ul>
       <li>تُدمج الكلمات المتشابهة إملائياً تلقائياً (أ/إ/ا، ة/ه، التشكيل).</li>
       <li>بعض شبكات المدارس والشركات تمنع الاتصال المباشر؛ عندها استخدم بيانات الجوال.</li>
-      <li>لا تسجيل ولا خادم: الإجابات تُحفظ على جهاز المقدّم فقط.</li>
+      <li>لا تسجيل ولا خادم: الإجابات تُحفظ على جهاز صاحب الجلسة فقط.</li>
     </ul>
   </div>
 
@@ -56,7 +58,7 @@
   <section class="kwc-view" data-view="home">
     <div class="kwc-hero">
       <h2>اجمع آراء جمهورك… وشاهدها تتحوّل إلى سحابة كلمات <span>مباشرة</span></h2>
-      <p>مجانية، بلا تسجيل، للفصل والورش والاجتماعات.</p>
+      <p>مجانية وبلا تسجيل، لأي مجموعة: فصل، فريق عمل، ورشة، عائلة أو أصدقاء.</p>
     </div>
 
     <div class="kwc-resume" data-js="resume" hidden>
@@ -70,14 +72,14 @@
     <div class="kwc-cards">
       <div class="kwc-card">
         <div class="kwc-card-ico">◆</div>
-        <h3>أنا المقدّم / المعلّم</h3>
-        <p>أنشئ سؤالاً واعرض السحابة على الشاشة أو جهاز العرض.</p>
+        <h3>أنشئ جلسة</h3>
+        <p>اطرح سؤالك على أي مجموعة، وشاهد إجاباتهم تتجمّع في سحابة مباشرة.</p>
         <button type="button" class="kwc-btn kwc-btn-gold" data-js="goSetup">إنشاء سحابة جديدة</button>
       </div>
       <div class="kwc-card">
         <div class="kwc-card-ico">◇</div>
-        <h3>أنا مشارك</h3>
-        <p>أدخل رمز الجلسة الظاهر على الشاشة.</p>
+        <h3>انضم إلى جلسة</h3>
+        <p>أدخل الرمز الذي شاركه معك صاحب الجلسة.</p>
         <div class="kwc-row">
           <input type="text" class="kwc-input kwc-code-input" data-js="homeCode" maxlength="8" placeholder="رمز الجلسة" dir="ltr" autocomplete="off" autocapitalize="characters">
           <button type="button" class="kwc-btn" data-js="homeJoin">انضمام</button>
@@ -93,14 +95,15 @@
     <h3 class="kwc-title">إعداد السؤال</h3>
 
     <label class="kwc-label" for="kwc-q">السؤال الذي سيُعرض على المشاركين</label>
-    <input id="kwc-q" type="text" class="kwc-input" data-js="setupQ" maxlength="140" placeholder="مثال: صِف درس اليوم بكلمة واحدة">
+    <input id="kwc-q" type="text" class="kwc-input" data-js="setupQ" maxlength="140" placeholder="مثال: صِف يومك بكلمة واحدة">
 
     <div class="kwc-chips" data-js="chips">
-      <button type="button">صِف درس اليوم بكلمة واحدة</button>
+      <button type="button">صِف يومك بكلمة واحدة</button>
       <button type="button">ما أول كلمة تخطر ببالك عند سماع «الذكاء الاصطناعي»؟</button>
-      <button type="button">ماذا تتوقع أن تتعلم في هذه الورشة؟</button>
-      <button type="button">ما أصعب شيء في المذاكرة؟</button>
       <button type="button">كلمة تصف فريقنا</button>
+      <button type="button">ماذا تتوقع من هذا اللقاء؟</button>
+      <button type="button">صِف درس اليوم بكلمة واحدة</button>
+      <button type="button">أين نذهب في رحلتنا القادمة؟</button>
     </div>
 
     <div class="kwc-grid2">
@@ -111,6 +114,15 @@
           <option value="2">إجابتان</option>
           <option value="3" selected>3 إجابات</option>
           <option value="5">5 إجابات</option>
+        </select>
+      </div>
+      <div>
+        <label class="kwc-label" for="kwc-dur">مدة الجلسة</label>
+        <select id="kwc-dur" class="kwc-input" data-js="setupDur">
+          <option value="h1">ساعة واحدة</option>
+          <option value="d1" selected>يوم واحد</option>
+          <option value="w1">أسبوع</option>
+          <option value="none">بلا حد (حتى أوقفها)</option>
         </select>
       </div>
       <label class="kwc-check">
@@ -125,7 +137,7 @@
     </div>
   </section>
 
-  <!-- ====== شاشة المقدّم ====== -->
+  <!-- ====== شاشة صاحب الجلسة ====== -->
   <section class="kwc-view" data-view="present" hidden>
     <div class="kwc-present">
       <div class="kwc-main">
@@ -147,6 +159,7 @@
             <span><b data-js="stResp">0</b> إجابة</span>
             <span><b data-js="stPeople">0</b> مشارك</span>
             <span><b data-js="stUnique">0</b> كلمة مختلفة</span>
+            <span data-js="leftTag" hidden>⏱ متبقٍ <b data-js="stLeft"></b></span>
             <span class="kwc-paused-tag" data-js="pausedTag" hidden>⏸ الاستقبال متوقف</span>
             <button type="button" class="kwc-fs-exit" data-js="fsExit">إغلاق ملء الشاشة ✕</button>
           </div>
@@ -173,7 +186,14 @@
             <button type="button" class="kwc-btn" data-js="copyLink">نسخ</button>
           </div>
           <button type="button" class="kwc-btn kwc-btn-block" data-js="bigQr">تكبير رمز QR للعرض</button>
-          <p class="kwc-small">متصلون الآن: <b data-js="stLive">0</b></p>
+          <p class="kwc-small">متصلون الآن: <b data-js="stLive">0</b> · المدة المتبقية: <b data-js="sideLeft">—</b></p>
+          <select class="kwc-input kwc-dur-sel" data-js="extendSel" aria-label="تغيير مدة الجلسة">
+            <option value="">⏱ تغيير مدة الجلسة…</option>
+            <option value="h1">ساعة من الآن</option>
+            <option value="d1">يوم من الآن</option>
+            <option value="w1">أسبوع من الآن</option>
+            <option value="none">بلا حد</option>
+          </select>
         </div>
 
         <div class="kwc-panel">
@@ -199,7 +219,7 @@
       </div>
 
       <div class="kwc-jstate" data-jstate="form" hidden>
-        <small class="kwc-jlabel">سؤال المقدّم</small>
+        <small class="kwc-jlabel">السؤال</small>
         <h3 class="kwc-jq" data-js="jQ"></h3>
         <div class="kwc-jinputs" data-js="jInputs"></div>
         <button type="button" class="kwc-btn kwc-btn-gold kwc-btn-lg kwc-btn-block" data-js="jSend">إرسال</button>
@@ -209,7 +229,13 @@
       <div class="kwc-jstate" data-jstate="paused" hidden>
         <div class="kwc-big-ico">⏸</div>
         <h3>الاستقبال متوقف مؤقتاً</h3>
-        <p>ستظهر خانة الإجابة تلقائياً عندما يعيد المقدّم فتح الاستقبال.</p>
+        <p>ستظهر خانة الإجابة تلقائياً عندما يعيد صاحب الجلسة فتح الاستقبال.</p>
+      </div>
+
+      <div class="kwc-jstate" data-jstate="ended" hidden>
+        <div class="kwc-big-ico">⏱</div>
+        <h3>انتهت مدة الجلسة</h3>
+        <p>لم يعد استقبال الإجابات متاحاً. شكراً لاهتمامك!</p>
       </div>
 
       <div class="kwc-jstate" data-jstate="thanks" hidden>
@@ -317,7 +343,7 @@
 #kwc .kwc-check input{accent-color:var(--gold);width:18px;height:18px;margin:0}
 #kwc .kwc-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
 
-/* شاشة المقدّم */
+/* شاشة صاحب الجلسة */
 #kwc .kwc-present{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:16px}
 #kwc .kwc-show{--bg:#ffffff;--fg:#111114;--sub:#6e6757;
   --c0:#9a6f17;--c1:#111114;--c2:#b8862e;--c3:#3a3a40;--c4:#7d5a14;--c5:#5a5650;
@@ -367,6 +393,7 @@
 #kwc .kwc-qr{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;width:180px;max-width:100%;margin:10px auto;cursor:zoom-in}
 #kwc .kwc-code{font-size:28px;font-weight:700;letter-spacing:6px;color:var(--gold);margin-bottom:10px}
 #kwc .kwc-link-input{font-size:12px;padding:8px 10px}
+#kwc .kwc-dur-sel{font-size:13px;padding:7px 10px;margin-top:8px;cursor:pointer}
 #kwc .kwc-net{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mute);background:var(--ink);border:1px solid var(--line);border-radius:99px;padding:3px 10px}
 #kwc .kwc-net i{width:8px;height:8px;border-radius:50%;background:var(--gold);display:inline-block}
 #kwc .kwc-net.kwc-on i{background:var(--ok);box-shadow:0 0 0 3px rgba(95,191,138,.2)}
@@ -527,16 +554,27 @@ html.kwc-js #kwc .kwc-boot{display:none}
       .replace(EDGE,'').replace(/\s+/g,' ').trim();
   }
 
-  /* ---------- حالة المقدّم ---------- */
+  /* ---------- حالة صاحب الجلسة ---------- */
   var SKEY = 'kwc_session_v1';
-  var S = null;           // {code,question,max,multi,open,dark,entries:[{w,k,p,t}],hidden:[]}
+  var S = null;           // {code,question,max,multi,open,dark,expires,entries:[{w,k,p,t}],hidden:[]}
+  var DUR = { h1:3600000, d1:86400000, w1:604800000, none:0 };
   var conns = [];
   var peer = null, hostRetry = 0, hostTimer = null;
 
   function save(){ if (S) store.set(SKEY, S); }
-  function newSession(q, max, multi){
-    S = { code:randCode(6), question:q, max:max, multi:multi, open:true, dark:false, entries:[], hidden:[] };
+  function newSession(q, max, multi, dur){
+    S = { code:randCode(6), question:q, max:max, multi:multi, open:true, dark:false,
+          expires: dur ? Date.now() + dur : 0, entries:[], hidden:[] };
     save();
+  }
+  // expires = 0 تعني جلسة بلا حد
+  function expired(s){ s = s || S; return !!(s && s.expires && Date.now() >= s.expires); }
+  function accepting(){ return S.open && !expired(); }
+  function fmtLeft(ms){
+    var t = Math.max(0, Math.ceil(ms/1000)), d = Math.floor(t/86400), h = Math.floor(t%86400/3600), m = Math.floor(t%3600/60), x = t%60;
+    var pad = function(n){ return (n < 10 ? '0' : '') + n; };
+    if (d) return (d === 1 ? 'يوم' : d === 2 ? 'يومان' : d + ' أيام') + (h ? ' و' + h + ' س' : '');
+    return (h ? h + ':' : '') + pad(m) + ':' + pad(x);
   }
   function hasSubmitted(pid){
     for (var i=0;i<S.entries.length;i++) if (S.entries[i].p === pid) return true;
@@ -729,7 +767,7 @@ html.kwc-js #kwc .kwc-boot{display:none}
     setQr(q.createSvgTag({ cellSize:4, margin:1, scalable:true }));
   }
 
-  /* ---------- شاشة المقدّم ---------- */
+  /* ---------- شاشة صاحب الجلسة ---------- */
   function openPresent(){
     show('present');
     $('showQ').textContent = S.question;
@@ -747,11 +785,17 @@ html.kwc-js #kwc .kwc-boot{display:none}
     $('themeBtn').textContent = S.dark ? '◐ خلفية فاتحة' : '◑ خلفية داكنة';
   }
   function paintOpen(){
-    $('toggleOpen').textContent = S.open ? '⏸ إيقاف الاستقبال' : '▶ استئناف الاستقبال';
-    $('pausedTag').hidden = S.open;
+    var ex = expired();
+    $('toggleOpen').textContent = S.open && !ex ? '⏸ إيقاف الاستقبال' : '▶ استئناف الاستقبال';
+    $('pausedTag').hidden = accepting();
+    $('pausedTag').textContent = ex ? '⏱ انتهت مدة الجلسة' : '⏸ الاستقبال متوقف';
+    $('leftTag').hidden = !S.expires || ex;
+    var left = S.expires ? (ex ? 'انتهت' : fmtLeft(S.expires - Date.now())) : 'بلا حد';
+    $('stLeft').textContent = left;
+    $('sideLeft').textContent = left;
   }
   function stateMsg(pid){
-    return { t:'state', q:S.question, max:S.max, open:S.open, multi:S.multi, done:!S.multi && hasSubmitted(pid) };
+    return { t:'state', q:S.question, max:S.max, open:accepting(), expired:expired(), multi:S.multi, done:!S.multi && hasSubmitted(pid) };
   }
   function broadcast(){
     conns.forEach(function(c){ try{ c.send(stateMsg(c._pid)); }catch(e){} });
@@ -791,7 +835,7 @@ html.kwc-js #kwc .kwc-boot{display:none}
       hostRetry = 0; setNet('on','مباشر — بانتظار المشاركين');
     });
     me.on('connection', function(c){
-      c.on('open', function(){ conns.push(c); updStats(); });
+      if (c.open) track(c); else c.on('open', function(){ track(c); });
       c.on('data', function(d){ onHostData(c, d); });
       c.on('close', function(){ conns = conns.filter(function(x){ return x !== c; }); updStats(); });
       c.on('error', function(){});
@@ -809,7 +853,7 @@ html.kwc-js #kwc .kwc-boot{display:none}
         if (hostRetry++ < 8){ setNet('wait','استعادة الجلسة… لحظات'); retryHost(3000); }
         else setNet('off','رمز الجلسة مشغول في نافذة أخرى. أغلقها أو أنشئ جلسة جديدة');
       } else if (type === 'peer-unavailable'){
-        /* لا يخص المقدّم */
+        /* لا يخص صاحب الجلسة */
       } else if (type === 'browser-incompatible'){
         setNet('off','المتصفح لا يدعم الاتصال المباشر — الإضافة اليدوية متاحة');
       } else {
@@ -819,15 +863,18 @@ html.kwc-js #kwc .kwc-boot{display:none}
     });
   }
 
+  function track(c){ if (conns.indexOf(c) < 0){ conns.push(c); updStats(); } }
   function onHostData(c, d){
     if (!d || typeof d !== 'object' || !S) return;
     if (d.t === 'hello'){
       c._pid = String(d.pid || c.peer).slice(0, 40);
+      track(c);
       try{ c.send(stateMsg(c._pid)); }catch(e){}
       return;
     }
     if (d.t !== 'words') return;
     var pid = c._pid || c.peer, reply = function(o){ o.t = 'ack'; try{ c.send(o); }catch(e){} };
+    if (expired()) return reply({ ok:false, why:'expired' });
     if (!S.open) return reply({ ok:false, why:'closed' });
     if (!S.multi && hasSubmitted(pid)) return reply({ ok:false, why:'done' });
     var now = Date.now();
@@ -894,7 +941,8 @@ html.kwc-js #kwc .kwc-boot{display:none}
     var saved = store.get(SKEY);
     var ok = saved && saved.code && Array.isArray(saved.entries);
     $('resume').hidden = !ok;
-    if (ok) $('resumeQ').textContent = '«' + saved.question + '» — ' + saved.entries.length + ' إجابة';
+    if (ok) $('resumeQ').textContent = '«' + saved.question + '» — ' + saved.entries.length + ' إجابة' +
+      (expired(saved) ? ' — انتهت مدتها' : saved.expires ? ' — متبقٍ ' + fmtLeft(saved.expires - Date.now()) : '');
   }
   function openSetup(){
     show('setup');
@@ -934,17 +982,17 @@ html.kwc-js #kwc .kwc-boot{display:none}
     }
     var p = J.peer = new window.Peer({ debug:0 });
     clearTimeout(J.timer);
-    J.timer = setTimeout(function(){ if (!J.live) jFail('استغرق الاتصال وقتاً طويلاً. تأكد من الرمز ومن أن صفحة المقدّم مفتوحة، ثم أعد المحاولة.'); }, 20000);
+    J.timer = setTimeout(function(){ if (!J.live) jFail('استغرق الاتصال وقتاً طويلاً. تأكد من الرمز ومن أن صفحة صاحب الجلسة مفتوحة، ثم أعد المحاولة.'); }, 20000);
     p.on('open', function(){
       var c = J.conn = p.connect(PREFIX + code, { reliable:true });
       c.on('open', function(){ c.send({ t:'hello', pid:PID }); });
       c.on('data', onJoinData);
-      c.on('close', function(){ if (J.peer === p) jFail('انتهت الجلسة أو انقطع الاتصال بجهاز المقدّم.'); });
+      c.on('close', function(){ if (J.peer === p) jFail('انتهت الجلسة أو انقطع الاتصال بجهاز صاحب الجلسة.'); });
       c.on('error', function(){});
     });
     p.on('error', function(err){
       if (J.peer !== p) return;
-      if (err && err.type === 'peer-unavailable') jFail('لا توجد جلسة نشطة بهذا الرمز. تأكد من الرمز، أو أن صفحة المقدّم ما زالت مفتوحة.');
+      if (err && err.type === 'peer-unavailable') jFail('الجلسة غير متاحة الآن: إمّا أن الرمز غير صحيح، أو أن صفحة صاحب الجلسة مغلقة حالياً، أو انتهت مدتها.');
       else jFail('تعذّر الاتصال. قد تمنع بعض شبكات المدارس والشركات الاتصال المباشر؛ جرّب بيانات الجوال.');
     });
   }
@@ -969,8 +1017,9 @@ html.kwc-js #kwc .kwc-boot{display:none}
       buildInputs(Math.max(1, Math.min(5, d.max|0)));
       var cur = jCurrent();
       if (d.done) jShow('thanks');
+      else if (d.expired) jShow('ended');
       else if (!d.open) jShow('paused');
-      else if (first || cur === 'paused' || cur === 'connecting'){
+      else if (first || cur === 'paused' || cur === 'ended' || cur === 'connecting'){
         jShow('form'); $('jMsg').textContent = ''; focusFirst();
       }
       $('jAgain').hidden = !d.multi;
@@ -980,8 +1029,9 @@ html.kwc-js #kwc .kwc-boot{display:none}
         $('jInputs').querySelectorAll('input').forEach(function(i){ i.value = ''; });
         $('jAgain').hidden = !d.multi; jShow('thanks');
       } else {
-        var msgs = { closed:'أوقف المقدّم الاستقبال حالياً.', done:'سبق أن أرسلت إجابتك في هذه الجلسة.', fast:'تمهّل قليلاً ثم أعد الإرسال.', empty:'اكتب كلمة واحدة على الأقل.' };
+        var msgs = { closed:'أوقف صاحب الجلسة الاستقبال حالياً.', done:'سبق أن أرسلت إجابتك في هذه الجلسة.', fast:'تمهّل قليلاً ثم أعد الإرسال.', empty:'اكتب كلمة واحدة على الأقل.' };
         if (d.why === 'done') jShow('thanks');
+        else if (d.why === 'expired') jShow('ended');
         else if (d.why === 'closed') jShow('paused');
         else $('jMsg').textContent = msgs[d.why] || 'لم تُرسل الإجابة، حاول مجدداً.';
       }
@@ -1002,11 +1052,12 @@ html.kwc-js #kwc .kwc-boot{display:none}
     startBtn: function(){
       var q = $('setupQ').value.replace(/\s+/g,' ').trim();
       if (!q){ $('setupQ').focus(); return toast('اكتب السؤال أولاً'); }
-      newSession(q, +$('setupMax').value || 3, !!$('setupMulti').checked);
+      var dv = $('setupDur').value;
+      newSession(q, +$('setupMax').value || 3, !!$('setupMulti').checked, DUR.hasOwnProperty(dv) ? DUR[dv] : DUR.d1);
       openPresent();
     },
     demoBtn: function(){
-      newSession('ما أول كلمة تخطر ببالك عند سماع «الذكاء الاصطناعي»؟', 3, true);
+      newSession('ما أول كلمة تخطر ببالك عند سماع «الذكاء الاصطناعي»؟', 3, true, 0);
       var demo = ('مستقبل مستقبل مستقبل مستقبل مستقبل مستقبل إبداع إبداع إبداع إبداع إبداع تقنية تقنية تقنية تقنية ' +
         'روبوت روبوت روبوت سرعة سرعة سرعة فرص فرص فرص خوف خوف تعلم تعلم تعلم تعلم بيانات بيانات ذكاء ذكاء ' +
         'ابتكار ابتكار وظائف وظائف مساعد مساعد ChatGPT ChatGPT دقة أتمتة أخلاقيات خيال تطور تحدي فضول ' +
@@ -1027,6 +1078,7 @@ html.kwc-js #kwc .kwc-boot{display:none}
     },
 
     toggleOpen: function(){
+      if (expired()) return toast('انتهت مدة الجلسة — مدّدها من «تغيير مدة الجلسة»');
       S.open = !S.open; save(); paintOpen(); broadcast();
       toast(S.open ? 'تم استئناف استقبال الإجابات' : 'تم إيقاف استقبال الإجابات');
     },
@@ -1074,7 +1126,7 @@ html.kwc-js #kwc .kwc-boot{display:none}
       var words = [];
       $('jInputs').querySelectorAll('input').forEach(function(i){ var c = clean(i.value); if (c) words.push(c); });
       if (!words.length){ $('jMsg').textContent = 'اكتب كلمة واحدة على الأقل.'; return; }
-      if (!J.conn || !J.conn.open) return jFail('انقطع الاتصال بجهاز المقدّم.');
+      if (!J.conn || !J.conn.open) return jFail('انقطع الاتصال بجهاز صاحب الجلسة.');
       $('jMsg').textContent = ''; $('jSend').disabled = true;
       setTimeout(function(){ $('jSend').disabled = false; }, 5000);
       J.conn.send({ t:'words', words:words });
@@ -1088,7 +1140,7 @@ html.kwc-js #kwc .kwc-boot{display:none}
       openHome(); $('homeCode').focus();
     }
   };
-  // أوامر شاشة المقدّم تحتاج جلسة قائمة
+  // أوامر شاشة صاحب الجلسة تحتاج جلسة قائمة
   var NEEDS_S = ['toggleOpen','editQ','themeBtn','newBtn','manualAdd','unhide','pngBtn','csvBtn'];
 
   function run(name, e, el){
@@ -1126,6 +1178,32 @@ html.kwc-js #kwc .kwc-boot{display:none}
       else if ($('show').classList.contains('kwc-fs')) setFs(false);
     }
   });
+
+  // تغيير مدة الجلسة من شاشة صاحب الجلسة
+  document.addEventListener('change', function(e){
+    var t = e.target;
+    if (!t || !t.closest || !t.closest('#kwc') || t.getAttribute('data-js') !== 'extendSel' || !S) return;
+    var v = t.value; t.value = '';
+    if (!DUR.hasOwnProperty(v)) return;
+    var wasExpired = expired();
+    S.expires = DUR[v] ? Date.now() + DUR[v] : 0;
+    if (wasExpired) S.open = true;
+    save(); paintOpen(); broadcast();
+    toast(DUR[v] ? 'تنتهي الجلسة بعد ' + fmtLeft(DUR[v]) : 'أصبحت الجلسة بلا حد زمني');
+  });
+
+  // عدّاد المدة: يحدّث الوقت المتبقي ويغلق الاستقبال عند انتهائه
+  var wasEnded = null;
+  setInterval(function(){
+    if (!S || current() !== 'present') return;
+    var ex = expired();
+    paintOpen();
+    if (wasEnded !== null && ex !== wasEnded){
+      broadcast();
+      if (ex) toast('انتهت مدة الجلسة وأُغلق استقبال الإجابات');
+    }
+    wasEnded = ex;
+  }, 1000);
 
   document.addEventListener('fullscreenchange', function(){
     if (!document.fullscreenElement && $('show').classList.contains('kwc-fs')) setFs(false);
