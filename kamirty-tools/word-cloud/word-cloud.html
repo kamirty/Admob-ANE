@@ -18,14 +18,14 @@
       <circle cx="38" cy="18" r="1.6" fill="currentColor"/>
     </svg>
     <span class="kwc-brand-name">Kamirty<b>.ai</b></span>
-    <span class="kwc-brand-tag">سحابة الكلمات التفاعلية</span>
+    <button type="button" class="kwc-help-btn" data-js="helpBtn">؟ التعليمات والإرشادات</button>
   </div>
 
   <!-- ====== الواجهة الرئيسية ====== -->
   <section class="kwc-view" data-view="home">
     <div class="kwc-hero">
       <h2>اجمع آراء جمهورك… وشاهدها تتحوّل إلى سحابة كلمات <span>مباشرة</span></h2>
-      <p>اطرح سؤالاً، يمسح الحاضرون رمز QR بجوالاتهم ويرسلون كلماتهم، فتكبر الكلمات الأكثر تكراراً أمام الجميع لحظة بلحظة. مجاني، بلا تسجيل، ومناسب للفصل والورش والاجتماعات.</p>
+      <p>مجانية، بلا تسجيل، للفصل والورش والاجتماعات.</p>
     </div>
 
     <div class="kwc-resume" data-js="resume" hidden>
@@ -48,17 +48,12 @@
         <h3>أنا مشارك</h3>
         <p>أدخل رمز الجلسة الظاهر على الشاشة.</p>
         <div class="kwc-row">
-          <input type="text" class="kwc-input kwc-code-input" data-js="homeCode" maxlength="8" placeholder="مثال: K7M2QX" dir="ltr" autocomplete="off" autocapitalize="characters">
+          <input type="text" class="kwc-input kwc-code-input" data-js="homeCode" maxlength="8" placeholder="رمز الجلسة" dir="ltr" autocomplete="off" autocapitalize="characters">
           <button type="button" class="kwc-btn" data-js="homeJoin">انضمام</button>
         </div>
       </div>
     </div>
 
-    <ol class="kwc-steps">
-      <li><b>1</b><span>اكتب سؤالك واضغط «ابدأ».</span></li>
-      <li><b>2</b><span>يمسح المشاركون رمز QR أو يدخلون الرمز.</span></li>
-      <li><b>3</b><span>تظهر الكلمات وتكبر مع التكرار لحظياً.</span></li>
-    </ol>
   </section>
 
   <!-- ====== إعداد الجلسة ====== -->
@@ -97,7 +92,6 @@
       <button type="button" class="kwc-btn kwc-btn-gold kwc-btn-lg" data-js="startBtn">ابدأ الجلسة المباشرة</button>
       <button type="button" class="kwc-btn" data-js="demoBtn">جرّب بمثال جاهز</button>
     </div>
-    <p class="kwc-note">لا حاجة لحساب. أبقِ هذه الصفحة مفتوحة أثناء الجلسة؛ فجهازك هو الذي يستقبل الإجابات.</p>
   </section>
 
   <!-- ====== شاشة المقدّم ====== -->
@@ -130,13 +124,12 @@
         <div class="kwc-toolbar">
           <button type="button" class="kwc-btn" data-js="toggleOpen">⏸ إيقاف الاستقبال</button>
           <button type="button" class="kwc-btn" data-js="fsBtn">⛶ ملء الشاشة</button>
-          <button type="button" class="kwc-btn" data-js="themeBtn">◐ خلفية فاتحة</button>
+          <button type="button" class="kwc-btn" data-js="themeBtn">◑ خلفية داكنة</button>
           <button type="button" class="kwc-btn" data-js="pngBtn">⬇ صورة PNG</button>
           <button type="button" class="kwc-btn" data-js="csvBtn">⬇ Excel / CSV</button>
           <button type="button" class="kwc-btn" data-js="editQ">✎ تعديل السؤال</button>
           <button type="button" class="kwc-btn kwc-btn-ghost" data-js="newBtn">جلسة جديدة</button>
         </div>
-        <p class="kwc-hint">تلميح: اضغط على أي كلمة في السحابة لإخفائها (للإشراف على الإجابات غير المناسبة).</p>
       </div>
 
       <aside class="kwc-side">
@@ -154,8 +147,7 @@
 
         <div class="kwc-panel">
           <h4>إضافة يدوية</h4>
-          <p class="kwc-small">للإجابات الشفهية أو للصق قائمة (كل سطر أو فاصلة = إجابة).</p>
-          <textarea class="kwc-input" data-js="manual" rows="3" placeholder="إبداع، تعاون، فضول"></textarea>
+          <textarea class="kwc-input" data-js="manual" rows="3" placeholder="كل سطر أو فاصلة = إجابة"></textarea>
           <button type="button" class="kwc-btn kwc-btn-block" data-js="manualAdd">إضافة إلى السحابة</button>
         </div>
 
@@ -218,19 +210,51 @@
     </div>
   </div>
 
+  <!-- ====== نافذة التعليمات ====== -->
+  <div class="kwc-modal" data-js="help" hidden>
+    <div class="kwc-modal-box kwc-help">
+      <button type="button" class="kwc-modal-x" data-js="helpX" aria-label="إغلاق">✕</button>
+      <h3>التعليمات والإرشادات</h3>
+      <h4>كيف تعمل؟</h4>
+      <ol>
+        <li>اكتب سؤالك واضغط «ابدأ الجلسة المباشرة».</li>
+        <li>يمسح المشاركون رمز QR بجوالاتهم، أو يدخلون الرمز المكوّن من 6 خانات.</li>
+        <li>تظهر الكلمات فوراً، وتكبر الكلمة كلما تكررت.</li>
+      </ol>
+      <h4>للمقدّم / المعلّم</h4>
+      <ul>
+        <li>أبقِ صفحتك مفتوحة طوال الجلسة؛ فجهازك هو الذي يستقبل الإجابات. إن حدّثتها اضغط «استئناف الجلسة».</li>
+        <li>اضغط على أي كلمة في السحابة لإخفائها، ويمكنك إرجاعها من «كلمات مخفية».</li>
+        <li>«إيقاف الاستقبال» يجمّد الإجابات مؤقتاً، و«ملء الشاشة» مناسب لجهاز العرض.</li>
+        <li>«الإضافة اليدوية» للإجابات الشفهية أو للصق قائمة: كل سطر أو فاصلة = إجابة.</li>
+        <li>نزّل النتيجة صورةً PNG أو ملف CSV يُفتح في Excel.</li>
+      </ul>
+      <h4>للمشارك</h4>
+      <ul>
+        <li>امسح رمز QR أو اضغط «انضمام» وأدخل الرمز الظاهر على الشاشة، ثم اكتب إجابتك.</li>
+      </ul>
+      <h4>ملاحظات</h4>
+      <ul>
+        <li>تُدمج الكلمات المتشابهة إملائياً تلقائياً (أ/إ/ا، ة/ه، التشكيل).</li>
+        <li>بعض شبكات المدارس والشركات تمنع الاتصال المباشر؛ عندها استخدم بيانات الجوال.</li>
+        <li>لا تسجيل ولا خادم: الإجابات تُحفظ على جهاز المقدّم فقط.</li>
+      </ul>
+    </div>
+  </div>
+
   <div class="kwc-toast" data-js="toast" hidden></div>
   <div class="kwc-credit">أداة مجانية من <a href="https://www.kamirtyai.com" target="_blank" rel="noopener">Kamirty.ai</a></div>
 </div>
 
 <style>
 #kwc{
-  --ink:#0d0d0f;--ink2:#151518;--ink3:#1d1d22;--line:#2c2c33;
-  --gold:#d4a84b;--gold2:#f0d58c;--gold3:#a87d2a;--txt:#ece7da;--mute:#9a9486;
+  --ink:#ffffff;--ink2:#f8f6f1;--ink3:#ffffff;--line:#e3ddd0;
+  --gold:#a87a1f;--gold2:#7d5a14;--gold3:#d9c08a;--btn:#d4a84b;--btn2:#e2bd6a;--txt:#111114;--mute:#5e5848;
   --ok:#5fbf8a;--bad:#e0675f;
   font-family:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
   background:var(--ink);color:var(--txt);border-radius:18px;padding:22px;
   max-width:1200px;margin:0 auto;line-height:1.7;text-align:right;
-  border:1px solid #23232a;position:relative;overflow:hidden;
+  border:1px solid var(--line);position:relative;overflow:hidden;
 }
 #kwc *,#kwc *::before,#kwc *::after{box-sizing:border-box}
 #kwc [hidden]{display:none !important}
@@ -243,13 +267,14 @@
 #kwc .kwc-logo{width:38px;height:38px}
 #kwc .kwc-brand-name{font-weight:700;font-size:18px;color:var(--txt);direction:ltr}
 #kwc .kwc-brand-name b{color:var(--gold)}
-#kwc .kwc-brand-tag{margin-inline-start:auto;font-size:13px;color:var(--mute);border:1px solid var(--line);padding:3px 12px;border-radius:99px}
+#kwc .kwc-help-btn{margin-inline-start:auto;font-size:13px;color:var(--txt);background:var(--ink2);border:1px solid var(--line);padding:5px 14px;border-radius:99px;cursor:pointer;margin-top:0;margin-bottom:0}
+#kwc .kwc-help-btn:hover{border-color:var(--gold);color:var(--gold)}
 
 /* أزرار وحقول */
 #kwc .kwc-btn{background:var(--ink3);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:9px 16px;cursor:pointer;transition:.18s;white-space:nowrap;line-height:1.4;box-shadow:none;margin:0;text-transform:none}
 #kwc .kwc-btn:hover{border-color:var(--gold);color:var(--gold2)}
-#kwc .kwc-btn-gold{background:var(--gold);color:#16120a;border-color:var(--gold);font-weight:700}
-#kwc .kwc-btn-gold:hover{background:var(--gold2);color:#16120a}
+#kwc .kwc-btn-gold{background:var(--btn);color:#111114;border-color:var(--btn);font-weight:700}
+#kwc .kwc-btn-gold:hover{background:var(--btn2);border-color:var(--btn2);color:#111114}
 #kwc .kwc-btn-ghost{background:transparent}
 #kwc .kwc-btn-lg{padding:13px 26px;font-size:17px}
 #kwc .kwc-btn-block{display:block;width:100%;margin-top:10px}
@@ -257,7 +282,8 @@
 #kwc .kwc-link{background:none;border:0;color:var(--mute);cursor:pointer;padding:0;margin-bottom:8px}
 #kwc .kwc-link:hover{color:var(--gold)}
 #kwc .kwc-input{width:100%;background:var(--ink2);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 14px;outline:none;transition:.18s;margin:0;box-shadow:none;height:auto}
-#kwc .kwc-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,168,75,.15)}
+#kwc .kwc-input{background:#fff}
+#kwc .kwc-input:focus{border-color:var(--btn);box-shadow:0 0 0 3px rgba(212,168,75,.25)}
 #kwc textarea.kwc-input{resize:vertical;min-height:70px}
 #kwc .kwc-label{display:block;font-size:14px;color:var(--mute);margin:16px 0 6px}
 #kwc .kwc-row{display:flex;gap:8px;align-items:center}
@@ -294,18 +320,18 @@
 
 /* شاشة المقدّم */
 #kwc .kwc-present{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:16px}
-#kwc .kwc-show{--bg:#0a0a0c;--fg:#ece7da;--sub:#8e8879;
-  --c0:#f0d58c;--c1:#d4a84b;--c2:#ece7da;--c3:#b8913f;--c4:#c9c2b0;--c5:#e3bf6a;
-  background:radial-gradient(ellipse at center,#16161b 0%,var(--bg) 70%);color:var(--fg);
+#kwc .kwc-show{--bg:#ffffff;--fg:#111114;--sub:#6e6757;
+  --c0:#9a6f17;--c1:#111114;--c2:#b8862e;--c3:#3a3a40;--c4:#7d5a14;--c5:#5a5650;
+  background:var(--bg);color:var(--fg);
   border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column}
-#kwc .kwc-show.kwc-light{--bg:#faf7ef;--fg:#141416;--sub:#7b7464;
-  --c0:#9a6f17;--c1:#141416;--c2:#b8862e;--c3:#3a3a40;--c4:#7d5a14;--c5:#5a5650;
-  background:radial-gradient(ellipse at center,#ffffff 0%,var(--bg) 75%);border-color:#e4dccb}
+#kwc .kwc-show.kwc-dark{--bg:#0a0a0c;--fg:#ece7da;--sub:#8e8879;
+  --c0:#f0d58c;--c1:#d4a84b;--c2:#ece7da;--c3:#b8913f;--c4:#c9c2b0;--c5:#e3bf6a;
+  background:radial-gradient(ellipse at center,#16161b 0%,var(--bg) 70%);border-color:#23232a}
 #kwc .kwc-show-head{display:flex;align-items:center;gap:14px;justify-content:space-between}
 #kwc .kwc-show-q{font-size:clamp(17px,2.2vw,26px);font-weight:700;line-height:1.45;flex:1}
 #kwc .kwc-show-join{display:flex;align-items:center;gap:8px;color:var(--sub);font-size:12px;text-align:center}
 #kwc .kwc-show-join b{display:block;color:var(--c1);font-size:18px;letter-spacing:3px}
-#kwc .kwc-mini-qr{display:none;width:84px;background:#fff;padding:4px;border-radius:6px}
+#kwc .kwc-mini-qr{display:none;width:84px;background:#fff;padding:4px;border-radius:6px;border:1px solid #e3ddd0}
 #kwc .kwc-mini-qr svg,#kwc .kwc-qr svg,#kwc .kwc-qr-big svg{display:block;width:100%;height:auto}
 #kwc .kwc-stage{position:relative;width:100%;aspect-ratio:16/9;min-height:300px;overflow:hidden;margin-top:6px}
 #kwc .kwc-word{position:absolute;left:0;top:0;white-space:nowrap;line-height:1;font-weight:700;cursor:pointer;user-select:none;
@@ -338,7 +364,7 @@
 #kwc .kwc-panel h4{font-size:15px;margin-bottom:2px}
 #kwc .kwc-panel textarea{margin-top:8px}
 #kwc .kwc-join-card{text-align:center}
-#kwc .kwc-qr{background:#fff;border-radius:10px;padding:8px;width:180px;max-width:100%;margin:10px auto;cursor:zoom-in}
+#kwc .kwc-qr{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;width:180px;max-width:100%;margin:10px auto;cursor:zoom-in}
 #kwc .kwc-code{font-size:28px;font-weight:700;letter-spacing:6px;color:var(--gold);margin-bottom:10px}
 #kwc .kwc-link-input{font-size:12px;padding:8px 10px}
 #kwc .kwc-net{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mute);background:var(--ink);border:1px solid var(--line);border-radius:99px;padding:3px 10px}
@@ -357,7 +383,7 @@
 #kwc .kwc-jq{font-size:clamp(20px,5vw,26px);line-height:1.5;margin:4px 0 18px}
 #kwc .kwc-jinputs{display:flex;flex-direction:column;gap:10px}
 #kwc .kwc-jinputs .kwc-input{font-size:18px;padding:13px 16px;text-align:center}
-#kwc .kwc-jinputs .kwc-input::placeholder{color:#5f5a50}
+#kwc .kwc-jinputs .kwc-input::placeholder{color:#a39c8c}
 #kwc .kwc-join .kwc-btn-block{margin-top:14px}
 #kwc .kwc-jmsg{min-height:24px;margin-top:10px;font-size:14px;color:var(--bad)}
 #kwc .kwc-jstate h3{font-size:22px;margin:8px 0}
@@ -369,15 +395,21 @@
 #kwc .kwc-spinner{width:42px;height:42px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;margin:20px auto 12px;animation:kwcSpin .8s linear infinite}
 
 /* نافذة وتنبيه */
-#kwc .kwc-modal{position:fixed;inset:0;z-index:2147483600;background:rgba(5,5,7,.88);display:grid;place-items:center;padding:16px}
-#kwc .kwc-modal-box{background:var(--ink2);border:1px solid var(--gold3);border-radius:18px;padding:24px;text-align:center;position:relative;width:min(520px,100%)}
+#kwc .kwc-modal{position:fixed;inset:0;z-index:2147483600;background:rgba(20,20,22,.55);overflow-y:auto;display:grid;place-items:center;padding:16px}
+#kwc .kwc-modal-box{background:#fff;border:1px solid var(--gold3);box-shadow:0 20px 60px rgba(0,0,0,.25);border-radius:18px;padding:24px;text-align:center;position:relative;width:min(520px,100%)}
 #kwc .kwc-modal-box p{color:var(--mute);font-size:18px}
 #kwc .kwc-qr-big{background:#fff;border-radius:12px;padding:12px;margin:14px auto;width:min(380px,100%)}
 #kwc .kwc-code-big{font-size:clamp(32px,8vw,52px);margin:0}
 #kwc .kwc-modal-x{position:absolute;top:10px;left:10px;background:none;border:0;color:var(--mute);font-size:20px;cursor:pointer}
-#kwc .kwc-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--gold);color:#16120a;font-weight:600;padding:10px 20px;border-radius:10px;z-index:2147483647;box-shadow:0 8px 30px rgba(0,0,0,.4);font-size:14px;max-width:90vw;text-align:center}
+#kwc .kwc-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111114;color:#fff;font-weight:600;padding:10px 20px;border-radius:10px;z-index:2147483647;box-shadow:0 8px 30px rgba(0,0,0,.4);font-size:14px;max-width:90vw;text-align:center}
 #kwc .kwc-credit{text-align:center;font-size:12px;color:var(--mute);margin-top:20px}
 #kwc .kwc-credit a{text-decoration:none}
+#kwc .kwc-help{text-align:right;width:min(640px,100%);max-height:86vh;overflow-y:auto}
+#kwc .kwc-help h3{font-size:20px;margin-bottom:6px}
+#kwc .kwc-help h4{font-size:15px;color:var(--gold);margin:14px 0 4px}
+#kwc .kwc-help ol,#kwc .kwc-help ul{margin:0;padding-inline-start:20px;padding-inline-end:0}
+#kwc .kwc-help li{margin:3px 0;font-size:14px;color:var(--txt);list-style-position:outside}
+#kwc .kwc-help .kwc-modal-x{left:10px}
 
 @keyframes kwcSpin{to{transform:rotate(360deg)}}
 @keyframes kwcPulse{50%{opacity:.25}}
@@ -388,7 +420,7 @@
 }
 @media (max-width:520px){
   #kwc{padding:16px;border-radius:14px}
-  #kwc .kwc-brand-tag{display:none}
+  #kwc .kwc-help-btn{font-size:12px;padding:4px 10px}
   #kwc .kwc-stage{aspect-ratio:4/5}
   #kwc .kwc-show{padding:12px}
   #kwc .kwc-show-join{display:none}
@@ -408,7 +440,8 @@
   root.dataset.ready = '1';
 
   /* ---------- أدوات عامة ---------- */
-  function $(n){ return root.querySelector('[data-js="'+n+'"]'); }
+  // إن حذف المحرر عنصراً ما، نعيد عنصراً وهمياً بدل أن يتوقف السكربت كله
+  function $(n){ return root.querySelector('[data-js="'+n+'"]') || document.createElement('div'); }
   var PREFIX = 'kamirtywc-v1-';
   var ALPH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   var MAXLEN = 30, MAX_SHOWN = 120;
@@ -460,13 +493,13 @@
 
   /* ---------- حالة المقدّم ---------- */
   var SKEY = 'kwc_session_v1';
-  var S = null;           // {code,question,max,multi,open,light,entries:[{w,k,p,t}],hidden:[]}
+  var S = null;           // {code,question,max,multi,open,dark,entries:[{w,k,p,t}],hidden:[]}
   var conns = [];
   var peer = null, hostRetry = 0, hostTimer = null;
 
   function save(){ if (S) store.set(SKEY, S); }
   function newSession(q, max, multi){
-    S = { code:randCode(6), question:q, max:max, multi:multi, open:true, light:false, entries:[], hidden:[] };
+    S = { code:randCode(6), question:q, max:max, multi:multi, open:true, dark:false, entries:[], hidden:[] };
     save();
   }
   function hasSubmitted(pid){
@@ -661,8 +694,8 @@
   function openPresent(){
     show('present');
     $('showQ').textContent = S.question;
-    $('show').classList.toggle('kwc-light', !!S.light);
-    $('themeBtn').textContent = S.light ? '◑ خلفية داكنة' : '◐ خلفية فاتحة';
+    $('show').classList.toggle('kwc-dark', !!S.dark);
+    $('themeBtn').textContent = S.dark ? '◐ خلفية فاتحة' : '◑ خلفية داكنة';
     paintOpen();
     paintJoin();
     renderHidden();
@@ -684,7 +717,7 @@
 
   function setNet(state, text){
     var n = $('net'); n.className = 'kwc-net kwc-' + state;
-    n.querySelector('span').textContent = text;
+    var sp = n.querySelector('span'); if (sp) sp.textContent = text;
   }
   function stopHost(){
     clearTimeout(hostTimer);
@@ -773,9 +806,9 @@
     S.question = q; save(); $('showQ').textContent = q; broadcast();
   };
   $('themeBtn').onclick = function(){
-    S.light = !S.light; save();
-    $('show').classList.toggle('kwc-light', S.light);
-    this.textContent = S.light ? '◑ خلفية داكنة' : '◐ خلفية فاتحة';
+    S.dark = !S.dark; save();
+    $('show').classList.toggle('kwc-dark', S.dark);
+    this.textContent = S.dark ? '◐ خلفية فاتحة' : '◑ خلفية داكنة';
   };
   $('newBtn').onclick = function(){
     if (S.entries.length && !confirm('ستُحذف السحابة الحالية نهائياً (يمكنك تنزيلها كصورة أو CSV قبل ذلك). متابعة؟')) return;
@@ -791,7 +824,11 @@
   };
   $('bigQr').onclick = $('qr').onclick = function(){ $('modal').hidden = false; };
   $('modalX').onclick = function(){ $('modal').hidden = true; };
-  $('modal').addEventListener('click', function(e){ if (e.target === this) this.hidden = true; });
+  $('helpBtn').onclick = function(){ $('help').hidden = false; };
+  $('helpX').onclick = function(){ $('help').hidden = true; };
+  ['modal','help'].forEach(function(n){
+    $(n).addEventListener('click', function(e){ if (e.target === this) this.hidden = true; });
+  });
 
   $('manualAdd').onclick = function(){
     var parts = $('manual').value.split(/[\n,،;؛]+/), n = 0;
@@ -817,7 +854,8 @@
   });
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape'){
-      if (!$('modal').hidden) $('modal').hidden = true;
+      if (!$('help').hidden) $('help').hidden = true;
+      else if (!$('modal').hidden) $('modal').hidden = true;
       else if ($('show').classList.contains('kwc-fs')) setFs(false);
     }
   });
