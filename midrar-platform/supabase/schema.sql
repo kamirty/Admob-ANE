@@ -1428,7 +1428,7 @@ alter table public.sessions add column if not exists upload_ext text;
 alter table public.sessions drop constraint if exists sessions_upload;
 alter table public.sessions add constraint sessions_upload check (
   (upload_state is null and upload_parts is null and upload_bytes is null and upload_ext is null)
-  or (upload_state in ('uploading', 'waiting') and kind = 'recorded'
+  or (upload_state in ('uploading', 'waiting') and kind in ('recorded', 'live')
       and upload_bytes between 1 and 524288000
       and upload_parts = ceil(upload_bytes / 10485760.0)::int
       and upload_ext ~ '^[a-z0-9]{2,5}$')
@@ -1446,6 +1446,9 @@ begin
   if tg_op = 'INSERT' or old.upload_state is null or old.upload_bytes is distinct from new.upload_bytes then
     if new.upload_state <> 'uploading' then
       raise exception 'ابدأ إرسال الفيديو من جديد' using errcode = '22023';
+    end if;
+    if new.kind = 'live' and new.starts_at > now() then
+      raise exception 'أرسل تسجيل الحصة بعد أن تبدأ' using errcode = '22023';
     end if;
     -- إرسالان في اللحظة نفسها يُفحصان بالتتابع، فلا يتجاوزان الحد معاً
     perform pg_advisory_xact_lock(hashtext('midrar-lesson-uploads'));
@@ -1476,7 +1479,7 @@ revoke execute on function public.sessions_upload_guard() from public, anon, aut
 drop policy if exists sessions_read on public.sessions;
 create policy sessions_read on public.sessions for select using (
   (not hidden and review = 'ok'
-     and (upload_state is null or (upload_state = 'waiting' and starts_at > created_at + interval '10 minutes'))
+     and (upload_state is null or kind = 'live' or (upload_state = 'waiting' and starts_at > created_at + interval '10 minutes'))
      and exists (select 1 from public.teachers t where t.id = sessions.teacher_id and t.status = 'approved'))
   or teacher_id = auth.uid()
   or public.is_admin()
@@ -1524,6 +1527,55 @@ begin
 exception when insufficient_privilege then
   raise warning 'تعذّر إعداد تخزين الفيديو تلقائياً: %', sqlerrm;
 end $do$;
+
+-- =====================================================================
+--  13) الحصة المباشرة برابط Google Meet أو Zoom أو Microsoft Teams
+--      الرابط في جدول منفصل يراه المعلم والمشرف فقط، ويصل إليه الطالب عبر
+--      join_link قبل الحصة بربع ساعة وحتى نهايتها (فلا ينتشر الرابط مسبقاً).
+--      وبعد الحصة يرسل المعلم تسجيلها (القسم 12) فتنشره الإدارة على قناة المنصة.
+-- =====================================================================
+create table if not exists public.session_links (
+  session_id uuid primary key references public.sessions (id) on delete cascade,
+  url        text not null check (char_length(url) <= 300
+               and url ~* '^https://(meet\.google\.com|([a-z0-9-]+\.)*zoom\.us|teams\.microsoft\.com|teams\.live\.com)/[^[:space:]<>"]+$'),
+  updated_at timestamptz not null default now()
+);
+alter table public.session_links enable row level security;
+revoke all on public.session_links from anon, authenticated;
+grant select, insert, update, delete on public.session_links to authenticated;
+drop policy if exists session_links_own on public.session_links;
+create policy session_links_own on public.session_links for all to authenticated
+  using (public.is_admin() or exists (select 1 from public.sessions s where s.id = session_id and s.teacher_id = auth.uid()))
+  with check (public.is_admin() or (public.my_status() in ('pending', 'approved')
+    and exists (select 1 from public.sessions s where s.id = session_id and s.teacher_id = auth.uid() and s.kind = 'live')));
+
+create or replace function public.session_links_touch() returns trigger
+language plpgsql as $$
+begin
+  new.url := btrim(new.url);
+  new.updated_at := now();
+  return new;
+end $$;
+drop trigger if exists session_links_touch on public.session_links;
+create trigger session_links_touch before insert or update on public.session_links
+  for each row execute function public.session_links_touch();
+
+-- رابط الدخول للطالب: has = وضع المعلم رابطاً، وurl يظهر من قبل الحصة بربع ساعة حتى نهايتها
+create or replace function public.join_link(p_id uuid) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'has', l.url is not null,
+    'url', case when l.url is not null and (s.teacher_id = auth.uid() or public.is_admin()
+                 or (s.status = 'scheduled' and now() >= s.starts_at - interval '15 minutes' and now() < s.ends_at)) then l.url end,
+    'opens_at', s.starts_at - interval '15 minutes')
+    from public.sessions s left join public.session_links l on l.session_id = s.id
+   where s.id = p_id and s.kind = 'live'
+     and ((not s.hidden and s.review = 'ok'
+           and exists (select 1 from public.teachers t where t.id = s.teacher_id and t.status = 'approved'))
+          or s.teacher_id = auth.uid() or public.is_admin());
+$$;
+revoke execute on function public.join_link(uuid) from public;
+grant  execute on function public.join_link(uuid) to anon, authenticated;
 
 -- =====================================================================
 --  بعد أول دخول لك كمعلم من الموقع، اجعل نفسك مشرفاً بتشغيل هذا السطر

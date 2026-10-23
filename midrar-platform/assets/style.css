@@ -2,15 +2,15 @@
    down the right edge, and the teachers of each slot side by side so the
    student picks one. Chalkboard green carries the brand; red means live. */
 :root {
-  --paper: #F4F6F1;
+  --paper: #FFFFFF;
   --surface: #FFFFFF;
-  --sunk: #EAEEE7;
-  --ink: #17252A;
-  --muted: #56676A;
-  --line: #D8DFD7;
-  --board: #1D5C4A;
+  --sunk: #F2F4F3;
+  --ink: #1B2428;
+  --muted: #5B6668;
+  --line: #DCE2DF;
+  --board: #0E5A46;
   --board-ink: #FFFFFF;
-  --board-soft: #E1EEE8;
+  --board-soft: #E9F2EE;
   --chalk: #B9770E;
   --chalk-soft: #FBF0D9;
   --live: #C3362B;
@@ -21,11 +21,11 @@
   --ok-soft: #E2F2E8;
   --warn: #8A5A00;
   --warn-soft: #FFF1D2;
-  --shadow: 0 1px 2px rgba(23, 37, 42, .06), 0 2px 8px rgba(23, 37, 42, .05);
-  --font-display: "Cairo", "Segoe UI", Tahoma, "Noto Sans Arabic", system-ui, sans-serif;
-  --font-body: "Cairo", "Segoe UI", Tahoma, "Noto Sans Arabic", system-ui, sans-serif;
-  --r: 12px;
-  --r-sm: 8px;
+  --shadow: none;
+  --font-display: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, "Noto Sans Arabic", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, "Noto Sans Arabic", system-ui, sans-serif;
+  --r: 8px;
+  --r-sm: 6px;
   --wrap: 1120px;
   --gutter: 16px;
 }
@@ -708,7 +708,7 @@ h1 .verified { font-size: .8rem; }
 .bot-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; font-weight: 700; }
 .bot-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
 .bot-form .input { flex: 1; min-width: 0; }
-@media (max-width: 640px) { .bot-btn span:last-child { display: none; } .bot-btn { padding: 12px 14px; } }
+@media (max-width: 640px) { .bot-btn { bottom: 12px; inset-inline-end: 12px; } }
 @media print { .bot-btn, .bot { display: none !important; } }
 .on-studio .bot-btn, .on-studio .bot { display: none !important; }
 
@@ -754,3 +754,69 @@ h1 .verified { font-size: .8rem; }
 .up-steps { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
 .up-steps li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .up-pub .input { flex: 1 1 220px; min-width: 0; }
+
+/* v5.3: الدخول إلى حصة Meet أو Zoom أو Teams */
+.player .ph-join .btn-live { color: var(--live-ink); }
+.player .ph-join .small { opacity: .85; max-width: 46ch; }
+.live-rec { border-color: var(--live); }
+
+
+/* =====================================================================
+   v5.3: مظهر رسمي بسيط — صفحات بيضاء، شريط علوي بلون المنصة، زوايا أقل
+   استدارة، عناوين أقسام بخط جانبي، وأزرار واضحة
+   ===================================================================== */
+h1 { font-weight: 700; }
+.topbar { background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; border-top: 4px solid var(--board); }
+.brand { color: var(--board); }
+.nav a { border-radius: 6px; }
+.nav a[aria-current="page"] { color: var(--board); background: var(--board-soft); }
+.btn { border-radius: 6px; min-height: 44px; font-weight: 600; }
+.btn-sm { border-radius: 6px; }
+.pill, .badge { border-radius: 4px; }
+.chip { border-radius: 6px; }
+.card, .stage, .box, .tile, .pcard, .skill-card, .empty, .item, .src-pick, .when { box-shadow: none; }
+.section-head h2, .section > h2 { padding-inline-start: 10px; border-inline-start: 4px solid var(--board); line-height: 1.3; }
+.section { padding-block: 18px; }
+
+/* الصفحة الرئيسية */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding-block: 26px 6px; }
+.hero h1 { font-size: clamp(1.45rem, 1.1rem + 1.4vw, 2rem); }
+.hero p { color: var(--muted); }
+.stage { background: var(--sunk); border-color: transparent; }
+.stage h3 { font-size: 1rem; color: var(--muted); font-weight: 600; }
+.grade-chip { background: var(--surface); border-radius: 6px; min-height: 48px; font-size: 1.02rem; }
+.band { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-block: 18px 6px;
+  padding: 16px 18px; border-radius: var(--r); background: var(--board); color: var(--board-ink); }
+.band div { display: grid; gap: 2px; }
+.band b { font-size: 1.1rem; }
+.band .btn-primary { background: var(--board-ink); color: var(--board); border-color: var(--board-ink); }
+.feat { grid-template-columns: minmax(0, 200px) minmax(0, 1fr); padding: 10px; background: var(--surface); border: 1px solid var(--line); }
+
+/* صور الدروس بلا صورة من يوتيوب: خلفية هادئة باسم المادة */
+.thumb { background: var(--board-soft); color: var(--board); border: 1px solid var(--line); border-radius: 6px; }
+.thumb .ph { font-weight: 600; font-size: 1rem; }
+
+/* لوحة المعلم */
+.dash-head { padding-block: 22px 4px; }
+.dash-actions { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); padding-block: 8px 4px; }
+.act-tile { display: grid; gap: 2px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface);
+  color: var(--ink); text-decoration: none; }
+.act-tile b { font-size: 1.05rem; }
+.act-tile span { font-size: .85rem; color: var(--muted); }
+.act-tile:hover { border-color: var(--board); }
+.act-tile.act-main { background: var(--board); border-color: var(--board); color: var(--board-ink); }
+.act-tile.act-main span { color: color-mix(in srgb, var(--board-ink) 80%, transparent); }
+.dash-links { display: flex; flex-wrap: wrap; gap: 4px 18px; padding-block: 6px 2px; font-size: .92rem; }
+.dash-links a { color: var(--muted); }
+.cert-box h3 { color: var(--warn); }
+
+/* صفحة «تطوّع بالشرح» */
+.teach-page .hadith, .hadith { padding: 16px 18px; border-radius: var(--r); box-shadow: none; gap: 6px; }
+.hadith blockquote { font-size: 1.25rem; line-height: 1.9; }
+
+/* زر المساعد: دائرة صغيرة */
+.bot-btn { width: 48px; height: 48px; padding: 0; justify-content: center; border-radius: 50%; font-size: 1.35rem; }
+
+.foot { text-align: start; }
+.foot-links { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; }
+.foot-links b { color: var(--ink); }

@@ -172,6 +172,9 @@
     return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
   }
   const isYouTube = (url) => /^https:\/\/(www\.|m\.|music\.)?(youtube\.com|youtu\.be)\/\S+$/i.test(url || '');
+  // رابط الحصة المباشرة: Google Meet أو Zoom أو Microsoft Teams
+  const isMeet = (url) => /^https:\/\/(meet\.google\.com|([a-z0-9-]+\.)*zoom\.us|teams\.microsoft\.com|teams\.live\.com)\/[^\s<>"]+$/i.test(url || '') && url.length <= 300;
+  const meetApp = (url) => (/zoom\.us/i.test(url) ? 'Zoom' : /teams\./i.test(url) ? 'Microsoft Teams' : 'Google Meet');
   // رابط قناة المعلم: نقبل «@الاسم» أو رابط القناة بأي صيغة، ونرفض روابط الفيديو
   function channelUrl(raw) {
     let v = String(raw || '').trim().replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '');
@@ -267,18 +270,14 @@
   function actionHtml(s, compact) {
     const st = stateOf(s).key;
     const to = '#/s/' + esc(s.id);
-    if (st === 'live' || st === 'soon') {
-      return s.video_url
-        ? `<a class="btn btn-live${compact ? ' btn-sm' : ''}" href="${to}">ادخل الحصة</a>`
-        : `<a class="btn${compact ? ' btn-sm' : ''}" href="${to}">بانتظار رابط المعلم</a>`;
-    }
+    if (st === 'live' || st === 'soon') return `<a class="btn btn-live${compact ? ' btn-sm' : ''}" href="${to}">ادخل الحصة</a>`;
     if (st === 'premiere') return `<a class="btn btn-live${compact ? ' btn-sm' : ''}" href="${to}">شاهد الآن</a>`;
     if (st === 'replay' || st === 'recorded') return `<a class="btn btn-primary${compact ? ' btn-sm' : ''}" href="${to}">شاهد التسجيل</a>`;
     if (st === 'upcoming') {
       return `<a class="btn${compact ? ' btn-sm' : ''}" href="${esc(calendarUrl(s))}" target="_blank" rel="noopener">ذكّرني في التقويم</a>
               <a class="btn btn-ghost${compact ? ' btn-sm' : ''}" href="${to}">التفاصيل</a>`;
     }
-    if (st === 'ended') return `<a class="btn btn-ghost${compact ? ' btn-sm' : ''}" href="${to}">انتهت — لا يوجد تسجيل بعد</a>`;
+    if (st === 'ended') return `<a class="btn btn-ghost${compact ? ' btn-sm' : ''}" href="${to}">${s.upload_state ? 'انتهت — التسجيل قريباً' : 'انتهت — لا يوجد تسجيل بعد'}</a>`;
     return '';
   }
 
@@ -323,7 +322,7 @@
       <div class="act" data-act>${actionHtml(s, true)}</div>
     </article>`;
   }
-  const upNow = (list) => list.filter((s) => s.status === 'scheduled' && ['upcoming', 'premiere'].includes(stateOf(s).key));
+  const upNow = (list) => list.filter((s) => s.status === 'scheduled' && ['upcoming', 'soon', 'premiere'].includes(stateOf(s).key));
   const upCards = (list, showGrade) => `<div class="slot-cards up-cards">${list.map((s) => cardHtml(s, { showGrade })).join('')}</div>`;
   function vidHtml(s, showGrade) {
     const url = videoOf(s);
@@ -430,70 +429,41 @@
     setNav('home'); setTitle('');
     const mine = store.get('grade');
     const upSec = `<section class="section" id="up-sec" hidden>
-        <div class="section-head"><h2>الدروس القادمة</h2><span class="muted" id="up-for"></span><span class="spacer"></span><a class="btn btn-ghost btn-sm" id="up-all" hidden>كل مواعيد صفّي</a></div>
+        <div class="section-head"><h2>القادم</h2><span class="muted" id="up-for"></span><span class="spacer"></span><a class="btn btn-ghost btn-sm" id="up-all" hidden>جدول صفّي</a></div>
         <div id="up-list"></div>
       </section>`;
     view.innerHTML = `
       <section class="hero">
-        <div class="hero-text">
-          ${C.SITE_MOTTO ? `<span class="motto">${esc(C.SITE_MOTTO)}</span>` : ''}
-          <h1>${esc(C.SITE_TAGLINE)}</h1>
-          <p>اختر صفّك لترى دروسه. اختر المعلم الذي تفضّله، وشاهد الدرس متى شئت ومن أي جهاز. لا تحتاج إلى حساب.</p>
-        </div>
-        <figure class="hadith">
-          <span class="orn" aria-hidden="true">❁ ❁ ❁</span>
-          <figcaption>قال رسول الله ﷺ</figcaption>
-          <blockquote>«إذا مات ابنُ آدمَ انقطع عملُه إلا من ثلاث: صدقةٍ جارية، أو <mark>علمٍ يُنتفَعُ به</mark>، أو ولدٍ صالحٍ يدعو له»</blockquote>
-          <figcaption>رواه مسلم</figcaption>
-          <p class="hadith-note">كل حصة تشرحها هنا… أثرٌ لا ينقطع</p>
-          <a class="btn btn-primary btn-sm" href="#/dashboard">اجعل علمك صدقة جارية</a>
-        </figure>
+        <h1>${esc(C.SITE_TAGLINE)}</h1>
+        <p>من الصف الأول إلى الثاني عشر · مجاناً · بلا حساب</p>
       </section>
-      ${mine && GRADES[mine] ? `<div class="mine"><span>صفّك:</span><b>${esc(gradeName(mine))}</b><span class="spacer"></span><a class="btn btn-primary btn-sm" href="#/g/${esc(mine)}">افتح دروس صفّي</a></div>` : ''}
-      <section class="section" id="feat-sec" hidden></section>
+      ${mine && GRADES[mine] ? `<div class="mine"><span>صفّك:</span><b>${esc(gradeName(mine))}</b><span class="spacer"></span><a class="btn btn-primary btn-sm" href="#/g/${esc(mine)}">افتح صفّي</a></div>` : ''}
       <section class="section" id="live-sec" hidden>
         <div class="section-head"><span class="dot-live"></span><h2>مباشر الآن</h2><span class="muted" id="live-count"></span></div>
         <div class="live-strip" id="live-list"></div>
       </section>
       ${mine && GRADES[mine] ? upSec : ''}
       <section class="section">
-        <div class="section-head"><h2>اختر صفّك</h2><span class="muted">صف دبلوم التعليم العام عليه علامة «${esc(C.EXAM_TAG)}»</span></div>
+        <div class="section-head"><h2>اختر صفّك</h2></div>
         <div class="stages">${C.STAGES.map((st) => `
-          <div class="stage"><h2>${esc(st.name)}</h2>
+          <div class="stage"><h3>${esc(st.name)}</h3>
             <div class="grade-grid">${st.grades.map((g) => `<a class="grade-chip${g.id === mine ? ' cur' : ''}" href="#/g/${esc(g.id)}"><span>${esc(g.short)}</span>${g.exam ? `<span class="tag-exam">${esc(C.EXAM_TAG)}</span>` : ''}</a>`).join('')}</div>
           </div>`).join('')}
         </div>
       </section>
       ${mine && GRADES[mine] ? '' : upSec}
-      <section class="section">
-        <div class="section-head"><h2>مهارات المستقبل</h2><span class="muted">دورات مجانية خارج المنهج</span><span class="spacer"></span><a class="btn btn-ghost btn-sm" href="#/k">كل المهارات</a></div>
-        <div class="skill-grid">${SKILLS.map((k) => `<a class="skill-chip" href="#/k/${esc(k.id)}"><span class="sk-ic" aria-hidden="true">${esc(k.icon || '✨')}</span><span>${esc(k.name)}</span></a>`).join('')}</div>
-      </section>
-      <section class="section" id="paths-sec" hidden>
-        <div class="section-head"><h2>مسارات جاهزة</h2><span class="muted">دروس مرتبة يجهزها معلمون موثوقون</span></div>
-        <div class="pcards" id="paths-list"></div>
-      </section>
+      <section class="section" id="feat-sec" hidden></section>
       <section class="section" id="cont-sec" hidden>
-        <div class="section-head"><h2>تابع من حيث توقفت</h2><span class="spacer"></span><button type="button" class="btn btn-ghost btn-sm" id="clear-watch">مسح السجل من هذا الجهاز</button></div>
+        <div class="section-head"><h2>تابع من حيث توقفت</h2><span class="spacer"></span><button type="button" class="btn btn-ghost btn-sm" id="clear-watch">مسح السجل</button></div>
         <div class="vids" id="cont-list"></div>
       </section>
       <section class="section" id="new-sec" hidden>
         <div class="section-head"><h2>أحدث الدروس</h2><span class="muted" id="new-for"></span></div>
         <div class="vids" id="new-list"></div>
       </section>
-      <section class="section">
-        <h2>كيف تعمل المنصة؟</h2>
-        <ol class="steps3">
-          <li><b>المعلم يسجّل درسه</b><span class="muted">في استوديو المنصة أو بجواله، ويرسله لنا فننشره على قناة مدرار العلم باسمه.</span></li>
-          <li><b>الطالب يختار</b><span class="muted">يرى دروس صفّه من كل المعلمين، مرتبة حسب المادة، ويختار من يناسبه.</span></li>
-          <li><b>في موعده أو متى شاء</b><span class="muted">يرى الطالب «الدروس القادمة» ومواعيدها ويضيفها إلى تقويمه، ثم يعود إلى أي درس قبل الاختبار.</span></li>
-        </ol>
-        <p class="muted small">ولي أمر؟ <a href="#/parents">اقرأ كيف نحمي أبناءكم</a>.</p>
-      </section>
-      <section class="cta">
-        <h2>أنت معلم وتريد التطوع؟</h2>
-        <p class="muted">ادخل بحساب Google، وسجّل درسك من شاشة حاسوبك أو بجوالك، ثم أرسله لنا: ننشره على قناة «مدرار العلم» في يوتيوب باسمك. لا تحتاج قناة، وكل شيء مجاني.</p>
-        <div class="cta-row"><a class="btn btn-primary" href="#/teach">تطوّع بدرس واحد</a><a class="btn" href="#/volunteer">كيف يعمل التطوع؟</a></div>
+      <section class="band">
+        <div><b>أنت معلم؟</b><span>اشرح حصة مباشرة لطلاب صفك، وننشر تسجيلها باسمك.</span></div>
+        <a class="btn btn-primary" href="#/teach">تطوّع معنا</a>
       </section>`;
     const conts = Object.entries(watch.read().items).map(([id, w]) => Object.assign({ id }, w))
       .filter((w) => !w.done && w.p >= 30 && Date.now() - w.at < 60 * DAY).sort((a, b) => b.at - a.at).slice(0, 4);
@@ -515,21 +485,16 @@
         sec.hidden = false;
         sec.innerHTML = `<a class="feat" href="#/s/${esc(f.id)}">
           <div class="thumb">${th ? `<img src="${esc(th)}" alt="" loading="lazy" data-ph="${esc(subjOf(f))}">` : `<span class="ph">${esc(subjOf(f))}</span>`}</div>
-          <div class="feat-text"><span class="pill pill-exam">⭐ درس الأسبوع</span><h2>${esc(f.title)}</h2>
+          <div class="feat-text"><span class="pill pill-exam">درس الأسبوع</span><h2>${esc(f.title)}</h2>
             <span class="muted">${esc(gradeName(f.grade))} · ${esc(subjOf(f))}${f.teacher ? ' · ' + esc(f.teacher.display_name || '') : ''}</span></div></a>`;
       }).catch(() => { /* اختياري */ });
     }
-    API.listPaths('').then((rows) => {
-      const list = (rows || []).sort((a, b) => (b.grade === mine) - (a.grade === mine)).slice(0, 4);
-      if (tok !== app.token || !list.length || !document.getElementById('paths-sec')) return;
-      document.getElementById('paths-sec').hidden = false;
-      document.getElementById('paths-list').innerHTML = list.map(pathCard).join('');
-    }).catch(() => { /* اختياري */ });
     // الدروس القادمة بمواعيدها (وما يُعرض الآن): لصف الطالب إن اختاره، وإلا لكل الصفوف
     (async () => {
       try {
         const g = mine && GRADES[mine] ? mine : '';
-        const rows = remember(upNow(await API.listUpcoming({ grade: g, limit: 30 }))).slice(0, g ? 4 : 3);
+        // الحصة التي تبدأ خلال ربع ساعة تظهر في «مباشر الآن»
+        const rows = remember(upNow(await API.listUpcoming({ grade: g, limit: 30 })).filter((x) => !(x.kind === 'live' && stateOf(x).key === 'soon'))).slice(0, g ? 4 : 3);
         const sec = document.getElementById('up-sec');
         if (tok !== app.token || !rows.length || !sec) return;
         sec.hidden = false;
@@ -541,7 +506,7 @@
     // أحدث الدروس: لصف الطالب إن اختاره من قبل، وإلا لكل الصفوف
     (async () => {
       try {
-        const rows = remember(await API.listLatest(mine && GRADES[mine] ? mine : '', 6));
+        const rows = remember(await API.listLatest(mine && GRADES[mine] ? mine : '', 4));
         if (tok !== app.token || !rows.length) return;
         document.getElementById('new-sec').hidden = false;
         document.getElementById('new-for').textContent = mine && GRADES[mine] ? gradeName(mine) : 'كل الصفوف';
@@ -584,7 +549,7 @@
         <div class="title-row"><h1>${esc(subj ? subjectName(subj) : g.name)}</h1>${subj ? `<span class="muted">${esc(g.name)}</span>` : ''}${g.exam ? `<span class="pill pill-exam">${esc(C.EXAM_PILL)}</span>` : ''}<span class="spacer"></span><a class="btn btn-ghost btn-sm" href="#/">تغيير الصف</a></div>
         <nav class="tabs" aria-label="أقسام الصف">
           <a href="#/g/${esc(gradeId)}"${plan ? '' : ' aria-current="page"'}>الدروس</a>
-          <a href="#/g/${esc(gradeId)}/plan"${plan ? ' aria-current="page"' : ''}>الجدول</a>
+          <a href="#/g/${esc(gradeId)}/plan"${plan ? ' aria-current="page"' : ''}>جدول الحصص</a>
         </nav>
       </header>
       <div id="grade-body"><p class="loading">جارٍ تحميل الدروس…</p></div>`;
@@ -760,14 +725,22 @@
     let offset = 0;
     let items = [];
     let seq = 0;
-    body.innerHTML = `${subjChips(gradeId, '')}${searchHtml(gradeId, '')}<div id="dipl"></div><div id="g-paths"></div><div id="main-list"><p class="loading">جارٍ التحميل…</p></div>${requestHtml(gradeId, '')}`;
+    body.innerHTML = `<div id="g-up"></div>${subjChips(gradeId, '')}${searchHtml(gradeId, '')}<div id="dipl"></div><div id="main-list"><p class="loading">جارٍ التحميل…</p></div><div id="g-paths"></div>${requestHtml(gradeId, '')}`;
+    // الحصص القادمة لهذا الصف أولاً
+    API.listUpcoming({ grade: gradeId, limit: 12 }).then((rows) => {
+      const box = $('#g-up');
+      const list = upNow(rows || []).slice(0, 3);
+      if (tok !== app.token || !box || !list.length) return;
+      remember(list);
+      box.innerHTML = `<section class="section"><div class="section-head"><h2>القادم</h2><span class="spacer"></span><a class="btn btn-ghost btn-sm" href="#/g/${esc(gradeId)}/plan">جدول الحصص</a></div>${upCards(list)}</section>`;
+    }).catch(() => { /* اختياري */ });
     API.listPaths(gradeId).then((rows) => {
       const box = $('#g-paths');
       if (tok !== app.token || !box || !rows || !rows.length) return;
       box.innerHTML = `<section class="section"><div class="section-head"><h2>مسارات جاهزة</h2></div><div class="pcards">${rows.slice(0, 6).map(pathCard).join('')}</div></section>`;
     }).catch(() => { /* اختياري */ });
     chipIntoView(body);
-    bindSearch(tok, gradeId, '', (on) => { ['#main-list', '#dipl', '#g-paths'].forEach((x) => { const el = $(x); if (el) el.hidden = on; }); });
+    bindSearch(tok, gradeId, '', (on) => { ['#main-list', '#dipl', '#g-paths', '#g-up'].forEach((x) => { const el = $(x); if (el) el.hidden = on; }); });
     bindRequest(gradeId);
     if (isExamGrade(gradeId)) {
       API.listExamLessons(gradeId).then((rows) => {
@@ -802,7 +775,7 @@
       if (!box) return;
       box.innerHTML = items.length ? `<div class="vids">${items.map((s) => vidHtml(s)).join('')}</div>
           ${hasMore ? '<div class="row" style="justify-content:center;padding-bottom:24px"><button type="button" class="btn" id="more">عرض المزيد</button></div>' : ''}`
-        : `<div class="empty"><b>لا توجد دروس بعد</b><span>تظهر هنا الدروس فور نشرها. شارك المنصة مع معلميك ليتطوعوا!</span><a class="btn" href="#/g/${esc(gradeId)}/plan">الدروس المجدولة</a></div>`;
+        : `<div class="empty"><b>لا توجد دروس بعد</b><a class="btn" href="#/g/${esc(gradeId)}/plan">جدول الحصص</a></div>`;
       const m = document.getElementById('more');
       if (m) m.addEventListener('click', () => { m.disabled = true; load(true); });
     }
@@ -1161,8 +1134,9 @@
           <li><b>أو اطلب الانضمام مباشرة:</b> ادخل بحساب Google وأكمل ملفك، وتراجع الإدارة حسابك وقناتك على يوتيوب.</li>
           <li>أول ${n} دروس للمتطوع الجديد تراجعها الإدارة قبل ظهورها للطلاب، ثم تُنشر دروسك مباشرة.</li>
         </ol>
-        <h2>كيف تسجّل الدرس؟</h2>
-        <p>في استوديو المنصة تسجّل شاشتك وصوتك فقط، بلا كاميرا وبلا برامج، أو تصوّر بجوالك، ثم تضغط «أرسل الدرس» فننشره على قناة «مدرار العلم» في يوتيوب باسمك. لا تحتاج قناة، ومن يفضّل قناته الخاصة يلصق رابط الفيديو. وتختار متى يشاهده الطلاب: فور نشره، أو في موعد تحدده. <a href="#/guide">دليل المعلم خطوة بخطوة</a>.</p>
+        <h2>كيف تشرح؟</h2>
+        <p><b>حصة مباشرة:</b> تحدد اليوم والساعة وتضع رابط الحصة من Google Meet أو Zoom أو Teams، فيحضرها الطلاب من المنصة في موعدها. وبعدها ترسل تسجيلها فننشره على قناة «مدرار العلم» في يوتيوب باسمك لمن فاته الحضور.</p>
+        <p><b>أو درس مسجّل:</b> في استوديو المنصة تسجّل شاشتك وصوتك فقط بلا برامج، أو تصوّر بجوالك، ثم تضغط «أرسل الدرس». لا تحتاج قناة يوتيوب في الحالتين. <a href="#/guide">دليل المعلم خطوة بخطوة</a>.</p>
         <h2>ماذا تجد في المنصة؟</h2>
         <ul>
           <li>أثر دروسك: المشاهدات وشكر الطلاب، شهرياً.</li>
@@ -1172,20 +1146,21 @@
         </ul>
         <h2>ميثاق المتطوع باختصار</h2>
         <p>الشرح مجاني بالكامل، بلا إعلانات لدروس أو دورات مدفوعة، وبلا أي تواصل خاص مع الطلاب. <a href="#/about">اقرأ الميثاق كاملاً</a>.</p>
-        <div class="cta-row"><a class="btn btn-primary btn-lg" href="#/teach">تطوّع بدرس واحد</a><a class="btn" href="#/dashboard">اطلب الانضمام</a><a class="btn" href="#/guide">كيف أسجّل درسي؟</a></div>
+        <div class="cta-row"><a class="btn btn-primary btn-lg" href="#/teach">تطوّع بدرس واحد</a><a class="btn" href="#/dashboard">اطلب الانضمام</a><a class="btn" href="#/guide">كيف أبدأ؟</a></div>
       </article>`;
   }
   function pageParents() {
     setNav(''); setTitle('لأولياء الأمور');
     view.innerHTML = `
       <header class="page-head"><h1>لأولياء الأمور: كيف نحمي أبناءكم؟</h1>
-        <p class="muted">${esc(C.SITE_NAME)} منصة مجانية لدروس مسجّلة، صُممت لتكون آمنة للطلاب من الصف الأول إلى الثاني عشر.</p></header>
+        <p class="muted">${esc(C.SITE_NAME)} منصة مجانية لحصص مباشرة ودروس مسجّلة، صُممت لتكون آمنة للطلاب من الصف الأول إلى الثاني عشر.</p></header>
       <article class="prose">
         <h2>ما الذي يفعله ابنك في المنصة؟</h2>
-        <p>يختار صفّه ثم المادة، ويشاهد دروساً مسجّلة يقدّمها معلمون متطوعون، مرتبة كما في كتابه المدرسي. وفي قسم المهارات دورات مثل الذكاء الاصطناعي والتصميم والبرمجة.</p>
+        <p>يختار صفّه، فيحضر الحصص المباشرة في مواعيدها، ويشاهد الدروس المسجّلة مرتبة كما في كتابه المدرسي. وفي قسم المهارات دورات مثل الذكاء الاصطناعي والتصميم والبرمجة.</p>
         <h2>الأمان</h2>
         <ul>
-          <li><b>لا تواصل مباشر:</b> لا دردشة ولا رسائل ولا بث مباشر داخل المنصة. الطالب يشاهد فيديو مسجّلاً فقط.</li>
+          <li><b>لا تواصل خاص:</b> لا دردشة ولا رسائل داخل المنصة. الحصة المباشرة تُعقد في Google Meet أو Zoom أو Teams، ويدخلها الطالب باسمه الأول فقط، ورابطها لا يظهر إلا قبل الحصة بربع ساعة.</li>
+          <li><b>تسجيل الحصة</b> يُنشر لشرح المعلم فقط، دون أسماء الطلاب أو صورهم أو أصواتهم.</li>
           <li><b>المتطوعون تحت المراجعة:</b> كل متطوع جديد تراجع الإدارة حسابه، وأول ${fNum(C.TRUST_AFTER || 3)} دروس له قبل ظهورها، وشارة «موثّق ✓» لمن تحقّقت منه الإدارة.</li>
           <li><b>الإبلاغ:</b> تحت كل درس زر «الإبلاغ عن مشكلة»، والإدارة تُخفي أي درس مخالف وتوقف صاحبه.</li>
           <li><b>بلا إعلانات</b> ولا دورات مدفوعة، وهذا شرط في ميثاق المتطوعين.</li>
@@ -1224,7 +1199,8 @@
         return `<div class="ph"><b>الفيديو في طريقه</b><span>${s.upload_state ? 'أرسله المعلم للمنصة، وتنشره الإدارة على قناة مدرار العلم قريباً.' : 'سيُضاف الفيديو قريباً.'} ستتحدّث هذه الصفحة تلقائياً.</span></div>`;
       }
       if (!url) {
-        return `<div class="ph"><b>${st.key === 'live' ? 'الحصة بدأت' : 'الحصة تبدأ قريباً'}</b><span>لم يضع المعلم رابط البث بعد. ستتحدّث هذه الصفحة تلقائياً عند إضافته.</span></div>`;
+        // حصة Meet أو Zoom أو Teams: زر الدخول يُملأ بعد جلب الرابط (joinHtml)
+        return `<div class="ph ph-join" data-join><b>${st.key === 'live' ? 'الحصة بدأت الآن' : 'الحصة تبدأ ' + esc(rel(new Date(s.starts_at) - Date.now()))}</b><span>جارٍ تجهيز رابط الدخول…</span></div>`;
       }
       if (isDemoVideo(url)) {
         return `<div class="ph"><b>هنا يظهر فيديو يوتيوب</b><span>في المنصة الحقيقية يعمل الفيديو داخل الصفحة مباشرة.</span></div>`;
@@ -1242,10 +1218,24 @@
       return `<div class="ph ph-up"><span>${s.kind === 'recorded' ? 'يُعرض الدرس' : 'تبدأ الحصة'}</span><span class="big" data-count>${esc(rel(d - Date.now()))}</span>
         <span class="up-when">${esc(dayLabel(d))} · الساعة ${esc(time(d))}</span>
         <div class="row up-btns">${remindHtml(s)}</div>
-        <span class="small">يُفتح الدرس هنا في موعده تلقائياً.</span></div>`;
+        <span class="small">${s.kind === 'recorded' ? 'يُفتح الدرس هنا في موعده تلقائياً.' : 'يظهر هنا زر «ادخل الحصة» قبل موعدها بربع ساعة.'}</span></div>`;
     }
     if (st.key === 'cancelled') return '<div class="ph"><b>ألغى المعلم هذه الحصة</b><span>اختر معلماً آخر من جدول الصف.</span></div>';
+    if (s.upload_state) return '<div class="ph"><b>انتهت الحصة، وتسجيلها في طريقه</b><span>أرسله المعلم للمنصة، وتنشره الإدارة على قناة مدرار العلم قريباً. ستتحدّث هذه الصفحة تلقائياً.</span></div>';
     return '<div class="ph"><b>انتهت الحصة</b><span>لم يُضف تسجيل لها بعد.</span></div>';
+  }
+
+  // زر الدخول لحصة Meet أو Zoom أو Teams (j من API.joinLink)
+  function joinHtml(s, j, mine) {
+    const live = stateOf(s).key === 'live';
+    const head = `<b>${live ? 'الحصة بدأت الآن' : 'الحصة تبدأ ' + esc(rel(new Date(s.starts_at) - Date.now()))}</b>`;
+    if (j && j.url) {
+      const app2 = meetApp(j.url);
+      return `${head}<a class="btn btn-live btn-lg" href="${esc(j.url)}" target="_blank" rel="noopener">${mine ? 'افتح رابط حصتك' : 'ادخل الحصة'} عبر ${esc(app2)}</a>
+        <span class="small">${mine ? 'سجّل الحصة لترسل تسجيلها بعدها.' : 'ادخل باسمك الأول فقط.'}</span>`;
+    }
+    if (j && j.has) return `${head}<span>يظهر زر الدخول هنا قبل الحصة بربع ساعة.</span>`;
+    return `${head}<span>لم يضع المعلم رابط الحصة بعد. ستتحدّث هذه الصفحة تلقائياً عند إضافته.</span>`;
   }
 
   // ------------------------------------------------------------------
@@ -1400,7 +1390,7 @@
               <dt>${s.kind === 'recorded' ? (showAt ? 'موعد العرض' : 'نُشر') : 'الموعد'}</dt><dd>${esc(fFull.format(new Date(s.starts_at)))}${showAt ? ' · ' + esc(time(s.starts_at)) : ''}</dd>
               ${s.kind === 'recorded' ? '' : `<dt>الوقت</dt><dd>${esc(time(s.starts_at))} – ${esc(time(s.ends_at))}</dd>`}
               <dt>المدة</dt><dd>${esc(minsTxt(minutes(s)))}</dd>
-              <dt>النوع</dt><dd>${s.kind === 'recorded' ? (s.lesson_type && s.lesson_type !== 'lesson' ? esc(typeName(s.lesson_type, s.grade)) : 'درس مسجّل') : 'بث مباشر'}</dd>
+              <dt>النوع</dt><dd>${s.kind === 'recorded' ? (s.lesson_type && s.lesson_type !== 'lesson' ? esc(typeName(s.lesson_type, s.grade)) : 'درس مسجّل') : 'حصة مباشرة'}</dd>
               ${s.term ? `<dt>الفصل</dt><dd>${esc(TERMS[s.term])}</dd>` : ''}
               ${s.unit && !sk ? `<dt>الوحدة</dt><dd>${esc(unitLabel(s).replace(/^الوحدة /, ''))}</dd>` : ''}
               ${s.exam_year ? `<dt>الامتحان</dt><dd>${esc(examLine(s))}</dd>` : ''}
@@ -1532,6 +1522,20 @@
     }
     bindFacade();
     drawWatchRow();
+    // حصة Meet أو Zoom أو Teams: زر الدخول (يظهر الرابط قبل الحصة بربع ساعة)
+    let joinAt = 0; let joinUrl = null;
+    async function fillJoin() {
+      const box = $('#player [data-join]');
+      if (!box || !API.joinLink) return;
+      joinAt = Date.now();
+      try {
+        const j = await API.joinLink(s.id);
+        if (tok !== app.token || !box.isConnected) return;
+        joinUrl = j && j.url;
+        box.innerHTML = joinHtml(s, j, !!(mine || admin));
+      } catch (e) { const sp = box.isConnected && $('span', box); if (sp) sp.textContent = 'تعذّر جلب رابط الدخول. حدّث الصفحة.'; }
+    }
+    fillJoin();
 
     // «هل أفادك الدرس؟» شكر مجهول يصل إلى المعلم كرقم فقط
     function drawThanks() {
@@ -1599,13 +1603,13 @@
       const k = stateOf(s).key;
       // العدّ التنازلي، وانتظار فيديو لم يُضف بعد (حصة بلا رابط، أو درس أُرسل للمنصة)
       if (k === 'upcoming') { const c = $('#player [data-count]'); if (c) c.textContent = rel(new Date(s.starts_at) - Date.now()); }
-      const waiting = ((k === 'soon' || k === 'live') && !s.video_url) || (s.kind === 'recorded' && k !== 'upcoming' && !videoOf(s));
+      const waiting = ((k === 'soon' || k === 'live') && !s.video_url) || (s.kind === 'recorded' && k !== 'upcoming' && !videoOf(s)) || (k === 'ended' && !!s.upload_state);
       if (waiting && Date.now() - lastFetch > 45000) {
         lastFetch = Date.now();
         try {
           const fresh = await API.getSession(s.id);
           if (tok !== app.token || !fresh) return;
-          if (fresh.video_url !== s.video_url || fresh.recording_url !== s.recording_url || fresh.status !== s.status) {
+          if (fresh.video_url !== s.video_url || fresh.recording_url !== s.recording_url || fresh.status !== s.status || fresh.upload_state !== s.upload_state) {
             s = fresh; remember([s]); lastKey = '';
           }
         } catch (e) { /* محاولة لاحقة */ }
@@ -1613,8 +1617,10 @@
       if (k !== lastKey) {
         lastKey = k;
         const p = $('#player');
-        if (p && p.dataset.h !== 'mounted') { const h = playerHtml(s); if (p.dataset.h !== h) { p.innerHTML = h; p.dataset.h = h; bindFacade(); drawWatchRow(); } }
+        if (p && p.dataset.h !== 'mounted') { const h = playerHtml(s); if (p.dataset.h !== h) { p.innerHTML = h; p.dataset.h = h; bindFacade(); drawWatchRow(); fillJoin(); } }
         drawThanks();
+      } else if (!joinUrl && $('#player [data-join]') && Date.now() - joinAt > 45000) {
+        fillJoin();
       }
     };
 
@@ -2083,16 +2089,15 @@
     const claimLvl = CERT_LEVELS.slice().reverse().find((l) => l <= n && l > top);
     const canClaim = p.status === 'approved' && !!claimLvl;
     const tile = (num, label) => `<div class="tile"><b class="num">${fNum(num)}</b><span>${label}</span></div>`;
-    box.innerHTML = `<section class="section"><div class="section-head"><h2>أثر دروسك</h2>${stats ? '<span class="muted small">تُحسب المشاهدة بعد دقيقة من التشغيل، دون معرفة الطالب.</span>' : ''}</div>
-      ${stats && (sum('views30') || sum('thanks30')) ? `<p class="month-note">📈 خلال آخر 30 يوماً شاهد الطلاب دروسك <b>${fNum(sum('views30'))}</b> مرة، وشكروك <b>${fNum(sum('thanks30'))}</b> مرة. جزاك الله خيراً!</p>` : ''}
-      <div class="tiles">${tile(published, 'درس منشور')}${stats ? tile(sum('views'), 'مشاهدة') + tile(sum('views7'), 'مشاهدة هذا الأسبوع') + tile(sum('thanks'), '«جزاك الله خيراً»') + tile(sum('understood'), '«فهمتُ الدرس»') : ''}</div>
+    if (!published && !(certs || []).length) { box.innerHTML = ''; return; }
+    box.innerHTML = `<section class="section"><div class="section-head"><h2>أثر دروسك</h2></div>
+      <div class="tiles">${tile(published, 'درس منشور')}${stats ? tile(sum('views'), 'مشاهدة') + tile(sum('thanks') + sum('understood'), 'شكر من الطلاب') : ''}</div>
       <div class="box cert-box">
-        <div class="row"><h2>شهادة شكر وتقدير</h2><span class="spacer"></span>${(certs || []).map((c) => `<a class="btn btn-sm${c.revoked ? ' btn-ghost' : ''}" href="#/c/${esc(c.code)}">${c.revoked ? 'ملغاة: ' : ''}شهادة ${lessonsN(c.level)}</a>`).join('')}</div>
-        ${canClaim ? `<p>لديك ${lessonsN(n)} تُحسب للشهادة. جزاك الله خيراً! شهادتك جاهزة.</p><div><button type="button" class="btn btn-primary" id="claim">استلم شهادة ${lessonsN(claimLvl)}</button></div>`
-          : next ? `<p class="muted">تصدر المنصة شهادة شكر برمز تحقق عند بلوغ ${CERT_LEVELS.map((l) => fNum(l)).join(' و')} من الدروس. ${n < next ? `باقٍ ${lessonsN(next - n)} للشهادة التالية.` : ''}</p>
-            <div class="meter cert-meter" role="progressbar" aria-valuemin="0" aria-valuemax="${next}" aria-valuenow="${Math.min(n, next)}" aria-label="التقدم نحو الشهادة التالية"><span style="width:${Math.round(Math.min(1, n / next) * 100)}%"></span></div>
-            <span class="hint">يُحسب الدرس بعد 3 أيام من نشره إن كان 5 دقائق فأكثر.${p.status !== 'approved' ? ' وتصدر الشهادة بعد اعتماد حسابك.' : ''}</span>`
-          : '<p>هذا أعلى مستوى من الشهادات. جزاك الله عن طلابك خير الجزاء.</p>'}
+        <div class="row"><h3>شهادة الشكر</h3><span class="spacer"></span>${(certs || []).map((c) => `<a class="btn btn-sm${c.revoked ? ' btn-ghost' : ''}" href="#/c/${esc(c.code)}">${c.revoked ? 'ملغاة: ' : ''}شهادة ${lessonsN(c.level)}</a>`).join('')}</div>
+        ${canClaim ? `<div><button type="button" class="btn btn-primary" id="claim">استلم شهادة ${lessonsN(claimLvl)}</button></div>`
+          : next ? `<div class="meter cert-meter" role="progressbar" aria-valuemin="0" aria-valuemax="${next}" aria-valuenow="${Math.min(n, next)}" aria-label="التقدم نحو الشهادة التالية"><span style="width:${Math.round(Math.min(1, n / next) * 100)}%"></span></div>
+            <span class="hint">${fNum(Math.min(n, next))} من ${fNum(next)} دروس</span>`
+          : ''}
       </div></section>`;
     // أرقام كل درس بجانبه
     (stats || []).forEach((x) => {
@@ -2129,7 +2134,7 @@
     const done = (rows || []).filter((q) => q.status === 'done');
     if (!open.length && !done.length) return;
     const what = (q) => [q.topic, q.unit ? 'الوحدة ' + fNum(q.unit) : '', q.term ? TERMS[q.term] : ''].filter(Boolean).join(' · ');
-    box.innerHTML = `<section class="section"><div class="section-head"><h2>طلبات طلاب صفوفك</h2><span class="muted small">دروس طلبها الطلاب في موادك. سجّل ما يناسبك، والطالب يرى أنه صار متاحاً.</span></div>
+    box.innerHTML = `<section class="section"><div class="section-head"><h2>طلبات الطلاب</h2></div>
       ${open.length ? `<div class="list">${open.map((q) => `<div class="item req-item" data-q="${esc(q.id)}">
         <div class="when"><b class="num">${fNum(q.votes)}</b><span>${q.votes === 1 ? 'طالب' : q.votes === 2 ? 'طالبان' : q.votes <= 10 ? 'طلاب' : 'طالباً'}</span></div>
         <div class="what"><b>${esc(what(q) || 'درس')}</b><div class="row"><span>${esc(gradeName(q.grade))}</span><span>·</span><span>${esc(subjectName(q.subject))}</span></div></div>
@@ -2158,12 +2163,11 @@
     try { nm = await API.myNomination(); } catch (e) { return; }
     if (tok !== app.token || !nm || !$('#nominate')) return;
     const link = pageUrl('#/join/' + nm.code);
-    box.innerHTML = `<section class="section"><div class="box nominate"><h2>رشّح زميلاً موثوقاً</h2>
-      <p class="muted">تعرف معلماً أو متخصصاً متميزاً؟ أرسل له هذا الرابط فيُعتمد حسابه مباشرة، ويظهر في صفحته أنك رشّحته. تراجع الإدارة أول ${fNum(C.TRUST_AFTER || 3)} دروس له.</p>
+    box.innerHTML = `<section class="section"><details class="more nominate"><summary>رشّح زميلاً</summary>
       <div class="row"><input class="input" readonly value="${esc(link)}" aria-label="رابط الترشيح" style="flex:1 1 240px;direction:ltr">
         <button type="button" class="btn" id="nm-copy">نسخ الرابط</button>
         <a class="btn" href="https://wa.me/?text=${encodeURIComponent('أدعوك للتطوع معي في ' + C.SITE_NAME + ': ' + link)}" target="_blank" rel="noopener">إرسال عبر واتساب</a></div>
-      <span class="hint">باقٍ ${plural(nm.uses_left, 'ترشيح واحد', 'ترشيحان', 'ترشيحات', 'ترشيحاً')}. رشّح من تعرفه شخصياً فقط.</span></div></section>`;
+      <span class="hint">باقٍ ${plural(nm.uses_left, 'ترشيح واحد', 'ترشيحان', 'ترشيحات', 'ترشيحاً')}. رشّح من تعرفه شخصياً فقط.</span></details></section>`;
     $('#nm-copy').addEventListener('click', () => copyText(link));
   }
   // مساراتي: للمعلم الموثوق والمشرف
@@ -2172,9 +2176,9 @@
     if (!box || !API.myPaths || !((p.status === 'approved' && p.trusted) || p.is_admin)) return;
     let rows;
     try { rows = await API.myPaths(); } catch (e) { return; }
-    if (tok !== app.token || !$('#mypaths')) return;
-    box.innerHTML = `<section class="section"><div class="section-head"><h2>مساراتي</h2><span class="muted small">رتّب دروساً (لك أو لغيرك) في مسار يتابعه الطالب خطوة بخطوة، مثل «استعد لاختبار الرياضيات».</span>
-        <span class="spacer"></span><a class="btn btn-sm btn-primary" href="#/dashboard/path/new">مسار جديد</a></div>
+    if (tok !== app.token || !$('#mypaths') || !rows.length) return;
+    box.innerHTML = `<section class="section"><div class="section-head"><h2>مساراتي</h2>
+        <span class="spacer"></span><a class="btn btn-sm" href="#/dashboard/path/new">مسار جديد</a></div>
       ${rows.length ? `<div class="list">${rows.map((x) => `<div class="item" style="grid-template-columns:minmax(0,1fr) auto">
         <div class="what"><b><a href="#/p/${esc(x.id)}">${esc(x.title)}</a></b><div class="row"><span>${esc(gradeName(x.grade))}</span><span>·</span><span>${lessonsN((x.items || []).length)}</span>${x.published ? '<span class="pill pill-ok">منشور</span>' : '<span class="pill">مسودة</span>'}</div></div>
         <div class="tools"><a class="btn btn-sm" href="#/dashboard/path/${esc(x.id)}">تعديل</a></div></div>`).join('')}</div>`
@@ -2392,6 +2396,10 @@
     try { list = await API.mySessions(); }
     catch (e) { if (tok === app.token) { view.innerHTML = errorBox(e, true); $('[data-retry]').addEventListener('click', route); } return; }
     if (tok !== app.token) return;
+    // روابط Meet أو Zoom أو Teams للحصص المباشرة
+    let links = {};
+    const liveIds = list.filter((s) => s.kind === 'live').map((s) => s.id);
+    if (liveIds.length) { try { links = await API.myLinks(liveIds); } catch (e) { /* تبقى بلا روابط */ } if (tok !== app.token) return; }
     const now = Date.now();
     // الدرس المسجّل يُعد منشوراً من لحظة نشره، والحصة المباشرة بعد انتهائها
     const isDone = (s) => (s.kind === 'recorded' ? +new Date(s.starts_at) : +new Date(s.ends_at)) <= now;
@@ -2399,12 +2407,16 @@
     const sending = list.filter((s) => s.upload_state);
     const upcoming = list.filter((s) => !s.upload_state && !isDone(s)).reverse();
     const past = list.filter((s) => !s.upload_state && isDone(s));
-    const missingLinks = upcoming.filter((s) => s.kind === 'live' && s.status === 'scheduled' && !s.video_url && +new Date(s.starts_at) - now < DAY).length;
+    const missingLinks = upcoming.filter((s) => s.kind === 'live' && s.status === 'scheduled' && !s.video_url && !links[s.id] && +new Date(s.starts_at) - now < DAY).length;
+    // حصص مباشرة انتهت خلال أسبوع ولم يُرسل تسجيلها
+    const needRec = (s) => s.kind === 'live' && s.status === 'scheduled' && !s.upload_state && !s.video_url && !s.recording_url && +new Date(s.starts_at) <= now;
+    const noRec = past.filter((s) => needRec(s) && now - +new Date(s.ends_at) < 7 * DAY).length;
     const fl = app.flash; app.flash = null;
     const row = (s) => {
       const st = stateOf(s);
       const d = new Date(s.starts_at);
-      const hasLink = !!(s.video_url || s.recording_url);
+      const hasLink = !!(s.video_url || s.recording_url || links[s.id]);
+      const startsSoon = s.kind === 'live' && s.status === 'scheduled' && links[s.id] && +new Date(s.starts_at) - now < 3600e3 && +new Date(s.ends_at) > now;
       return `<div class="item${s.status === 'cancelled' ? ' cancelled' : ''}" data-id="${esc(s.id)}">
         <div class="when"><b>${esc(time(d))}</b><span>${esc(fWd.format(d))} ${esc(fDateShort.format(d))}</span></div>
         <div class="what"><b><a href="#/s/${esc(s.id)}">${esc(s.title)}</a></b>
@@ -2414,8 +2426,10 @@
           ${s.review === 'rejected' ? `<span class="small reject-note">${s.review_note ? 'السبب: ' + esc(s.review_note) + ' — ' : ''}${s.kind === 'recorded' && !hasLink && !s.upload_state ? 'أرسل الفيديو من جديد بعد تصحيحه، فيعود إلى المراجعة.' : 'عدّل الدرس فيعود إلى المراجعة.'}</span>` : ''}</div>
         <div class="tools">
           ${s.upload_state === 'uploading' ? `<a class="btn btn-sm btn-primary" href="#/dashboard/resume/${esc(s.id)}">أكمل الإرسال</a>` : ''}
+          ${startsSoon ? `<a class="btn btn-sm btn-live" href="${esc(links[s.id])}" target="_blank" rel="noopener">ابدأ الحصة</a>` : ''}
+          ${needRec(s) && isDone(s) ? `<a class="btn btn-sm btn-primary" href="#/dashboard/rec/${esc(s.id)}">أرسل تسجيل الحصة</a>` : ''}
           ${s.status === 'scheduled' && +new Date(s.starts_at) > now && (s.review || 'ok') === 'ok' ? `<a class="btn btn-sm btn-ghost" href="${esc(whatsappUrl(s))}" target="_blank" rel="noopener">شارك الموعد</a>` : ''}
-          <a class="btn btn-sm" href="#/dashboard/edit/${esc(s.id)}">${!s.upload_state && s.kind === 'recorded' && !hasLink && s.status === 'scheduled' ? 'أضف الفيديو' : !s.upload_state && (st.key === 'ended' || (!hasLink && s.status === 'scheduled')) ? 'أضف الرابط' : 'تعديل'}</a>
+          <a class="btn btn-sm" href="#/dashboard/edit/${esc(s.id)}">${!s.upload_state && s.kind === 'recorded' && !hasLink && s.status === 'scheduled' ? 'أضف الفيديو' : !s.upload_state && !hasLink && s.status === 'scheduled' && st.key !== 'ended' ? 'أضف الرابط' : 'تعديل'}</a>
           ${s.kind === 'recorded' ? '' : `<a class="btn btn-sm btn-ghost" href="#/dashboard/copy/${esc(s.id)}">نسخ</a>`}
           ${!isDone(s) ? `<button type="button" class="btn btn-sm btn-ghost" data-toggle="${esc(s.id)}">${s.status === 'cancelled' ? 'إعادة إلى الجدول' : s.kind === 'recorded' ? 'إلغاء النشر' : 'إلغاء الحصة'}</button>` : ''}
           <button type="button" class="btn btn-sm btn-ghost btn-danger" data-del="${esc(s.id)}">حذف</button>
@@ -2425,34 +2439,36 @@
       <header class="dash-head">${avatar(p.display_name, p.avatar_url || app.user.avatar, 'av-lg')}
         <div class="who-big"><h1>${esc(p.display_name)}</h1><div class="row">${statusPill(p.status)}${p.is_admin ? '<span class="pill">مشرف</span>' : ''}</div></div>
         <span class="spacer"></span>
-        <div class="dash-actions">
-          ${p.status !== 'suspended' ? '<a class="btn btn-primary" href="#/studio">سجّل درساً جديداً</a><a class="btn" href="#/dashboard/new">أضف درساً جاهزاً</a>' : ''}
-          <a class="btn" href="#/profile">ملفي</a>
-          <a class="btn" href="#/t/${esc(p.id)}">صفحتي العامة</a>
-          ${p.is_admin ? '<a class="btn" href="#/admin">الإدارة <span class="badge-n" data-admin-n hidden></span></a>' : ''}
-          <a class="btn btn-ghost" href="#/guide">دليل المعلم</a>
-        </div>
+        ${p.is_admin ? '<a class="btn" href="#/admin">الإدارة <span class="badge-n" data-admin-n hidden></span></a>' : ''}
       </header>
-      ${p.status === 'pending' ? '<div class="note warn"><b>حسابك قيد المراجعة.</b><span>يمكنك تسجيل دروسك ونشرها الآن، وستظهر للطلاب بعد أن تعتمد إدارة المنصة حسابك.</span></div>' : ''}
-      ${p.status === 'suspended' ? '<div class="note bad"><b>حسابك موقوف.</b><span>دروسك لا تظهر للطلاب. تواصل مع إدارة المنصة.</span></div>' : ''}
-      ${fl && fl.kind === 'sent' ? `<div class="note ok-note" style="margin-top:10px" role="status"><b>وصل درسك «${esc(fl.title)}» 🎉</b><span>ستراجعه الإدارة وتنشره على قناة «مدرار العلم» باسمك، ثم يظهر للطلاب ${fl.at ? `في موعده: ${esc(dayLabel(new Date(fl.at)))} الساعة ${esc(time(fl.at))}` : 'فور نشره'}.</span></div>` : ''}
-      ${missingLinks ? `<div class="note warn" style="margin-top:10px"><b>${plural(missingLinks, 'حصة واحدة', 'حصتان', 'حصص', 'حصة')} خلال 24 ساعة بلا رابط بث.</b><span>أضف رابط يوتيوب حتى يتمكن الطلاب من الدخول.</span></div>` : ''}
+      ${p.status !== 'suspended' ? `<div class="dash-actions">
+        <a class="act-tile act-main" href="#/dashboard/live"><b>حصة مباشرة جديدة</b><span>Meet · Zoom · Teams</span></a>
+        <a class="act-tile" href="#/studio"><b>سجّل درساً جديداً</b><span>شاشتك وصوتك</span></a>
+        <a class="act-tile" href="#/dashboard/new"><b>أضف درساً جاهزاً</b><span>فيديو من جهازك</span></a>
+      </div>` : ''}
+      <nav class="dash-links"><a href="#/profile">ملفي</a><a href="#/t/${esc(p.id)}">صفحتي العامة</a>${(p.status === 'approved' && p.trusted) || p.is_admin ? '<a href="#/dashboard/path/new">مسار جديد</a>' : ''}<a href="#/guide">دليل المعلم</a></nav>
+      ${p.status === 'pending' ? '<div class="note warn"><b>حسابك قيد المراجعة.</b><span>تظهر حصصك للطلاب بعد اعتماده.</span></div>' : ''}
+      ${p.status === 'suspended' ? '<div class="note bad"><b>حسابك موقوف.</b><span>تواصل مع إدارة المنصة.</span></div>' : ''}
+      ${fl && fl.kind === 'sent' && fl.rec ? `<div class="note ok-note" style="margin-top:10px" role="status"><b>وصل تسجيل حصتك «${esc(fl.title)}» 🎉</b><span>تنشره الإدارة على قناة «مدرار العلم» باسمك، ثم يظهر في صفحة الحصة لمن فاته الحضور.</span></div>` : ''}
+      ${fl && fl.kind === 'sent' && !fl.rec ? `<div class="note ok-note" style="margin-top:10px" role="status"><b>وصل درسك «${esc(fl.title)}» 🎉</b><span>ستراجعه الإدارة وتنشره على قناة «مدرار العلم» باسمك، ثم يظهر للطلاب ${fl.at ? `في موعده: ${esc(dayLabel(new Date(fl.at)))} الساعة ${esc(time(fl.at))}` : 'فور نشره'}.</span></div>` : ''}
+      ${missingLinks ? `<div class="note warn" style="margin-top:10px"><b>${plural(missingLinks, 'حصة واحدة', 'حصتان', 'حصص', 'حصة')} خلال 24 ساعة بلا رابط.</b><span>أضف رابط الحصة من Google Meet أو Zoom أو Teams حتى يتمكن الطلاب من الدخول.</span></div>` : ''}
+      ${noRec ? `<div class="note" style="margin-top:10px"><b>${plural(noRec, 'حصة انتهت', 'حصتان انتهتا', 'حصص انتهت', 'حصة انتهت')} دون تسجيل.</b><span>أرسل تسجيلها من زر «أرسل تسجيل الحصة»، فننشره على قناة «مدرار العلم» لمن فاته الحضور.</span></div>` : ''}
       ${p.status === 'approved' && p.trusted !== undefined && !p.trusted && !p.is_admin ? (() => {
         const n = C.TRUST_AFTER || 3;
         const ok = list.filter((s) => (s.review || 'ok') === 'ok').length;
-        return `<div class="note" style="margin-top:10px"><b>أهلاً بك متطوعاً جديداً</b><span>تراجع الإدارة أول ${fNum(n)} دروس لك قبل ظهورها للطلاب، ثم تُنشر دروسك مباشرة. اعتُمد لك حتى الآن ${fNum(Math.min(ok, n))} من ${fNum(n)}.</span></div>`;
+        return `<div class="note" style="margin-top:10px"><b>أهلاً بك</b><span>أول ${fNum(n)} دروس تراجعها الإدارة قبل ظهورها (اعتُمد ${fNum(Math.min(ok, n))} من ${fNum(n)}).</span></div>`;
       })() : ''}
-      <div id="unpub"></div><div id="impact"></div><div id="reqs"></div><div id="nominate"></div><div id="mypaths"></div>
-      ${sending.length ? `<section class="section"><div class="section-head"><h2>أرسلتها للمنصة</h2><span class="muted">${fNum(sending.length)}</span></div>
-        <p class="muted small">تنشرها الإدارة على قناة «مدرار العلم» باسمك، ثم تظهر للطلاب في موعدها.</p>
-        <div class="list">${sending.map(row).join('')}</div></section>` : ''}
-      ${upcoming.length ? `<section class="section"><div class="section-head"><h2>دروسك القادمة</h2><span class="muted">${fNum(upcoming.length)}</span></div>
-        <p class="muted small">يراها الطلاب في «الدروس القادمة» مع عدّ تنازلي، ويُعرض كل درس في موعده. شارك الموعد مع طلابك عبر واتساب.</p>
+      <div id="unpub"></div>
+      ${upcoming.length ? `<section class="section"><div class="section-head"><h2>حصصك ودروسك القادمة</h2><span class="muted">${fNum(upcoming.length)}</span></div>
         <div class="list">${upcoming.map(row).join('')}</div></section>` : ''}
+      ${sending.length ? `<section class="section"><div class="section-head"><h2>أرسلتها للمنصة</h2><span class="muted">${fNum(sending.length)} · تنشرها الإدارة قريباً</span></div>
+        <div class="list">${sending.map(row).join('')}</div></section>` : ''}
+      <div id="reqs"></div>
       <section class="section"><div class="section-head"><h2>دروسي المنشورة</h2><span class="muted">${fNum(past.length)}</span></div>
         ${past.length ? `<div class="list">${past.slice(0, 60).map(row).join('')}</div>${past.length > 60 ? '<p class="muted small">تظهر آخر 60 درساً.</p>' : ''}`
-          : `<div class="empty"><b>لم تنشر أي درس بعد</b>${p.status !== 'suspended' ? '<span>سجّل درسك في الاستوديو أو أرسل فيديو من جهازك، وننشره على قناة «مدرار العلم» باسمك.</span><a class="btn btn-primary" href="#/studio">سجّل درسك الأول</a>' : ''}</div>`}
+          : `<div class="empty"><b>لم تنشر أي درس بعد</b>${p.status !== 'suspended' ? '<div class="row"><a class="btn btn-primary" href="#/dashboard/live">أنشئ حصتك الأولى</a><a class="btn" href="#/studio">سجّل درسك الأول</a></div>' : ''}</div>`}
       </section>
+      <div id="impact"></div><div id="mypaths"></div><div id="nominate"></div>
       <div class="row" style="padding-bottom:12px"><span class="spacer"></span><button type="button" class="btn btn-ghost" id="out">تسجيل الخروج</button></div>`;
     $('#out').addEventListener('click', signOut);
     $$('[data-toggle]').forEach((b) => {
@@ -2646,13 +2662,107 @@
       }
     });
   }
+  // تسجيل حصة مباشرة: يُرسل للإدارة لتنشره في صفحة الحصة نفسها
+  async function sendRec(s, file, box) {
+    const paint = progressBox(box);
+    app.sending = (app.sending || 0) + 1;
+    try {
+      if (!(s.upload_state === 'uploading' && s.upload_bytes === file.size)) await API.sendRecording(s.id, file);
+      s.upload_state = 'uploading'; s.upload_bytes = file.size;
+      await API.uploadParts(s.id, file, paint);
+    } finally { app.sending -= 1; }
+  }
+  // حصص المعلم المباشرة التي بدأت ولم يُرسل تسجيلها (خلال 3 أيام)
+  const recTargets = (list) => list.filter((x) => x.kind === 'live' && x.status === 'scheduled' && !x.upload_state && !x.video_url && !x.recording_url
+    && +new Date(x.starts_at) <= Date.now() && Date.now() - +new Date(x.ends_at) < 3 * DAY).sort((a, b) => b.starts_at.localeCompare(a.starts_at));
+  async function pageRecording(tok, id) {
+    setNav(''); setTitle('أرسل تسجيل الحصة');
+    const p = await requireTeacher(tok, location.hash);
+    if (!p) return;
+    let s = null;
+    try { s = (await API.mySessions()).find((x) => x.id === id) || null; } catch (e) { /* أدناه */ }
+    if (tok !== app.token) return;
+    if (!s || s.kind !== 'live') return pageNotFound('لم نجد هذه الحصة في حصصك.');
+    if (s.upload_state === 'uploading') { location.replace('#/dashboard/resume/' + s.id); return; }
+    const head = `<header class="page-head"><nav class="crumbs"><a href="#/dashboard">لوحتي</a><span>›</span><span>تسجيل الحصة</span></nav>
+        <h1>أرسل تسجيل «${esc(s.title)}»</h1>
+        <p class="muted">${esc(gradeName(s.grade))} · ${esc(subjOf(s))} · ${esc(dayLabel(new Date(s.starts_at)))} ${esc(time(s.starts_at))}</p></header>`;
+    if (s.upload_state === 'waiting') { view.innerHTML = head + '<div class="note ok-note"><b>وصل تسجيل هذه الحصة.</b><span>تنشره الإدارة على قناة «مدرار العلم» قريباً.</span></div>'; return; }
+    if (s.video_url || s.recording_url) { view.innerHTML = head + `<div class="note"><b>لهذه الحصة تسجيل منشور.</b><span><a href="#/s/${esc(s.id)}">افتح صفحة الحصة</a></span></div>`; return; }
+    if (+new Date(s.starts_at) > Date.now()) { view.innerHTML = head + '<div class="note"><b>لم تبدأ الحصة بعد.</b><span>بعد انتهائها ارجع إلى هنا وأرسل تسجيلها.</span></div>'; return; }
+    view.innerHTML = head + `
+      <form class="form" id="rc" novalidate>
+        <fieldset class="src-pick"><legend>من أين التسجيل؟</legend>
+          <label class="src-opt"><input type="radio" name="rc-src" value="file" checked><span><b>ملف من جهازي</b>
+            <small>ننشره على قناة المنصة باسمك</small></span></label>
+          <label class="src-opt"><input type="radio" name="rc-src" value="link"><span><b>رابط من قناتي في يوتيوب</b>
+            <small>فيديو «عام» أو «غير مدرج» على قناتك</small></span></label></fieldset>
+        <div id="rc-file-box">
+          <div class="field"><label for="rc-file">ملف التسجيل</label><input class="input" id="rc-file" type="file" accept="video/*">
+            <span class="hint" id="rc-info">حتى 500 ميغابايت</span></div>
+          ${consentHtml('rc-consent')}</div>
+        <div class="field" id="rc-link-box" hidden><label for="rc-url">رابط التسجيل على يوتيوب</label>
+          <input class="input" id="rc-url" type="url" inputmode="url" maxlength="300" placeholder="https://youtu.be/..."></div>
+        <div id="rc-prog" hidden></div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit" id="rc-go">أرسل التسجيل</button><a class="btn" href="#/dashboard">رجوع</a></div>
+      </form>`;
+    let mode = 'file';
+    $$('input[name=rc-src]').forEach((r) => r.addEventListener('change', () => {
+      mode = r.value; $('#rc-file-box').hidden = mode !== 'file'; $('#rc-link-box').hidden = mode !== 'link';
+      $('#rc-go').textContent = mode === 'file' ? 'أرسل التسجيل' : 'احفظ الرابط';
+    }));
+    const fileIn = $('#rc-file');
+    fileIn.addEventListener('change', () => {
+      const f = fileIn.files && fileIn.files[0];
+      fileIn.removeAttribute('aria-invalid');
+      if (f && f.size > API.uploadLimit) { fileIn.setAttribute('aria-invalid', 'true'); $('#rc-info').innerHTML = `<span class="warn-t">حجم الملف ${esc(mbs(f.size))}، والحد 500 ميغابايت. قسّمه إلى جزأين، أو ارفعه على قناتك والصق رابطه.</span>`; }
+      else if (f) $('#rc-info').textContent = `${f.name} · ${mbs(f.size)}`;
+    });
+    $('#rc').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const btn = $('#rc-go');
+      const bad = (sel, msg) => { const el = $(sel); el.setAttribute('aria-invalid', 'true'); el.focus(); toast(msg, true); };
+      if (mode === 'link') {
+        const url = normYt($('#rc-url').value.trim());
+        if (!isYouTube(url) || !ytId(url)) return bad('#rc-url', 'الصق رابط التسجيل من يوتيوب، مثل https://youtu.be/...');
+        btn.disabled = true;
+        try { await API.updateSession(s.id, { recording_url: url }); toast('حُفظ رابط تسجيل الحصة'); location.hash = '#/dashboard'; }
+        catch (e) { toast(errMsg(e), true); btn.disabled = false; }
+        return;
+      }
+      const f = (fileIn.files || [])[0];
+      if (!f) return bad('#rc-file', 'اختر ملف التسجيل من جهازك.');
+      if (f.size > API.uploadLimit) return bad('#rc-file', 'حجم التسجيل أكبر من 500 ميغابايت. قسّمه إلى جزأين، أو ارفعه على قناتك والصق رابطه.');
+      if (!$('#rc-consent').checked) return bad('#rc-consent', 'وافق على نشر التسجيل في قناة «مدرار العلم» أولاً.');
+      btn.disabled = true;
+      const box = $('#rc-prog');
+      try { await sendRec(s, f, box); sentDoneRec(tok, s.title); }
+      catch (e) {
+        if (tok === app.token && box.isConnected) { box.hidden = false; box.innerHTML = `<div class="note bad" role="alert"><b>توقف الإرسال</b><span>${esc(errMsg(e))}</span>${s.upload_state ? '<span>اضغط «أرسل التسجيل» مرة أخرى، فنكمل من حيث توقف.</span>' : ''}</div>`; }
+        else toast('توقف إرسال تسجيل الحصة، أكمله من «لوحتي»: ' + errMsg(e), true);
+        btn.disabled = false;
+      }
+    });
+  }
+  function sentDoneRec(tok, title) {
+    app.flash = sentFlash(title, null, true);
+    if (tok === app.token) { location.hash = '#/dashboard'; return; }
+    if (location.hash === '#/dashboard') { route(); return; }
+    app.flash = null;
+    toast(`وصل تسجيل حصتك «${title}». تجده في «لوحتي».`);
+  }
   // رسالة توقف الإرسال: «نكمل من حيث توقف» فقط إن بدأ الإرسال فعلاً
   const sendFail = (e, key) => `<div class="note bad" role="alert"><b>${store.get(key) ? 'توقف الإرسال' : 'لم يُرسل الدرس'}</b><span>${esc(errMsg(e))}</span>${store.get(key) ? '<span>اضغط «أرسل الدرس» مرة أخرى، فنكمل من حيث توقف.</span>' : ''}</div>`;
-  const sentFlash = (title, at) => ({ kind: 'sent', title, at: at ? new Date(at).toISOString() : null });
-  const consentHtml = (id) => `<label class="check consent"><input type="checkbox" id="${id}"><span>أوافق على نشر هذا الدرس في قناة «مدرار العلم» على يوتيوب باسمي، وأن الشرح من إعدادي ويلتزم <a href="#/about" target="_blank">ميثاق المنصة</a>.</span></label>`;
+  const sentFlash = (title, at, rec) => ({ kind: 'sent', title, at: at ? new Date(at).toISOString() : null, rec: !!rec });
+  // حفظ رابط Meet أو Zoom أو Teams: إن تعذّر تبقى الحصة محفوظة، ونطلب إضافة الرابط من «تعديل»
+  async function saveLink(id, url) {
+    try { await API.setJoinLink(id, url || null); }
+    catch (e) { toast('حُفظت الحصة، لكن تعذّر حفظ رابطها: ' + errMsg(e) + ' أضفه من «تعديل».', true); }
+  }
+  const consentHtml = (id) => `<label class="check consent"><input type="checkbox" id="${id}"><span>أوافق على نشره في قناة «مدرار العلم» باسمي وفق <a href="#/about" target="_blank">الميثاق</a>.</span></label>`;
 
   async function pageSessionForm(tok, mode, id) {
-    setNav(''); setTitle(mode === 'edit' ? 'تعديل الدرس' : 'نشر درس');
+    setNav(''); setTitle(mode === 'edit' ? 'تعديل الدرس' : mode === 'live' ? 'حصة مباشرة جديدة' : 'نشر درس');
     const p = await requireTeacher(tok, location.hash);
     if (!p) return;
     if (p.status === 'suspended') { view.innerHTML = '<div class="note bad" style="margin-top:24px">حسابك موقوف ولا يمكنك إضافة حصص.</div>'; return; }
@@ -2662,6 +2772,9 @@
       if (tok !== app.token) return;
       if (!s) return pageNotFound('لم نجد هذه الحصة في حصصك.');
     }
+    // رابط Meet أو Zoom أو Teams المحفوظ للحصة
+    let link0 = '';
+    if (s && s.kind === 'live') { try { link0 = (await API.myLinks([s.id]))[s.id] || ''; } catch (e) { /* يبقى فارغاً */ } if (tok !== app.token) return; }
     const editing = mode === 'edit';
     const pre = mode === 'new' ? app.prefill : null;
     app.prefill = null;
@@ -2674,7 +2787,7 @@
     let start = src.starts_at ? new Date(src.starts_at) : null;
     if (mode === 'copy' && start) { start = addDays(start, 7); while (start < new Date()) start = addDays(start, 7); }
     if (!start) { start = new Date(Date.now() + 2 * 3600e3); start.setMinutes(0, 0, 0); }
-    const kind = mode === 'new' ? 'recorded' : src.kind || 'live';
+    const kind = mode === 'new' ? 'recorded' : mode === 'live' ? 'live' : src.kind || 'live';
     const rec0 = kind === 'recorded';
     const noun = rec0 ? 'الدرس' : 'الحصة';
     const dur = src.starts_at ? minutes(src) : Math.min(240, (pre && pre.minutes) || (rec0 ? 30 : 60));
@@ -2694,19 +2807,20 @@
     const published = editing && rec0 && !needVideo && +new Date(src.starts_at) <= Date.now();
 
     view.innerHTML = `
-      <header class="page-head"><nav class="crumbs"><a href="#/dashboard">لوحتي</a><span>›</span><span>${editing ? 'تعديل' : mode === 'copy' ? 'نسخ حصة' : 'درس جديد'}</span></nav>
-        <h1>${editing ? 'تعديل ' + noun : mode === 'copy' ? 'نسخ الحصة إلى موعد جديد' : 'درس جديد'}</h1>
+      <header class="page-head"><nav class="crumbs"><a href="#/dashboard">لوحتي</a><span>›</span><span>${editing ? 'تعديل' : mode === 'copy' ? 'نسخ حصة' : mode === 'live' ? 'حصة مباشرة' : 'درس جديد'}</span></nav>
+        <h1>${editing ? 'تعديل ' + noun : mode === 'copy' ? 'نسخ الحصة إلى موعد جديد' : mode === 'live' ? 'حصة مباشرة جديدة' : 'درس جديد'}</h1>
+
         ${mode === 'new' ? (pre && pre.video_url ? '<p class="note">رابط الفيديو جاهز من الاستوديو. راجع بيانات الدرس ثم انشره.</p>'
           : presetFile ? '<p class="note">الفيديو جاهز من الاستوديو. أكمل بيانات الدرس ثم أرسله.</p>'
-          : '<p class="muted">لفيديو جاهز على جهازك أو على قناتك في يوتيوب. لم تسجّله بعد؟ <a href="#/studio">سجّل درساً في الاستوديو</a>.</p>') : ''}
+          : '') : ''}
         ${req ? `<div class="note" id="sf-req"><b>تنشر درساً طلبه الطلاب</b><span>${esc([req.topic, req.unit ? 'الوحدة ' + fNum(req.unit) : ''].filter(Boolean).join(' · '))} — ${esc(gradeName(req.grade))} · ${esc(subjectName(req.subject))}</span>
           <span class="small">عند نشره يرى الطلاب أن طلبهم صار متاحاً. <button type="button" class="btn btn-ghost btn-sm" id="sf-req-x">إلغاء الربط بالطلب</button></span></div>` : ''}</header>
       <form class="form" id="sf" novalidate>
         ${srcPick && !presetFile && !(pre && pre.video_url) ? `<fieldset class="src-pick"><legend>من أين الفيديو؟</legend>
           <label class="src-opt"><input type="radio" name="sf-src" value="file"${srcMode === 'file' ? ' checked' : ''}><span><b>من جهازي</b>
-            <small>ترسله لنا، فننشره على قناة «مدرار العلم» في يوتيوب باسمك. لا تحتاج قناة.</small></span></label>
+            <small>ننشره على قناة المنصة باسمك</small></span></label>
           <label class="src-opt"><input type="radio" name="sf-src" value="link"${srcMode === 'link' ? ' checked' : ''}><span><b>رابط من قناتي في يوتيوب</b>
-            <small>الفيديو مرفوع على قناتك بظهور «عام» أو «غير مدرج».</small></span></label></fieldset>` : ''}
+            <small>فيديو «عام» أو «غير مدرج» على قناتك</small></span></label></fieldset>` : ''}
         ${upPending ? `<div class="note"><b>أرسلت فيديو هذا الدرس للإدارة</b><span>${src.upload_state === 'waiting' ? 'تنشره على قناة مدرار العلم قريباً. يمكنك تعديل بياناته وموعده هنا.' : `لم يكتمل الإرسال. <a href="#/dashboard/resume/${esc(src.id)}">أكمل الإرسال</a>`}</span></div>` : ''}
         <div class="grid2">
           <div class="field"><label for="sf-grade">الصف</label>
@@ -2720,7 +2834,7 @@
           <input class="input" id="sf-title" required minlength="3" maxlength="120" value="${esc(src.title || '')}" placeholder="مثال: الفصل الثالث — حل المعادلات من الدرجة الثانية"></div>
         ${rec0 ? placeHtml() : ''}
         <div class="field"><label for="sf-desc">وصف ${noun} (اختياري)</label>
-          <textarea class="input" id="sf-desc" maxlength="1500" rows="4" placeholder="ماذا سيتعلم الطالب؟ ماذا يحضّر قبل الدرس؟">${esc(src.description || '')}</textarea></div>
+          <textarea class="input" id="sf-desc" maxlength="1500" rows="2" placeholder="ماذا سيتعلم الطالب؟">${esc(src.description || '')}</textarea></div>
         ${rec0 ? quizEditorHtml(src.quiz) + filesEditorHtml(src.attachments) : ''}
         ${rec0 ? `${whenHtml('sf', editing && +new Date(src.starts_at) > Date.now() ? new Date(src.starts_at) : null, published)}
         <div class="field" style="max-width:320px"><label for="sf-dur" id="lbl-dur">طول الفيديو تقريباً</label><select class="input" id="sf-dur">${durs.map((m) => `<option value="${m}"${m === dur ? ' selected' : ''}>${fNum(m)} دقيقة</option>`).join('')}</select></div>`
@@ -2731,15 +2845,15 @@
         </div>`}
         ${editing || rec0 ? '' : `<div class="field" id="rep-field"><label for="sf-rep">التكرار</label>
           <select class="input" id="sf-rep"><option value="1">مرة واحدة</option>${[2, 3, 4, 6, 8, 10, 12, 16].map((n) => `<option value="${n}">${n === 2 ? 'كل أسبوع لمدة أسبوعين' : `كل أسبوع لمدة ${fNum(n)} ${n <= 10 ? 'أسابيع' : 'أسبوعاً'}`}</option>`).join('')}</select>
-          <span class="hint">ينشئ حصة في نفس اليوم والوقت من كل أسبوع.</span></div>`}
+</div>`}
         <div id="peers"></div>
         ${srcPick ? `<div id="sf-file-box"${srcMode === 'file' ? '' : ' hidden'}>
           ${presetFile ? `<div class="note"><b>الفيديو جاهز من الاستوديو</b><span>${esc(mbs(presetFile.size))}${pre.minutes ? ' · ' + esc(minsTxt(pre.minutes)) : ''}</span></div>`
             : `<div class="field"><label for="sf-file">ملف الفيديو</label><input class="input" id="sf-file" type="file" accept="video/*">
-              <span class="hint" id="sf-file-info">حتى 500 ميغابايت. إن صوّرت بجوالك فاختر دقة 720p ليكون الملف أصغر.</span></div>`}
+              <span class="hint" id="sf-file-info">حتى 500 ميغابايت</span></div>`}
           ${consentHtml('sf-consent')}</div>` : ''}
         <div class="field" id="sf-link-box"${(srcPick && srcMode !== 'link') || upPending ? ' hidden' : ''}><label for="sf-url" id="lbl-url">رابط البث على يوتيوب</label>
-          <input class="input" id="sf-url" type="url" inputmode="url" maxlength="300" value="${esc(mode === 'copy' && kind === 'live' ? '' : (src.video_url || ''))}" placeholder="https://www.youtube.com/live/...">
+          <input class="input" id="sf-url" type="url" inputmode="url" maxlength="300" value="${esc(kind === 'live' ? link0 || (mode === 'copy' ? '' : src.video_url || '') : (src.video_url || ''))}" placeholder="${kind === 'live' ? 'https://meet.google.com/...' : 'https://youtu.be/...'}">
           <span class="hint" id="hint-url">يمكنك إضافته لاحقاً. أنشئ بثاً مجدولاً في YouTube Studio وضع رابطه هنا، وسيصبح نفس الرابط هو التسجيل بعد الحصة. <a href="#/guide" target="_blank">كيف؟</a></span></div>
         <div class="field" id="rec-field"${editing || isPast ? '' : ' hidden'}><label for="sf-rec">رابط التسجيل (إذا كان مختلفاً عن رابط البث)</label>
           <input class="input" id="sf-rec" type="url" inputmode="url" maxlength="300" value="${esc(src.recording_url || '')}" placeholder="https://youtu.be/...">
@@ -2764,8 +2878,8 @@
     function applyKind() {
       const rec = kindNow() === 'recorded';
       if (!rec) { $('#lbl-date').textContent = 'التاريخ'; $('#lbl-time').textContent = 'وقت البدء'; $('#lbl-dur').textContent = 'المدة'; }
-      $('#lbl-url').textContent = rec ? 'رابط الفيديو على يوتيوب' : 'رابط البث على يوتيوب';
-      $('#hint-url').innerHTML = rec ? 'الفيديو على قناتك في يوتيوب بظهور «عام» أو «غير مدرج». الصق رابطه هنا.' : 'يمكنك إضافته لاحقاً. أنشئ بثاً مجدولاً في YouTube Studio وضع رابطه هنا، وسيصبح نفس الرابط هو التسجيل بعد الحصة. <a href="#/guide" target="_blank">كيف؟</a>';
+      $('#lbl-url').textContent = rec ? 'رابط الفيديو على يوتيوب' : 'رابط الحصة (Google Meet أو Zoom أو Teams)';
+      $('#hint-url').innerHTML = rec ? '' : 'يظهر للطلاب قبل الحصة بربع ساعة. يمكنك إضافته لاحقاً.';
       const rf = $('#rep-field'); if (rf) rf.hidden = rec;
       peers();
     }
@@ -2853,7 +2967,10 @@
         tm = readTimes();
         if (!tm) return bad('#sf-date', 'حدّد التاريخ والوقت.');
       }
-      if (url && !isYouTube(url)) return bad('#sf-url', 'الرابط يجب أن يكون من يوتيوب (youtube.com أو youtu.be).');
+      // الحصة المباشرة: رابط Meet أو Zoom أو Teams (أو بث يوتيوب كما في السابق)
+      const meet = k === 'live' && url && isMeet(url) ? url : '';
+      if (k === 'live' && url && !meet && !isYouTube(url)) return bad('#sf-url', 'رابط الحصة يجب أن يكون من Google Meet أو Zoom أو Microsoft Teams.');
+      if (k !== 'live' && url && !isYouTube(url)) return bad('#sf-url', 'الرابط يجب أن يكون من يوتيوب (youtube.com أو youtu.be).');
       if (recUrl && !isYouTube(recUrl)) return bad('#sf-rec', 'رابط التسجيل يجب أن يكون من يوتيوب.');
       if (k === 'recorded' && viaLink && !url) return bad('#sf-url', 'ضع رابط الفيديو المسجّل.');
       if (k === 'live' && !editing && +tm.start < Date.now() - 30 * MIN) return bad('#sf-date', 'هذا الموعد في الماضي. اختر وقتاً قادماً.');
@@ -2866,7 +2983,7 @@
       }
       const base = {
         grade: gSel.value, subject: sSel.value, title, description: $('#sf-desc').value.trim() || null, kind: k,
-        starts_at: tm.start.toISOString(), ends_at: tm.end.toISOString(), video_url: url || null,
+        starts_at: tm.start.toISOString(), ends_at: tm.end.toISOString(), video_url: meet ? null : url || null,
       };
       if (upPending) delete base.video_url;
       if (editing) base.recording_url = recUrl || null;
@@ -2902,6 +3019,7 @@
       try {
         if (editing) {
           await API.updateSession(id, base);
+          if (k === 'live' && meet !== link0) await saveLink(id, meet);
           toast('حُفظت التعديلات');
           location.hash = '#/dashboard';
         } else {
@@ -2911,10 +3029,11 @@
             video_url: i === 0 ? base.video_url : null,
           }));
           const made = await API.createSessions(rows);
+          if (meet) for (const m of made || []) await saveLink(m.id, meet);
           if (base.request_id && req) store.del('st-req');
           // التسجيل نُشر: لا حاجة لنسخته في المتصفح، ولا لتنبيه «تسجيل لم يُنشر»
           if (pre && pre._rec && ST) { if (pre._rec.saved) ST.remove(pre._rec.id).catch(() => {}); else ST.discard(); }
-          toast(n > 1 ? 'نُشرت ' + plural(n, 'حصة واحدة', 'حصتان أسبوعيتان', 'حصص أسبوعية', 'حصة أسبوعية') : k === 'recorded' ? publishedMsg() : 'نُشرت الحصة');
+          toast(n > 1 ? 'نُشرت ' + plural(n, 'حصة واحدة', 'حصتان أسبوعيتان', 'حصص أسبوعية', 'حصة أسبوعية') : k === 'recorded' ? publishedMsg() : 'نُشرت الحصة، وتظهر في جدول الصف');
           location.hash = made && made[0] && n === 1 ? '#/s/' + made[0].id : '#/dashboard';
         }
       } catch (e) { toast(errMsg(e), true); btn.disabled = false; }
@@ -2930,12 +3049,15 @@
     setNav(''); setTitle('تطوّع بالشرح');
     const gradeOpts = C.STAGES.map((st) => `<optgroup label="${esc(st.name)}">${st.grades.map((g) => `<option value="${esc(g.name)}">${esc(g.name)}</option>`).join('')}</optgroup>`).join('');
     view.innerHTML = `
-      <header class="page-head teach-head"><h1>تطوّع بالشرح: كن من أوائل المساهمين في صدقة علمٍ جارية</h1>
-        <p class="muted">درس واحد، عشر دقائق من مادتك، يُنشر باسمك على قناة «مدرار العلم»، وينتفع به طلاب في كل مكان. لا تحتاج قناة يوتيوب، والمنصة مجانية وبلا إعلانات.</p></header>
+      <header class="page-head teach-head"><h1>تطوّع بالشرح</h1></header>
+      <figure class="hadith">
+        <blockquote>«إذا مات ابنُ آدمَ انقطع عملُه إلا من ثلاث: صدقةٍ جارية، أو <mark>علمٍ يُنتفَعُ به</mark>، أو ولدٍ صالحٍ يدعو له»</blockquote>
+        <figcaption>رواه مسلم</figcaption>
+      </figure>
       <ol class="steps3 teach-steps">
-        <li><b>صوّر درساً واحداً</b><span class="muted">بجوالك، أو سجّل شاشتك وصوتك من <a href="#/studio">استوديو المنصة</a> بلا برامج.</span></li>
-        <li><b>أرسله من المنصة</b><span class="muted">بضغطة «أرسل الدرس» بعد التسجيل، أو من «أضف درساً جاهزاً». لا تحتاج قناة.</span></li>
-        <li><b>ننشره باسمك</b><span class="muted">على قناة «مدرار العلم» في يوتيوب، ويظهر للطلاب في الموعد الذي تختاره.</span></li>
+        <li><b>حدّد موعد حصتك</b><span class="muted">على Meet أو Zoom أو Teams.</span></li>
+        <li><b>اشرح لطلابك مباشرة</b><span class="muted">يدخلون من المنصة.</span></li>
+        <li><b>أرسل التسجيل</b><span class="muted">ننشره باسمك على قناة المنصة.</span></li>
       </ol>
       <form class="form box" id="tf" novalidate>
         <h2>أرغب في التطوع</h2>
@@ -2946,19 +3068,18 @@
         <div class="field"><label for="tf-grade">الصف (اختياري)</label><select class="input" id="tf-grade"><option value="">أكثر من صف أو غير محدد</option>${gradeOpts}<option value="المهارات">المهارات (خارج المنهج)</option></select></div>
         <div class="field"><label for="tf-note">ملاحظة (اختياري)</label><textarea class="input" id="tf-note" maxlength="200" rows="2" placeholder="مثال: عندي درس جاهز عن الكسور"></textarea></div>
         <div class="form-actions"><button class="btn btn-primary btn-lg wa-btn" type="submit">أرسل عبر واتساب</button>
-          <a class="btn" href="#/dashboard">جاهز الآن؟ ادخل وانشر بنفسك</a></div>
-        <p class="hint">يفتح واتساب برسالة جاهزة إلى إدارة المنصة. لا تحفظ المنصة أي بيانات تكتبها هنا.</p>
+          <a class="btn" href="#/dashboard">ادخل وابدأ الآن</a></div>
+        <p class="hint">يفتح واتساب برسالة جاهزة إلى الإدارة.</p>
       </form>
       <section class="box" id="tf-next" hidden>
         <h2>شكراً لك! هذه خطواتك التالية</h2>
         <ol class="prose-list">
-          <li>اختر درساً قصيراً تحبه من مادتك (عشر دقائق تكفي).</li>
-          <li>سجّله بجوالك أو من <a href="#/studio">استوديو المنصة</a>، والصوت الواضح أهم من الصورة.</li>
-          <li>ادخل المنصة بحساب Google واضغط «أرسل الدرس»، فننشره على قناة «مدرار العلم» باسمك. <a href="#/guide">الشرح خطوة بخطوة</a>.</li>
-          <li>صعب عليك؟ أرسل الفيديو لنا على واتساب (كملف «مستند» حتى لا تقل جودته) وننشره نحن.</li>
+          <li>ادخل المنصة بحساب Google واضغط «حصة مباشرة جديدة».</li>
+          <li>أو سجّل درساً قصيراً وأرسله من المنصة.</li>
+          <li>صعب عليك؟ أرسل الفيديو لنا على واتساب وننشره نحن.</li>
         </ol>
       </section>
-      <p class="muted small">تريد معرفة المزيد قبل أن تبدأ؟ <a href="#/volunteer">كل ما يخص التطوع</a> · <a href="#/about">ميثاق المتطوع</a></p>`;
+      <p class="muted small"><a href="#/guide">دليل المعلم</a> · <a href="#/about">ميثاق المتطوع</a></p>`;
     $('#tf').addEventListener('submit', (ev) => {
       ev.preventDefault();
       const name = $('#tf-name').value.trim(); const subj = $('#tf-subj').value.trim();
@@ -3017,11 +3138,11 @@
   const nrm = (t) => String(t || '').toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[^\w؀-ۿ\s]/g, ' ').replace(/\s+/g, ' ').trim();
   const FAQ = [
     { k: ['ما هي المنصه', 'ماهي المنصه', 'عن المنصه', 'فكره المنصه', 'ما هي مدرار', 'وش المنصه', 'ايش المنصه'], q: 'ما هي منصة مِدْرار العلم؟',
-      a: `${esc(C.SITE_NAME)} منصة تعليمية مجانية وتطوعية لدروس مسجّلة، يقدّمها معلمون متطوعون للطلاب من الصف الأول إلى الثاني عشر، وفيها قسم للمهارات. بلا رسوم وبلا إعلانات.`, l: [['#/about', 'عن المنصة']] },
+      a: `${esc(C.SITE_NAME)} منصة تعليمية مجانية وتطوعية: حصص مباشرة يحضرها الطلاب في موعدها، ثم تُنشر تسجيلاتها، ودروس مسجّلة، يقدّمها معلمون متطوعون للطلاب من الصف الأول إلى الثاني عشر، وفيها قسم للمهارات. بلا رسوم وبلا إعلانات.`, l: [['#/about', 'عن المنصة']] },
     { k: ['مجاني', 'مجانا', 'رسوم', 'فلوس', 'سعر', 'اشتراك', 'كم', 'بفلوس', 'مدفوع'], q: 'هل المنصة مجانية؟',
       a: 'نعم، مجانية بالكامل للطلاب والمعلمين، بلا اشتراك وبلا إعلانات.' },
     { k: ['تطوع', 'اتطوع', 'متطوع', 'انضم', 'انضمام', 'اشارك', 'مشاركه', 'اسجل كمعلم', 'معلم جديد', 'ابي اشرح', 'ابغى اشرح', 'اشرح'], q: 'كيف أتطوع بالشرح؟',
-      a: 'سجّل درساً واحداً (عشر دقائق تكفي) في الاستوديو أو بجوالك، ثم اضغط «أرسل الدرس» فننشره على قناة «مدرار العلم» باسمك. لا تحتاج قناة يوتيوب. أو املأ نموذج «تطوّع بالشرح» فنتواصل معك عبر واتساب ونساعدك.', l: [['#/teach', 'تطوّع بالشرح'], ['#/volunteer', 'تفاصيل التطوع']] },
+      a: 'ادخل بحساب Google، ثم من «لوحتي» اضغط «حصة مباشرة جديدة»: حدد الموعد وضع رابط Meet أو Zoom أو Teams، وبعد الحصة أرسل تسجيلها فننشره على قناة «مدرار العلم» باسمك. أو سجّل درساً واحداً في الاستوديو. لا تحتاج قناة يوتيوب. أو املأ نموذج «تطوّع بالشرح» فنتواصل معك عبر واتساب ونساعدك.', l: [['#/teach', 'تطوّع بالشرح'], ['#/volunteer', 'تفاصيل التطوع']] },
     { k: ['اسجل الدرس', 'تسجيل', 'اصور', 'تصوير', 'استوديو', 'سجل الشاشه', 'برنامج', 'كاميرا', 'مايك', 'صوت'], q: 'كيف أسجّل درسي؟',
       a: 'من «استوديو المنصة» تسجّل شاشتك وصوتك من المتصفح بلا برامج وبلا كاميرا، أو صوّر بجوالك. الصوت الواضح أهم من الصورة.', l: [['#/studio', 'استوديو المنصة'], ['#/guide', 'دليل المعلم']] },
     { k: ['يوتيوب', 'قناه', 'قناتي', 'ارفع', 'رفع', 'احتاج قناه', 'ما عندي قناه', 'غير مدرج'], q: 'هل أحتاج قناة على يوتيوب؟',
@@ -3054,7 +3175,11 @@
       a: 'إن كنت معلماً تريد التطوع فاستخدم نموذج «تطوّع بالشرح»، فيفتح واتساب برسالة جاهزة إلى الإدارة.', l: [['#/teach', 'تطوّع بالشرح']] },
   ];
   FAQ.push(
-    { k: ['موعد', 'احدد', 'وقت الدرس', 'جدوله', 'اجدول', 'عرض اول', 'حصه', 'اونلاين', 'بث'], q: 'كيف أحدد موعداً يشاهد فيه الطلاب الدرس؟',
+    { k: ['حصه مباشره', 'مباشره', 'مباشر', 'meet', 'ميت', 'جوجل ميت', 'zoom', 'زوم', 'teams', 'تيمز', 'رابط الحصه', 'اونلاين', 'بث مباشر'], q: 'كيف أقدّم حصة مباشرة؟',
+      a: 'من «لوحتي» اضغط «حصة مباشرة جديدة»، واختر الصف والمادة والعنوان واليوم والساعة، والصق رابط الحصة من Google Meet أو Zoom أو Teams. تظهر في جدول الصف، ورابطها لا يظهر للطلاب إلا قبل الحصة بربع ساعة. وبعدها اضغط «أرسل تسجيل الحصة» فننشره على قناة «مدرار العلم».', l: [['#/dashboard/live', 'حصة مباشرة جديدة'], ['#/guide', 'دليل المعلم']] },
+    { k: ['ادخل الحصه', 'دخول الحصه', 'رابط الدخول', 'احضر', 'حضور', 'كيف ادخل', 'وين الرابط'], q: 'كيف أدخل الحصة المباشرة؟',
+      a: 'افتح الحصة من جدول صفك أو «مباشر الآن». قبل موعدها بربع ساعة يظهر زر «ادخل الحصة»، فتُفتح في Meet أو Zoom أو Teams. ادخل باسمك الأول فقط. وإن فاتتك فشاهد تسجيلها في الصفحة نفسها بعد نشره.', l: [['#/', 'الدروس']] },
+    { k: ['موعد', 'احدد', 'وقت الدرس', 'جدوله', 'اجدول', 'عرض اول'], q: 'كيف أحدد موعداً يشاهد فيه الطلاب الدرس؟',
       a: 'عند الإرسال اختر «في موعد أحدده» واكتب اليوم والساعة. يظهر الدرس للطلاب في «الدروس القادمة» مع عدّ تنازلي وتذكير في التقويم، ويُعرض في موعده ليشاهدوه معاً. وفي «لوحتي» زر «شارك الموعد» لإرساله لطلابك عبر واتساب.', l: [['#/dashboard', 'لوحتي']] },
     { k: ['الدروس القادمه', 'متى الدرس', 'موعد الدرس', 'تذكير', 'ذكرني', 'التقويم', 'يعرض الان'], q: 'كيف أعرف موعد الدرس القادم؟',
       a: 'في الصفحة الرئيسية وصفحة كل مادة قسم «الدروس القادمة» بالمواعيد. افتح الدرس واضغط «ذكّرني» لإضافته إلى تقويمك، وفي موعده يُفتح الدرس ويظهر عليه «يُعرض الآن».', l: [['#/', 'الدروس']] },
@@ -3072,7 +3197,7 @@
   function initBot() {
     if ($('#bot-btn')) return;
     document.body.insertAdjacentHTML('beforeend', `
-      <button type="button" class="bot-btn" id="bot-btn" aria-expanded="false" aria-controls="bot"><span aria-hidden="true">💬</span><span>مساعد المنصة</span></button>
+      <button type="button" class="bot-btn" id="bot-btn" aria-expanded="false" aria-controls="bot" aria-label="مساعد المنصة" title="مساعد المنصة"><span aria-hidden="true">؟</span></button>
       <section class="bot" id="bot" role="dialog" aria-label="مساعد المنصة" hidden>
         <header class="bot-head"><b>مساعد ${esc(C.SITE_NAME)}</b><button type="button" class="btn btn-sm btn-ghost" id="bot-x" aria-label="إغلاق">✕</button></header>
         <div class="bot-log" id="bot-log" aria-live="polite"></div>
@@ -3184,12 +3309,13 @@
           `${C.SITE_NAME}: منصة تعليمية مجانية تطوعية بلا إعلانات.`, `${tag('مدرار العلم')} ${tag(gradeName(s.grade))} ${tag(subjOf(s))}`].join('\n');
         const whenLine = (s) => {
           const t = +new Date(s.starts_at);
+          if (s.kind === 'live') return `<span class="up-when">تسجيل حصة مباشرة كانت ${esc(dayLabel(new Date(t)))} ${esc(time(t))}: يظهر في صفحة الحصة فور نشره</span>`;
           if (!isPremiere(s)) return '<span class="up-when">يُنشر للطلاب فور نشره على القناة</span>';
           if (t <= now) return `<span class="up-when late">فات موعده (${esc(dayLabel(new Date(t)))} ${esc(time(t))}): انشره الآن</span>`;
           return `<span class="up-when${t - now < DAY ? ' soon' : ''}">موعد العرض: <b>${esc(dayLabel(new Date(t)))} الساعة ${esc(time(t))}</b> (${esc(rel(t - now))})</span>`;
         };
         const item = (s) => `<div class="box up-item" data-up="${esc(s.id)}">
-          <div class="up-head"><b>${esc(s.title)}</b>${s.review === 'pending' ? '<span class="pill pill-warn">معلم جديد: شاهد الدرس قبل نشره</span>' : ''}</div>
+          <div class="up-head"><b>${esc(s.title)}</b>${s.kind === 'live' ? '<span class="pill">تسجيل حصة مباشرة</span>' : ''}${s.review === 'pending' ? '<span class="pill pill-warn">معلم جديد: شاهد الدرس قبل نشره</span>' : ''}</div>
           <div class="row small muted"><span>${esc(tName(s))}</span><span>·</span><span>${esc(gradeName(s.grade))}</span><span>·</span><span>${esc(subjOf(s))}</span>
             ${placeLine(s) ? `<span>·</span><span>${esc(placeLine(s))}</span>` : ''}<span>·</span><span>${esc(mbs(s.upload_bytes || 0))}</span></div>
           ${whenLine(s)}
@@ -3316,13 +3442,14 @@
       } else if (tab === 'review') {
         const list = await API.adminReviewQueue();
         if (tok !== app.token) return;
-        box.innerHTML = `<p class="muted">دروس المتطوعين الجدد قبل أن يراها الطلاب. شاهد الدرس، ثم اعتمده أو ارفضه مع سبب قصير يراه المعلم. بعد ${fNum(C.TRUST_AFTER || 3)} دروس معتمدة يصبح المتطوع موثوقاً تلقائياً.</p>
+        box.innerHTML = `<p class="muted">دروس المتطوعين الجدد وحصصهم قبل أن يراها الطلاب. شاهد الدرس، أو راجع بيانات الحصة المباشرة واعتمدها قبل موعدها، أو ارفض مع سبب قصير يراه المعلم. بعد ${fNum(C.TRUST_AFTER || 3)} دروس معتمدة يصبح المتطوع موثوقاً تلقائياً.</p>
           ${list.length ? `<div class="list">${list.map((s) => `<div class="item rv-item" data-rv="${esc(s.id)}" style="grid-template-columns:minmax(0,1fr) auto">
             <div class="what"><b><a href="#/s/${esc(s.id)}">${esc(s.title)}</a></b>
               <div class="row"><span>${esc((s.teacher && s.teacher.display_name) || '')}</span><span>·</span><span>${esc(gradeName(s.grade))}</span><span>·</span><span>${esc(subjOf(s))}</span>
                 ${placeLine(s) ? `<span>·</span><span>${esc(placeLine(s))}</span>` : ''}<span>·</span><span>${esc(rel(new Date(s.created_at || s.starts_at) - Date.now()))}</span>
-                ${s.quiz ? '<span class="pill">فيه اختبار</span>' : ''}${s.attachments ? '<span class="pill">فيه ملفات</span>' : ''}</div></div>
-            <div class="tools"><a class="btn btn-sm" href="#/s/${esc(s.id)}">شاهد</a>
+                ${s.quiz ? '<span class="pill">فيه اختبار</span>' : ''}${s.attachments ? '<span class="pill">فيه ملفات</span>' : ''}
+                ${s.kind === 'live' ? `<span class="pill${+new Date(s.starts_at) - Date.now() < DAY ? ' pill-warn' : ''}">حصة مباشرة: ${esc(dayLabel(new Date(s.starts_at)))} ${esc(time(s.starts_at))}</span>` : ''}</div></div>
+            <div class="tools"><a class="btn btn-sm" href="#/s/${esc(s.id)}">${s.kind === 'live' ? 'التفاصيل' : 'شاهد'}</a>
               <button type="button" class="btn btn-sm btn-primary" data-ok="${esc(s.id)}">اعتماد</button>
               <button type="button" class="btn btn-sm btn-danger" data-no="${esc(s.id)}">رفض</button></div></div>`).join('')}</div>`
             : '<div class="empty"><b>لا دروس بانتظار المراجعة ✓</b><span>ستظهر هنا دروس المتطوعين الجدد.</span></div>'}`;
@@ -3668,9 +3795,10 @@
         ${r.partial ? '<div class="note warn"><b>هذا تسجيل توقف قبل أن يكتمل.</b><span>حفظنا ما سُجّل حتى لحظة التوقف.</span></div>' : ''}
         ${studio.quiet ? '<div class="note warn"><b>تنبيه: لم نلتقط صوتاً تقريباً.</b><span>شاهد الفيديو أولاً؛ إن كان بلا صوت فجرّب المايكروفون وأعد التسجيل.</span></div>' : ''}
         <video class="st-video" controls preload="metadata" src="${esc(r.url)}"></video>
+        <div id="st-live"></div>
         <section class="box send-box">
           <h2>أرسل الدرس للمنصة</h2>
-          <p class="muted">نرفعه نحن على قناة «مدرار العلم» في يوتيوب باسمك، ثم يظهر للطلاب. لا تحتاج قناة ولا خطوات أخرى.</p>
+          <p class="muted">ننشره على قناة «مدرار العلم» باسمك.</p>
           ${info ? `<p class="small">سيُنشر ${where}.</p>${whenHtml('st', null, false)}${consentHtml('st-consent')}`
             : '<p class="note">في الخطوة التالية تختار صف الدرس ومادته وعنوانه وموعده.</p>'}
           <div class="row"><button type="button" class="btn btn-primary btn-lg" id="st-send">${info ? 'أرسل الدرس' : 'تابع: بيانات الدرس'}</button>
@@ -3756,6 +3884,35 @@
           btn.disabled = false;
         }
       });
+      // تسجيل حصة مباشرة انتهت للتو: يُرسل تسجيلاً لها مباشرة
+      API.mySessions().then((all) => {
+        const targets = recTargets(all);
+        const lb = $('#st-live');
+        if (!lb || !targets.length || tok !== app.token) return;
+        lb.innerHTML = `<section class="box send-box live-rec"><h2>هذا تسجيل حصة مباشرة؟</h2>
+          <p class="muted">يظهر في صفحة الحصة لمن فاته الحضور.</p>
+          <div class="field"><label for="st-lv">الحصة</label><select class="input" id="st-lv">${targets.map((x) => `<option value="${esc(x.id)}">${esc(x.title)} — ${esc(gradeName(x.grade))} · ${esc(dayLabel(new Date(x.starts_at)))} ${esc(time(x.starts_at))}</option>`).join('')}</select></div>
+          ${consentHtml('st-lv-consent')}
+          <div class="row"><button type="button" class="btn btn-primary btn-lg" id="st-lv-send">أرسله تسجيلاً للحصة</button></div>
+          <div id="st-lv-prog" hidden></div></section>`;
+        $('#st-lv-send').addEventListener('click', async () => {
+          const x = targets.find((y) => y.id === $('#st-lv').value);
+          if (!x) return;
+          if (!$('#st-lv-consent').checked) { $('#st-lv-consent').focus(); return toast('وافق على نشر التسجيل في قناة «مدرار العلم» أولاً.', true); }
+          if (r.bytes > API.uploadLimit) return toast('التسجيل أكبر من 500 ميغابايت. احفظه على جهازك وارفعه على قناتك، ثم الصق رابطه من «لوحتي».', true);
+          const b = $('#st-lv-send'); b.disabled = true;
+          const box = $('#st-lv-prog');
+          try {
+            await sendRec(x, fileOf(), box);
+            if (r.saved) ST.remove(r.id).catch(() => {}); else ST.discard();
+            sentDoneRec(tok, x.title);
+          } catch (e) {
+            if (tok === app.token && box.isConnected) { box.hidden = false; box.innerHTML = `<div class="note bad" role="alert"><b>توقف الإرسال</b><span>${esc(errMsg(e))}</span>${x.upload_state ? '<span>اضغط الزر مرة أخرى، فنكمل من حيث توقف.</span>' : ''}</div>`; }
+            else toast('توقف إرسال تسجيل الحصة، أكمله من «لوحتي»: ' + errMsg(e), true);
+            b.disabled = false;
+          }
+        });
+      }).catch(() => { /* اختياري */ });
       const edit = $('#st-edit');
       if (edit) edit.addEventListener('click', () => toForm({ _file: fileOf() }));
       const more = $('#st-more');
@@ -3918,8 +4075,8 @@
   function pageGuide() {
     setNav(''); setTitle('دليل المعلم');
     view.innerHTML = `
-      <header class="page-head"><h1>دليل المعلم: سجّل درسك بشاشتك وصوتك</h1>
-        <p class="muted">ثلاث خطوات: تسجّل الدرس في استوديو المنصة، وتختار متى يشاهده الطلاب، ثم تضغط «أرسل الدرس» فننشره على قناة «مدرار العلم» في يوتيوب باسمك. بلا برامج، وبلا كاميرا، وبلا قناة، وبلا أي تكلفة.</p></header>
+      <header class="page-head"><h1>دليل المعلم: حصتك المباشرة ودروسك</h1>
+        <p class="muted">الطريق الأساسي: تحدد موعد حصة مباشرة على Google Meet أو Zoom أو Teams، فيحضرها الطلاب من المنصة، ثم ترسل تسجيلها فننشره على قناة «مدرار العلم» في يوتيوب باسمك لمن فاته الحضور. ويمكنك أيضاً تسجيل درس في استوديو المنصة. بلا قناة يوتيوب، وبلا أي تكلفة.</p></header>
       <article class="prose">
         <h2>أولاً: قبل أول درس (مرة واحدة)</h2>
         <ol>
@@ -3927,7 +4084,22 @@
           <li><b>الجهاز:</b> كمبيوتر بمتصفح Chrome أو Edge، وسماعة بمايكروفون إن وُجدت؛ الصوت الواضح أهم من أي شيء. ويمكنك أيضاً التصوير بالجوال.</li>
           <li><b>(اختياري) قناتك الخاصة:</b> إن كنت تفضّل النشر عليها فضع رابطها في «ملفي»، ووثّقها برقم هاتفك من <a href="https://www.youtube.com/verify" target="_blank" rel="noopener">youtube.com/verify</a> لترفع فيديوهات أطول من 15 دقيقة.</li>
         </ol>
-        <h2>ثانياً: سجّل الدرس</h2>
+        <h2>ثانياً: الحصة المباشرة</h2>
+        <ol>
+          <li><b>أنشئ رابط الحصة</b> في الأداة التي تفضّلها:
+            <ul>
+              <li><b>Google Meet</b> (الأسهل، ومجاني بحسابك في Google): افتح <a href="https://meet.google.com" target="_blank" rel="noopener">meet.google.com</a> ثم «اجتماع جديد» ثم «إنشاء اجتماع لاحقاً»، وانسخ الرابط.</li>
+              <li><b>Zoom</b>: «Schedule» ثم انسخ رابط الدعوة. الحساب المجاني يحدّ الحصة بـ40 دقيقة.</li>
+              <li><b>Microsoft Teams</b>: من «التقويم» أنشئ «اجتماعاً جديداً» وانسخ رابط الانضمام.</li>
+            </ul></li>
+          <li>من <a href="#/dashboard">لوحتي</a> اضغط <b>حصة مباشرة جديدة</b>: اختر الصف والمادة، واكتب عنوان الحصة، وحدّد اليوم والساعة والمدة، والصق الرابط. ويمكنك تكرارها كل أسبوع في الموعد نفسه.</li>
+          <li>تظهر الحصة للطلاب في جدول صفهم و«الدروس القادمة» مع تذكير في التقويم. <b>رابطها لا يظهر إلا قبل الحصة بربع ساعة</b>، فلا ينتشر مسبقاً. وأرسل الموعد لطلابك بزر «شارك الموعد».</li>
+          <li>في الموعد اضغط <b>ابدأ الحصة</b> في «لوحتي». ويُستحسن أن تفعّل في أداتك «غرفة الانتظار» أو قبول الدخول، وأن تُكتم المايكروفونات عند الدخول.</li>
+          <li><b>سجّل الحصة:</b> من Zoom أو Teams اضغط «تسجيل»، أو افتح <a href="#/studio">استوديو المنصة</a> في نافذة أخرى قبل البدء ليسجّل شاشتك وصوتك (Google Meet المجاني لا يسجّل).</li>
+          <li>بعد انتهائها اضغط <b>أرسل تسجيل الحصة</b> في «لوحتي» واختر الملف، أو من الاستوديو اختر «أرسله تسجيلاً للحصة». تنشره الإدارة على قناة «مدرار العلم» باسمك، فيظهر في صفحة الحصة لمن فاته الحضور.</li>
+        </ol>
+        <div class="note warn"><b>خصوصية الطلاب</b><span>التسجيل يُنشر على يوتيوب، فاجعله شاشتك وصوتك فقط: لا تُظهر فيه أسماء الطلاب أو صورهم أو أصواتهم، وإن تحدّث طالب فاحذف ذلك الجزء أو أخبر الإدارة. ولا تطلب من الطلاب أرقام هواتفهم أو حساباتهم.</span></div>
+        <h2>ثالثاً: أو سجّل درساً في الاستوديو</h2>
         <ol>
           <li>من <a href="#/dashboard">لوحتي</a> اضغط <b>سجّل درساً جديداً</b>.</li>
           <li>اختر الصف والمادة، واكتب عنوان الدرس، وحدّد <b>مكانه في الكتاب</b>: الفصل الدراسي والوحدة. يتذكر المتصفح اختيارك، فالدرس التالي في نفس الوحدة لا يحتاج شيئاً.</li>
@@ -3935,7 +4107,7 @@
           <li>اشرح براحتك. يمكنك الإيقاف المؤقت متى شئت، ولا حد لمدة التسجيل. عند الانتهاء ارجع إلى الصفحة واضغط <b>إنهاء التسجيل</b>.</li>
         </ol>
         <div class="note warn"><b>قبل أن تبدأ</b><span>أغلق واتساب ويب والبريد، وفعّل «عدم الإزعاج»؛ كل ما يظهر على شاشتك يُسجَّل، بما فيه الإشعارات. الكاميرا لا تعمل أبداً في المنصة.</span></div>
-        <h2>ثالثاً: اختر الموعد وأرسل الدرس</h2>
+        <h2>رابعاً: اختر موعد الدرس المسجّل وأرسله</h2>
         <ol>
           <li>في <b>«متى يشاهده الطلاب؟»</b> اختر <b>«فور نشره»</b>، أو <b>«في موعد أحدده»</b> (اليوم والساعة): يظهر الدرس للطلاب في «الدروس القادمة» مع عدّ تنازلي وتذكير في التقويم، ويُعرض في موعده ليشاهدوه معاً.</li>
           <li>وافق على النشر في قناة المنصة، واضغط <b>أرسل الدرس</b>، وانتظر حتى يكتمل شريط الإرسال. إن انقطع الإنترنت اضغط مرة أخرى فنكمل من حيث توقف.</li>
@@ -4024,6 +4196,7 @@
         <ol>
           <li>الشرح مجاني بالكامل. لا إعلانات لدروس خصوصية أو دورات أو مجموعات مدفوعة.</li>
           <li>لا تواصل خاص مع الطلاب، ولا طلب أرقام هواتفهم أو حساباتهم.</li>
+          <li>في الحصة المباشرة: فعّل غرفة الانتظار أو قبول الدخول، ولا تُظهر أسماء الطلاب أو صورهم أو أصواتهم في التسجيل المنشور.</li>
           <li>محتوى تعليمي محترم يناسب أعمار الطلاب، دون مواد محمية بحقوق النشر.</li>
           <li>شرح واضح ومتقن، ونشر الدروس في مواعيدها المعلنة أو إلغاؤها من اللوحة مبكراً.</li>
           <li>الإبقاء على فيديوهات الدروس متاحة على يوتيوب قدر الإمكان، فهي علمٌ يُنتفع به.</li>
@@ -4073,6 +4246,8 @@
     [/^#\/about$/, () => pageAbout()],
     [/^#\/dashboard$/, (t) => pageDashboard(t)],
     [/^#\/dashboard\/new$/, (t) => pageSessionForm(t, 'new')],
+    [/^#\/dashboard\/live$/, (t) => pageSessionForm(t, 'live')],
+    [/^#\/dashboard\/rec\/([\w-]+)$/, (t, m) => pageRecording(t, m[1])],
     [/^#\/dashboard\/edit\/([\w-]+)$/, (t, m) => pageSessionForm(t, 'edit', m[1])],
     [/^#\/dashboard\/copy\/([\w-]+)$/, (t, m) => pageSessionForm(t, 'copy', m[1])],
     [/^#\/dashboard\/resume\/([\w-]+)$/, (t, m) => pageResume(t, m[1])],

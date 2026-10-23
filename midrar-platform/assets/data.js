@@ -37,6 +37,16 @@
       upload_parts: partsOf(file.size), upload_bytes: file.size, upload_ext: fileExt(file) });
   }
   const UP_DONE = { upload_state: null, upload_parts: null, upload_bytes: null, upload_ext: null };
+  // تسجيل حصة مباشرة: الأعمدة نفسها، دون تغيير نوع الحصة
+  function recordingRow(file) {
+    const r = uploadRow({}, file);
+    return { upload_state: r.upload_state, upload_parts: r.upload_parts, upload_bytes: r.upload_bytes, upload_ext: r.upload_ext };
+  }
+  // رابط الحصة المباشرة: Google Meet أو Zoom أو Microsoft Teams (يطابق قيد قاعدة البيانات)
+  const meetUrlOk = (u) => /^https:\/\/(meet\.google\.com|([a-z0-9-]+\.)*zoom\.us|teams\.microsoft\.com|teams\.live\.com)\/[^\s<>"]+$/i.test(u || '') && u.length <= 300;
+  const BAD_MEET = 'رابط الحصة يجب أن يكون من Google Meet أو Zoom أو Microsoft Teams.';
+  // أول دقيقة يظهر فيها رابط الدخول للطالب (يطابق join_link)
+  const JOIN_EARLY = (C.JOIN_EARLY_MIN || 15) * 60000;
   const PLACE_KEYS = ['term', 'unit', 'unit_title', 'lesson_type', 'exam_year', 'exam_round', 'request_id', 'skill_name', 'level', 'ages', 'quiz', 'attachments'];
   const V5_KEYS = ['skill_name', 'level', 'ages', 'quiz', 'attachments'];
   const strip = (o, keys) => { const x = Object.assign({}, o); keys.forEach((k) => delete x[k]); return x; };
@@ -481,6 +491,41 @@
       },
       // درس موجود بلا فيديو (مثل درس رُفض فحُذف ملفه): يُرسل له فيديو جديد
       async resendUpload(id, row, file) { return this.updateSession(id, uploadRow(row, file)); },
+      // تسجيل حصة مباشرة انتهت: يُرسل للإدارة لتنشره على قناة المنصة
+      async sendRecording(id, file) { return this.updateSession(id, recordingRow(file)); },
+
+      // ---------- رابط الحصة المباشرة ----------
+      // للطالب: has (وضع المعلم رابطاً) وurl (قبل الحصة بربع ساعة وحتى نهايتها)
+      async joinLink(id) {
+        try {
+          if (user) { const c = await client(); const r = await c.rpc('join_link', { p_id: id }); if (r.error) throw r.error; return r.data || null; }
+          return await rpcPublic('join_link', { p_id: id });
+        } catch (e) {
+          const code = e && (e.code || (e.raw && e.raw.code));
+          if (code === 'PGRST202' || code === '42883' || code === 'PGRST205') return null; // قاعدة بيانات أقدم
+          throw e instanceof ApiError ? e : new ApiError(e);
+        }
+      },
+      async myLinks(ids) {
+        if (!ids || !ids.length) return {};
+        const c = await authed();
+        const out = {};
+        for (let i = 0; i < ids.length; i += 100) {
+          const r = await c.from('session_links').select('session_id,url').in('session_id', ids.slice(i, i + 100));
+          if (r.error) { if (noTable(r.error)) return {}; throw new ApiError(r.error); }
+          (r.data || []).forEach((x) => { out[x.session_id] = x.url; });
+        }
+        return out;
+      },
+      async setJoinLink(id, url) {
+        const c = await authed();
+        let r;
+        if (url) {
+          if (!meetUrlOk(url)) throw new ApiError({ message: BAD_MEET });
+          r = await c.from('session_links').upsert({ session_id: id, url }, { onConflict: 'session_id' });
+        } else r = await c.from('session_links').delete().eq('session_id', id);
+        if (r.error) { if (noTable(r.error)) { if (url) throw new ApiError({ message: NEED_SCHEMA }); return; } throw new ApiError(r.error); }
+      },
       // يرفع الأجزاء الناقصة فقط (يكمل إرسالاً انقطع)، ثم يجعل الدرس «بانتظار النشر»
       async uploadParts(id, file, onProgress) {
         const c = await authed();
@@ -552,7 +597,8 @@
         return new Blob(parts, { type: EXT_MIME[s.upload_ext] || 'video/mp4' });
       },
       async adminFinishUpload(s, url) {
-        await this.updateSession(s.id, Object.assign({ video_url: url, recording_url: null, review: 'ok', review_note: null }, UP_DONE));
+        const v = s.kind === 'live' ? { recording_url: url } : { video_url: url, recording_url: null };
+        await this.updateSession(s.id, Object.assign(v, { review: 'ok', review_note: null }, UP_DONE));
         const c = await authed();
         await removeUpload(c, s.teacher_id, s.id).catch(() => {});
       },
@@ -746,6 +792,18 @@
         { term: 1, unit: 1, unit_title: 'الحركة', created_at: iso(Date.now() - 2 * 864e5) });
       add('t-new', 'g10', 'arabic', 'الإملاء: الهمزة المتوسطة', at(2, 18), 24,
         { video_url: null, review: 'pending', created_at: iso(Date.now() - 3 * 3600e3), upload_state: 'waiting', upload_parts: 4, upload_bytes: 38273024, upload_ext: 'webm' });
+      // حصص مباشرة برابط Meet أو Zoom أو Teams: الآن، وبعد قليل، وخلال الأسبوع، وحصة انتهت وتسجيلها منشور
+      const links = {};
+      const live = (t, grade, subject, title, start, mins, url, extra) => {
+        add(t, grade, subject, title, start, mins, Object.assign({ kind: 'live', video_url: null,
+          description: 'حصة مباشرة: احضر في موعدها واسأل المعلم مباشرة. جهّز دفترك وقلمك.' }, extra || {}));
+        if (url) links[sessions[sessions.length - 1].id] = url;
+      };
+      live('t-mustafa', 'g10', 'arabic', 'حصة مباشرة: إعراب الجملة الفعلية', new Date(now.getTime() - 10 * 60000), 50, 'https://meet.google.com/abc-defg-hij');
+      live('t-noor', 'g12', 'english', 'Live class: Speaking exam practice', new Date(now.getTime() + 10 * 60000), 45, 'https://us05web.zoom.us/j/1234567890');
+      live('t-ali', 'g10', 'math', 'حصة مباشرة: حل أسئلة المعادلات التربيعية', at(1, 19), 60, 'https://teams.microsoft.com/l/meetup-join/demo');
+      live('t-zainab', 'g12', 'physics', 'حصة مباشرة: مراجعة المجال الكهربائي', at(3, 18), 60, 'https://meet.google.com/xyz-abcd-efg');
+      live('t-haider', 'g12', 'biology', 'حصة مباشرة: مراجعة الوراثة', at(-1, 19), 60, 'https://meet.google.com/bio-revi-ew1', { recording_url: 'https://youtu.be/demo-video' });
       // إزالة الحجوزات المزدوجة لنفس المعلم
       const kept = [];
       sessions.sort((a, b) => a.starts_at.localeCompare(b.starts_at)).forEach((s) => {
@@ -782,7 +840,7 @@
           items: kept.filter((s) => s.subject === 'sk_ai').map((s) => s.id), published: true, created_at: iso(Date.now() - 4 * 864e5), updated_at: iso(Date.now() - 2 * 864e5) },
       ];
       const invites = [{ code: 'KHWDSCHL26', kind: 'invite', label: 'مدرسة الخوض', created_by: null, uses_left: 8, active: true, created_at: iso(Date.now() - 10 * 864e5), used: 2 }];
-      return { v: 7, tools: seedTools(), teachers, sessions: kept, reports: [], requests, stats, certificates: [], paths, invites, inviteUses: [],
+      return { v: 8, links, tools: seedTools(), teachers, sessions: kept, reports: [], requests, stats, certificates: [], paths, invites, inviteUses: [],
         settings: { auto_approve: true, site_notice: '', requests_on: true, views_on: true, request_min_votes: 2, featured_session: quad ? quad.id : null }, me: null };
     }
     function seedTools() {
@@ -794,7 +852,7 @@
     function load() {
       if (db) return db;
       try { db = JSON.parse(storeGet(KEY) || 'null'); } catch (e) { db = null; }
-      if (!db || db.v !== 7) { db = seed(); save(); }
+      if (!db || db.v !== 8) { db = seed(); save(); }
       return db;
     }
     function save() { storeSet(KEY, JSON.stringify(db)); }
@@ -1156,6 +1214,7 @@
         const s = db.sessions.find((x) => x.id === id);
         if (!s || (s.teacher_id !== user.id && !isAdmin())) throw new ApiError({ code: '42501' });
         db.sessions = db.sessions.filter((x) => x.id !== id);
+        if (db.links) delete db.links[id];
         db.reports = db.reports.filter((r) => r.session_id !== id);
         files.delete(id);
         // الطلب الذي سُجّل بهذا الدرس يعود مفتوحاً
@@ -1253,6 +1312,46 @@
         }
         return (await this.createSessions([r]))[0];
       },
+      async sendRecording(id, file) {
+        need(); load();
+        const s = db.sessions.find((x) => x.id === id && x.teacher_id === user.id);
+        if (!s) throw new ApiError({ code: '42501' });
+        if (+new Date(s.starts_at) > Date.now()) throw new ApiError({ message: 'أرسل تسجيل الحصة بعد أن تبدأ' });
+        const r = recordingRow(file);
+        const pending = db.sessions.filter((x) => x.upload_state && x.id !== id);
+        if (pending.filter((x) => x.teacher_id === user.id).length >= 3) throw new ApiError({ message: 'لديك 3 دروس بانتظار النشر. انتظر حتى تنشرها الإدارة ثم أرسل غيرها.' });
+        if (pending.reduce((n, x) => n + (x.upload_bytes || 0), 0) + r.upload_bytes > 943718400) throw new ApiError({ message: 'مساحة الإرسال المؤقتة ممتلئة الآن. حاول بعد ساعات، أو انشر الدرس برابط من قناتك.' });
+        Object.assign(s, r); save();
+        return withTeacher(s);
+      },
+      async joinLink(id) {
+        load();
+        const s = db.sessions.find((x) => x.id === id && x.kind === 'live');
+        if (!s) return delay(null);
+        const own = user && (s.teacher_id === user.id || isAdmin());
+        if (!own && !(!s.hidden && (s.review || 'ok') === 'ok' && (teacherOf(s.teacher_id) || {}).status === 'approved')) return delay(null);
+        const url = (db.links || {})[id] || null;
+        const now = Date.now();
+        const open = own || (s.status === 'scheduled' && now >= +new Date(s.starts_at) - JOIN_EARLY && now < +new Date(s.ends_at));
+        return delay({ has: !!url, url: url && open ? url : null, opens_at: iso(+new Date(s.starts_at) - JOIN_EARLY) });
+      },
+      async myLinks(ids) {
+        need(); load();
+        const out = {};
+        (ids || []).forEach((id) => { const s = db.sessions.find((x) => x.id === id); if (s && (s.teacher_id === user.id || isAdmin()) && (db.links || {})[id]) out[id] = db.links[id]; });
+        return delay(out);
+      },
+      async setJoinLink(id, url) {
+        need(); load();
+        const s = db.sessions.find((x) => x.id === id);
+        if (!s || !(s.teacher_id === user.id || isAdmin())) throw new ApiError({ code: '42501' });
+        db.links = db.links || {};
+        if (url) {
+          if (!meetUrlOk(url) || s.kind !== 'live') throw new ApiError({ message: BAD_MEET });
+          db.links[id] = url.trim();
+        } else delete db.links[id];
+        save();
+      },
       async resendUpload(id, row, file) {
         need(); load();
         const s = db.sessions.find((x) => x.id === id && x.teacher_id === user.id);
@@ -1287,7 +1386,10 @@
         for (let i = 1; i <= x.upload_parts; i++) { await new Promise((ok) => setTimeout(ok, 20)); if (onProgress) onProgress(i, x.upload_parts); }
         return f;
       },
-      async adminFinishUpload(x, url) { await this.updateSession(x.id, Object.assign({ video_url: url, recording_url: null, review: 'ok', review_note: null }, UP_DONE)); files.delete(x.id); },
+      async adminFinishUpload(x, url) {
+        const v = x.kind === 'live' ? { recording_url: url } : { video_url: url, recording_url: null };
+        await this.updateSession(x.id, Object.assign(v, { review: 'ok', review_note: null }, UP_DONE)); files.delete(x.id);
+      },
       async adminRejectUpload(x, note) { await this.updateSession(x.id, Object.assign({ review: 'rejected', review_note: note || null }, UP_DONE)); files.delete(x.id); },
       async adminStorage() {
         need(); load(); if (!isAdmin()) throw new ApiError({ code: '42501' });
