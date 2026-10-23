@@ -5,7 +5,7 @@
 =================================================================== -->
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
 
-<div id="kwc" dir="rtl" lang="ar">
+<div id="kwc" dir="rtl" lang="ar" data-fb-key="ضع-apiKey-هنا" data-fb-db="ضع-databaseURL-هنا">
   <div class="kwc-boot">⚠ لم يعمل كود الأداة على هذه الصفحة. تأكد من لصق الكود في «عرض HTML» ثم النشر مباشرة دون الرجوع إلى «عرض الإنشاء».</div>
 
   <!-- ====== الشعار ====== -->
@@ -34,9 +34,10 @@
     </ol>
     <h4>لصاحب الجلسة</h4>
     <ul>
-      <li>أبقِ صفحتك مفتوحة طوال الجلسة؛ فجهازك هو الذي يستقبل الإجابات. إن أغلقتها أو حدّثتها اضغط «استئناف الجلسة»، فالرمز والرابط لا يتغيّران.</li>
-      <li>اختر مدة الجلسة عند إنشائها (ساعة، يوم، أسبوع، أو بلا حد)، فيُغلق الاستقبال تلقائياً عند انتهائها، ويمكنك تمديدها متى شئت من «تغيير مدة الجلسة».</li>
-      <li>للجلسات الطويلة (يوم أو أسبوع): تصل الإجابات فقط وصفحتك مفتوحة، فاتركها مفتوحة على جهاز متصل بالإنترنت.</li>
+      <li>إن أغلقت صفحتك أو حدّثتها اضغط «استئناف الجلسة»، فالرمز والرابط لا يتغيّران.</li>
+      <li>جلسة «ساعة»: اتصال مباشر بين الأجهزة، وتصل الإجابات فقط وصفحتك مفتوحة.</li>
+      <li>جلسة «24 ساعة»: سحابية، يرسل فيها الناس إجاباتهم حتى لو أغلقت صفحتك، وتجدها عند «استئناف الجلسة».</li>
+      <li>يُغلق الاستقبال تلقائياً عند انتهاء المدة، ويمكنك تمديدها من «تغيير مدة الجلسة».</li>
       <li>اضغط على أي كلمة في السحابة لإخفائها، ويمكنك إرجاعها من «كلمات مخفية».</li>
       <li>«إيقاف الاستقبال» يجمّد الإجابات مؤقتاً، و«ملء الشاشة» مناسب لجهاز العرض.</li>
       <li>«الإضافة اليدوية» للإجابات الشفهية أو للصق قائمة: كل سطر أو فاصلة = إجابة.</li>
@@ -50,7 +51,7 @@
     <ul>
       <li>تُدمج الكلمات المتشابهة إملائياً تلقائياً (أ/إ/ا، ة/ه، التشكيل).</li>
       <li>بعض شبكات المدارس والشركات تمنع الاتصال المباشر؛ عندها استخدم بيانات الجوال.</li>
-      <li>لا تسجيل ولا خادم: الإجابات تُحفظ على جهاز صاحب الجلسة فقط.</li>
+      <li>لا تسجيل: الجلسة المباشرة لا تمر بأي خادم، أما السحابية فتُحفظ إجاباتها مؤقتاً في Firebase وتُحذف عند بدء جلسة جديدة.</li>
     </ul>
   </div>
 
@@ -119,10 +120,8 @@
       <div>
         <label class="kwc-label" for="kwc-dur">مدة الجلسة</label>
         <select id="kwc-dur" class="kwc-input" data-js="setupDur">
-          <option value="h1">ساعة واحدة</option>
-          <option value="d1" selected>يوم واحد</option>
-          <option value="w1">أسبوع</option>
-          <option value="none">بلا حد (حتى أوقفها)</option>
+          <option value="h1" selected>ساعة — اتصال مباشر (أبقِ صفحتك مفتوحة)</option>
+          <option value="d1" data-js="durCloud">24 ساعة — سحابية (تستقبل حتى لو أغلقت صفحتك)</option>
         </select>
       </div>
       <label class="kwc-check">
@@ -186,13 +185,11 @@
             <button type="button" class="kwc-btn" data-js="copyLink">نسخ</button>
           </div>
           <button type="button" class="kwc-btn kwc-btn-block" data-js="bigQr">تكبير رمز QR للعرض</button>
-          <p class="kwc-small">متصلون الآن: <b data-js="stLive">0</b> · المدة المتبقية: <b data-js="sideLeft">—</b></p>
+          <p class="kwc-small"><span data-js="liveWrap">متصلون الآن: <b data-js="stLive">0</b> · </span>المدة المتبقية: <b data-js="sideLeft">—</b></p>
           <select class="kwc-input kwc-dur-sel" data-js="extendSel" aria-label="تغيير مدة الجلسة">
             <option value="">⏱ تغيير مدة الجلسة…</option>
             <option value="h1">ساعة من الآن</option>
-            <option value="d1">يوم من الآن</option>
-            <option value="w1">أسبوع من الآن</option>
-            <option value="none">بلا حد</option>
+            <option value="d1">24 ساعة من الآن</option>
           </select>
         </div>
 
@@ -557,7 +554,7 @@ html.kwc-js #kwc .kwc-boot{display:none}
   /* ---------- حالة صاحب الجلسة ---------- */
   var SKEY = 'kwc_session_v1';
   var S = null;           // {code,question,max,multi,open,dark,expires,entries:[{w,k,p,t}],hidden:[]}
-  var DUR = { h1:3600000, d1:86400000, w1:604800000, none:0 };
+  var DUR = { h1:3600000, d1:86400000 };
   var conns = [];
   var peer = null, hostRetry = 0, hostTimer = null;
 
@@ -767,6 +764,142 @@ html.kwc-js #kwc .kwc-boot{display:none}
     setQr(q.createSvgTag({ cellSize:4, margin:1, scalable:true }));
   }
 
+  /* ---------- الوضع السحابي: Firebase Realtime Database عبر REST (بلا مكتبات) ----------
+     يُفعَّل بوضع data-fb-key و data-fb-db على عنصر #kwc، ويُستخدم لجلسات 24 ساعة فقط. */
+  var FB = null, AKEY = 'kwc_fb_auth', es = null, seenIds = {};
+  function fbConf(){
+    if (FB) return FB;
+    var r = R(); if (!r) return null;
+    var key = (r.getAttribute('data-fb-key') || '').trim();
+    var db = (r.getAttribute('data-fb-db') || '').trim().replace(/\/+$/, '');
+    if (/^AIza[\w-]{20,}$/.test(key) && /^https?:\/\/\S+$/.test(db)) FB = { key:key, db:db };
+    return FB;
+  }
+  function fbJson(r){
+    return r.text().then(function(t){
+      var j = null; try{ j = t ? JSON.parse(t) : null; }catch(e){}
+      if (!r.ok){
+        var err = new Error(String(j && j.error ? (j.error.message || j.error) : 'HTTP ' + r.status));
+        err.status = r.status; throw err;
+      }
+      return j;
+    });
+  }
+  function fbUrl(path, qs){ return FB.db + '/' + path + '.json' + (qs ? '?' + qs : ''); }
+  function fbReq(method, path, body, tok){
+    var opt = { method:method };
+    if (body !== undefined){ opt.headers = { 'Content-Type':'application/json' }; opt.body = JSON.stringify(body); }
+    return fetch(fbUrl(path, tok ? 'auth=' + encodeURIComponent(tok) : ''), opt).then(fbJson);
+  }
+  function fbSaveAuth(tok, ref, exp, uid){
+    var a = { tok:tok, ref:ref, exp:Date.now() + (parseInt(exp, 10) || 3600)*1000, uid:uid };
+    store.set(AKEY, a); return a;
+  }
+  function fbSignUp(){
+    return fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + encodeURIComponent(FB.key), {
+      method:'POST', headers:{ 'Content-Type':'application/json' }, body:'{"returnSecureToken":true}'
+    }).then(fbJson).then(function(j){ return fbSaveAuth(j.idToken, j.refreshToken, j.expiresIn, j.localId); });
+  }
+  // هوية مجهولة تثبت ملكية صاحب الجلسة لها، وتبقى محفوظة في متصفحه
+  function fbAuth(){
+    var a = store.get(AKEY);
+    if (a && a.tok && a.uid && a.exp > Date.now() + 60000) return Promise.resolve(a);
+    if (!a || !a.ref) return fbSignUp();
+    return fetch('https://securetoken.googleapis.com/v1/token?key=' + encodeURIComponent(FB.key), {
+      method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
+      body:'grant_type=refresh_token&refresh_token=' + encodeURIComponent(a.ref)
+    }).then(fbJson).then(function(j){ return fbSaveAuth(j.id_token, j.refresh_token, j.expires_in, j.user_id); },
+      function(e){ if (e.status === 400) return fbSignUp(); throw e; });
+  }
+  function fbErr(e){
+    var m = String(e && e.message || e);
+    if (/OPERATION_NOT_ALLOWED|ADMIN_ONLY/i.test(m)) return 'فعّل «Anonymous» في Firebase ← Authentication';
+    if (/API.?KEY/i.test(m)) return 'مفتاح Firebase غير صحيح';
+    if (/permission/i.test(m)) return 'رفضت قواعد Firebase العملية — تأكد من لصق القواعد';
+    if (/fetch|network|load failed/i.test(m)) return 'تعذّر الوصول إلى Firebase';
+    return m;
+  }
+  function newId(){ return Date.now().toString(36) + randCode(8).toLowerCase(); }
+  function cloudAdd(code, words, pid, asOwner){
+    var body = {};
+    words.forEach(function(w){ body[newId()] = { w:w, p:pid, t:{ '.sv':'timestamp' } }; });
+    var go = function(tok){ return fbReq('PATCH', 'kwc/' + code + '/e', body, tok); };
+    return asOwner ? fbAuth().then(function(a){ return go(a.tok); }) : go();
+  }
+  function cloudCreate(q, max, multi, tries){
+    tries = tries || 0;
+    return fbAuth().then(function(a){
+      var code = randCode(6), ex = Date.now() + DUR.d1;
+      var meta = { o:a.uid, q:q, x:max, mu:multi, op:true, ex:ex, c:{ '.sv':'timestamp' } };
+      return fbReq('PUT', 'kwc/' + code + '/m', meta, a.tok).then(function(){
+        S = { code:code, question:q, max:max, multi:multi, open:true, dark:false, expires:ex, entries:[], hidden:[], cloud:true };
+        save(); return S;
+      }, function(e){
+        // تصادم نادر مع رمز مستخدم: نجرّب رمزاً آخر
+        if (/permission/i.test(e.message) && tries < 2) return cloudCreate(q, max, multi, tries + 1);
+        throw e;
+      });
+    });
+  }
+  function cloudMeta(patch){
+    var code = S.code;
+    return fbAuth().then(function(a){ return fbReq('PATCH', 'kwc/' + code + '/m', patch, a.tok); })
+      .catch(function(e){ toast('لم يُحفظ التغيير في السحابة: ' + fbErr(e)); throw e; });
+  }
+  function cloudDelete(code){
+    if (!fbConf()) return;
+    fbAuth().then(function(a){ return fbReq('DELETE', 'kwc/' + code, undefined, a.tok); }).catch(function(){});
+  }
+  function cloudSyncMeta(){
+    var code = S.code;
+    fbReq('GET', 'kwc/' + code + '/m').then(function(m){
+      if (!S || S.code !== code) return;
+      if (!m){ cloudStop(); setNet('off','الجلسة غير موجودة في السحابة (ربما حُذفت)'); return; }
+      S.question = m.q; S.open = !!m.op; S.expires = +m.ex || 0; S.max = m.x; S.multi = !!m.mu;
+      save(); $('showQ').textContent = S.question; paintOpen();
+    }, function(){});
+  }
+  function ingest(id, v){
+    if (seenIds[id] || !v || typeof v.w !== 'string') return false;
+    var c = clean(v.w), k = c && norm(c);
+    if (!k) return false;
+    seenIds[id] = 1;
+    S.entries.push({ w:c, k:k, p:String(v.p || ''), t:+v.t || 0, id:id });
+    return true;
+  }
+  function cloudStop(){ if (es){ try{ es.close(); }catch(e){} es = null; } }
+  // بث مباشر للإجابات من السحابة (Server-Sent Events)
+  function cloudListen(){
+    cloudStop();
+    if (!fbConf()) return setNet('off','إعدادات Firebase غير موجودة في الكود');
+    setNet('wait','جارٍ الاتصال بالسحابة…');
+    var code = S.code, src = es = new EventSource(fbUrl('kwc/' + code + '/e'));
+    var mine = function(){ return es === src && S && S.code === code; };
+    var changed = function(){ save(); scheduleRender(); };
+    src.onopen = function(){ if (mine()) setNet('on','☁ سحابية — تعمل وصفحتك مغلقة'); };
+    src.onerror = function(){ if (mine()) setNet('wait','انقطع الاتصال بالسحابة… إعادة المحاولة'); };
+    src.addEventListener('put', function(ev){
+      if (!mine()) return;
+      var d = JSON.parse(ev.data);
+      if (d.path === '/'){
+        S.entries = []; seenIds = {};
+        var all = d.data || {};
+        Object.keys(all).sort().forEach(function(id){ ingest(id, all[id]); });
+      } else {
+        var parts = d.path.split('/');
+        if (parts.length === 2) ingest(parts[1], d.data);
+      }
+      changed();
+    });
+    src.addEventListener('patch', function(ev){
+      if (!mine()) return;
+      var d = JSON.parse(ev.data);
+      if (d.path === '/' && d.data) Object.keys(d.data).sort().forEach(function(id){ ingest(id, d.data[id]); });
+      changed();
+    });
+    src.addEventListener('cancel', function(){ if (mine()) setNet('off','رفضت قواعد Firebase القراءة — راجع القواعد'); });
+  }
+
   /* ---------- شاشة صاحب الجلسة ---------- */
   function openPresent(){
     show('present');
@@ -778,7 +911,9 @@ html.kwc-js #kwc .kwc-boot{display:none}
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ render(); });
     render();
     setTimeout(render, 600);
-    startHost();
+    $('liveWrap').hidden = !!S.cloud;
+    if (S.cloud){ stopHost(); cloudListen(); cloudSyncMeta(); }
+    else { cloudStop(); startHost(); }
   }
   function paintTheme(){
     $('show').classList.toggle('kwc-dark', !!S.dark);
@@ -946,6 +1081,9 @@ html.kwc-js #kwc .kwc-boot{display:none}
   }
   function openSetup(){
     show('setup');
+    $('durCloud').textContent = fbConf()
+      ? '24 ساعة — سحابية (تستقبل حتى لو أغلقت صفحتك)'
+      : '24 ساعة — اتصال مباشر (أبقِ صفحتك مفتوحة)';
     setTimeout(function(){ $('setupQ').focus(); }, 50);
   }
   function readCode(v){ return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g,''); }
@@ -953,7 +1091,7 @@ html.kwc-js #kwc .kwc-boot{display:none}
   /* ---------- المشارك ---------- */
   var PID = store.get('kwc_pid');
   if (!PID){ PID = 'p' + randCode(10); store.set('kwc_pid', PID); }
-  var J = { code:'', peer:null, conn:null, state:null, timer:null, live:false };
+  var J = { code:'', peer:null, conn:null, state:null, timer:null, live:false, cloud:false, meta:null, poll:null, last:0 };
 
   function jShow(name){
     $$('.kwc-jstate').forEach(function(s){ s.hidden = s.getAttribute('data-jstate') !== name; });
@@ -963,19 +1101,68 @@ html.kwc-js #kwc .kwc-boot{display:none}
     return s ? s.getAttribute('data-jstate') : '';
   }
   function jFail(msg){
-    clearTimeout(J.timer);
+    clearTimeout(J.timer); clearInterval(J.poll);
     if (J.peer){ try{ J.peer.destroy(); }catch(e){} J.peer = null; }
     J.live = false;
     $('jErr').textContent = msg; jShow('error');
   }
   function startJoin(code){
-    J.code = code; J.live = false; J.state = null;
+    J.code = code; J.live = false; J.state = null; J.cloud = false; J.meta = null;
+    clearInterval(J.poll);
     show('join'); jShow('connecting'); $('jCode').textContent = code;
     if (J.peer){ try{ J.peer.destroy(); }catch(e){} J.peer = null; }
+    // نبحث عن الجلسة في السحابة أولاً، وإلا فهي جلسة مباشرة
+    if (fbConf()){
+      fbReq('GET', 'kwc/' + code + '/m').then(function(m){
+        if (J.code !== code) return;
+        if (m && m.q) cloudJoin(code, m); else p2pJoin(code);
+      }, function(){ if (J.code === code) p2pJoin(code); });
+      return;
+    }
+    p2pJoin(code);
+  }
+  function cloudState(m, code){
+    var now = Date.now();
+    return { t:'state', q:m.q, max:m.x, open:!!m.op && m.ex > now, expired:m.ex <= now, multi:!!m.mu,
+             done:!m.mu && !!store.get('kwc_done_' + code) };
+  }
+  function cloudJoin(code, m){
+    J.cloud = true; J.meta = m;
+    onJoinData(cloudState(m, code));
+    clearInterval(J.poll);
+    J.poll = setInterval(function(){
+      if (J.code !== code || current() !== 'join'){ clearInterval(J.poll); return; }
+      fbReq('GET', 'kwc/' + code + '/m').then(function(m2){
+        if (J.code !== code) return;
+        if (!m2) return jFail('انتهت هذه الجلسة أو حُذفت.');
+        J.meta = m2; onJoinData(cloudState(m2, code));
+      }, function(){});
+    }, 20000);
+  }
+  function cloudSend(words){
+    var code = J.code, m = J.meta || {};
+    if (!m.mu && store.get('kwc_done_' + code)) return onJoinData({ t:'ack', ok:false, why:'done' });
+    if (Date.now() - J.last < 1500) return onJoinData({ t:'ack', ok:false, why:'fast' });
+    J.last = Date.now();
+    $('jMsg').textContent = ''; $('jSend').disabled = true;
+    cloudAdd(code, words.slice(0, Math.max(1, m.x | 0)), PID).then(function(){
+      if (!m.mu) store.set('kwc_done_' + code, 1);
+      onJoinData({ t:'ack', ok:true, multi:!!m.mu });
+    }, function(){
+      // نعرف السبب من حالة الجلسة الحالية
+      fbReq('GET', 'kwc/' + code + '/m').then(function(m2){
+        if (!m2) return jFail('انتهت هذه الجلسة أو حُذفت.');
+        J.meta = m2;
+        var st = cloudState(m2, code);
+        onJoinData({ t:'ack', ok:false, why: st.expired ? 'expired' : !st.open ? 'closed' : 'net' });
+      }, function(){ onJoinData({ t:'ack', ok:false, why:'net' }); });
+    });
+  }
+  function p2pJoin(code){
     if (!window.Peer){
       lib('Peer', function(ok){
         if (J.code !== code || current() !== 'join') return;
-        if (ok) startJoin(code);
+        if (ok) p2pJoin(code);
         else jFail('تعذّر تحميل مكتبة الاتصال. تحقّق من الإنترنت ثم أعد المحاولة.');
       });
       return;
@@ -1029,7 +1216,7 @@ html.kwc-js #kwc .kwc-boot{display:none}
         $('jInputs').querySelectorAll('input').forEach(function(i){ i.value = ''; });
         $('jAgain').hidden = !d.multi; jShow('thanks');
       } else {
-        var msgs = { closed:'أوقف صاحب الجلسة الاستقبال حالياً.', done:'سبق أن أرسلت إجابتك في هذه الجلسة.', fast:'تمهّل قليلاً ثم أعد الإرسال.', empty:'اكتب كلمة واحدة على الأقل.' };
+        var msgs = { closed:'أوقف صاحب الجلسة الاستقبال حالياً.', done:'سبق أن أرسلت إجابتك في هذه الجلسة.', fast:'تمهّل قليلاً ثم أعد الإرسال.', empty:'اكتب كلمة واحدة على الأقل.', net:'تعذّر الإرسال، تحقّق من الإنترنت ثم أعد المحاولة.' };
         if (d.why === 'done') jShow('thanks');
         else if (d.why === 'expired') jShow('ended');
         else if (d.why === 'closed') jShow('paused');
@@ -1052,8 +1239,19 @@ html.kwc-js #kwc .kwc-boot{display:none}
     startBtn: function(){
       var q = $('setupQ').value.replace(/\s+/g,' ').trim();
       if (!q){ $('setupQ').focus(); return toast('اكتب السؤال أولاً'); }
-      var dv = $('setupDur').value;
-      newSession(q, +$('setupMax').value || 3, !!$('setupMulti').checked, DUR.hasOwnProperty(dv) ? DUR[dv] : DUR.d1);
+      var dv = $('setupDur').value, max = +$('setupMax').value || 3, multi = !!$('setupMulti').checked;
+      if (dv === 'd1' && fbConf()){
+        var btn = $('startBtn'), label = btn.textContent;
+        btn.disabled = true; btn.textContent = 'جارٍ إنشاء الجلسة…';
+        var reset = function(){ btn = $('startBtn'); btn.disabled = false; btn.textContent = label; };
+        cloudCreate(q, max, multi).then(function(){ reset(); openPresent(); }, function(e){
+          reset();
+          toast('تعذّر إنشاء جلسة سحابية (' + fbErr(e) + ') — بدأت جلسة مباشرة بدلاً منها');
+          newSession(q, max, multi, DUR.d1); openPresent();
+        });
+        return;
+      }
+      newSession(q, max, multi, DUR.hasOwnProperty(dv) ? DUR[dv] : DUR.h1);
       openPresent();
     },
     demoBtn: function(){
@@ -1081,6 +1279,7 @@ html.kwc-js #kwc .kwc-boot{display:none}
       if (expired()) return toast('انتهت مدة الجلسة — مدّدها من «تغيير مدة الجلسة»');
       S.open = !S.open; save(); paintOpen(); broadcast();
       toast(S.open ? 'تم استئناف استقبال الإجابات' : 'تم إيقاف استقبال الإجابات');
+      if (S.cloud) cloudMeta({ op:S.open }).catch(function(){ S.open = !S.open; save(); paintOpen(); });
     },
     editQ: function(){
       var q = prompt('عدّل نص السؤال:', S.question);
@@ -1088,10 +1287,12 @@ html.kwc-js #kwc .kwc-boot{display:none}
       q = q.replace(/\s+/g,' ').trim().slice(0, 140);
       if (!q) return;
       S.question = q; save(); $('showQ').textContent = q; broadcast();
+      if (S.cloud) cloudMeta({ q:q }).catch(function(){});
     },
     themeBtn: function(){ S.dark = !S.dark; save(); paintTheme(); },
     newBtn: function(){
       if (S.entries.length && !confirm('ستُحذف السحابة الحالية نهائياً (يمكنك تنزيلها كصورة أو CSV قبل ذلك). متابعة؟')) return;
+      if (S.cloud){ cloudStop(); cloudDelete(S.code); }
       stopHost(); store.del(SKEY); S = null;
       Object.keys(spans).forEach(function(k){ spans[k].remove(); }); spans = {};
       openSetup();
@@ -1107,6 +1308,15 @@ html.kwc-js #kwc .kwc-boot{display:none}
     modalX: function(){ $('modal').hidden = true; },
     manualAdd: function(){
       var parts = $('manual').value.split(/[\n,،;؛]+/), n = 0;
+      if (S.cloud){
+        var words = parts.map(clean).filter(function(w){ return norm(w); });
+        if (!words.length) return toast('اكتب كلمة واحدة على الأقل');
+        cloudAdd(S.code, words, 'host', true).then(function(){
+          $('manual').value = '';
+          toast('أُضيفت ' + words.length + (words.length === 1 ? ' إجابة' : ' إجابات'));
+        }, function(e){ toast('لم تُضف الإجابات: ' + fbErr(e)); });
+        return;
+      }
       parts.forEach(function(p){ if (addEntry(p, 'host')) n++; });
       if (!n) return toast('اكتب كلمة واحدة على الأقل');
       $('manual').value = ''; save(); render();
@@ -1126,6 +1336,7 @@ html.kwc-js #kwc .kwc-boot{display:none}
       var words = [];
       $('jInputs').querySelectorAll('input').forEach(function(i){ var c = clean(i.value); if (c) words.push(c); });
       if (!words.length){ $('jMsg').textContent = 'اكتب كلمة واحدة على الأقل.'; return; }
+      if (J.cloud) return cloudSend(words);
       if (!J.conn || !J.conn.open) return jFail('انقطع الاتصال بجهاز صاحب الجلسة.');
       $('jMsg').textContent = ''; $('jSend').disabled = true;
       setTimeout(function(){ $('jSend').disabled = false; }, 5000);
@@ -1135,7 +1346,7 @@ html.kwc-js #kwc .kwc-boot{display:none}
     jRetry: function(){ startJoin(J.code); },
     jHome: function(){
       if (J.peer){ try{ J.peer.destroy(); }catch(e){} J.peer = null; }
-      J.code = '';
+      J.code = ''; clearInterval(J.poll);
       try{ var u = new URL(location.href); u.searchParams.delete('wc'); history.replaceState(null, '', u.toString()); }catch(e){}
       openHome(); $('homeCode').focus();
     }
@@ -1186,10 +1397,11 @@ html.kwc-js #kwc .kwc-boot{display:none}
     var v = t.value; t.value = '';
     if (!DUR.hasOwnProperty(v)) return;
     var wasExpired = expired();
-    S.expires = DUR[v] ? Date.now() + DUR[v] : 0;
+    S.expires = Date.now() + DUR[v];
     if (wasExpired) S.open = true;
     save(); paintOpen(); broadcast();
-    toast(DUR[v] ? 'تنتهي الجلسة بعد ' + fmtLeft(DUR[v]) : 'أصبحت الجلسة بلا حد زمني');
+    toast('تنتهي الجلسة بعد ' + fmtLeft(DUR[v]));
+    if (S.cloud) cloudMeta({ ex:S.expires, op:S.open }).catch(function(){});
   });
 
   // عدّاد المدة: يحدّث الوقت المتبقي ويغلق الاستقبال عند انتهائه
