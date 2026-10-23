@@ -1,0 +1,1010 @@
+<!-- ===================================================================
+  Kamirty.ai — سحابة الكلمات التفاعلية (Live Word Cloud)
+  الصق هذا الكود كاملاً في تدوينة/صفحة بلوجر عبر «عرض HTML».
+  يعمل دون خادم: المشاركون يتصلون بجهاز المقدّم مباشرة (WebRTC عبر PeerJS).
+=================================================================== -->
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+
+<div id="kwc" dir="rtl" lang="ar">
+
+  <!-- ====== الشعار ====== -->
+  <div class="kwc-brand">
+    <svg class="kwc-logo" viewBox="0 0 48 48" aria-hidden="true">
+      <rect x="4" y="13" width="40" height="28" rx="5" fill="none" stroke="currentColor" stroke-width="2.4"/>
+      <path d="M16 13l3-5h10l3 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+      <circle cx="24" cy="27" r="9.5" fill="none" stroke="currentColor" stroke-width="2.4"/>
+      <rect x="20.5" y="23.5" width="7" height="7" rx="1" fill="currentColor"/>
+      <path d="M22 21.5v2M26 21.5v2M22 30.5v2M26 30.5v2M18.5 25h2M18.5 29h2M27.5 25h2M27.5 29h2" stroke="currentColor" stroke-width="1.3"/>
+      <circle cx="38" cy="18" r="1.6" fill="currentColor"/>
+    </svg>
+    <span class="kwc-brand-name">Kamirty<b>.ai</b></span>
+    <span class="kwc-brand-tag">سحابة الكلمات التفاعلية</span>
+  </div>
+
+  <!-- ====== الواجهة الرئيسية ====== -->
+  <section class="kwc-view" data-view="home">
+    <div class="kwc-hero">
+      <h2>اجمع آراء جمهورك… وشاهدها تتحوّل إلى سحابة كلمات <span>مباشرة</span></h2>
+      <p>اطرح سؤالاً، يمسح الحاضرون رمز QR بجوالاتهم ويرسلون كلماتهم، فتكبر الكلمات الأكثر تكراراً أمام الجميع لحظة بلحظة. مجاني، بلا تسجيل، ومناسب للفصل والورش والاجتماعات.</p>
+    </div>
+
+    <div class="kwc-resume" data-js="resume" hidden>
+      <div>
+        <small>لديك جلسة سابقة</small>
+        <strong data-js="resumeQ"></strong>
+      </div>
+      <button type="button" class="kwc-btn kwc-btn-gold" data-js="resumeBtn">استئناف الجلسة</button>
+    </div>
+
+    <div class="kwc-cards">
+      <div class="kwc-card">
+        <div class="kwc-card-ico">◆</div>
+        <h3>أنا المقدّم / المعلّم</h3>
+        <p>أنشئ سؤالاً واعرض السحابة على الشاشة أو جهاز العرض.</p>
+        <button type="button" class="kwc-btn kwc-btn-gold" data-js="goSetup">إنشاء سحابة جديدة</button>
+      </div>
+      <div class="kwc-card">
+        <div class="kwc-card-ico">◇</div>
+        <h3>أنا مشارك</h3>
+        <p>أدخل رمز الجلسة الظاهر على الشاشة.</p>
+        <div class="kwc-row">
+          <input type="text" class="kwc-input kwc-code-input" data-js="homeCode" maxlength="8" placeholder="مثال: K7M2QX" dir="ltr" autocomplete="off" autocapitalize="characters">
+          <button type="button" class="kwc-btn" data-js="homeJoin">انضمام</button>
+        </div>
+      </div>
+    </div>
+
+    <ol class="kwc-steps">
+      <li><b>1</b><span>اكتب سؤالك واضغط «ابدأ».</span></li>
+      <li><b>2</b><span>يمسح المشاركون رمز QR أو يدخلون الرمز.</span></li>
+      <li><b>3</b><span>تظهر الكلمات وتكبر مع التكرار لحظياً.</span></li>
+    </ol>
+  </section>
+
+  <!-- ====== إعداد الجلسة ====== -->
+  <section class="kwc-view" data-view="setup" hidden>
+    <button type="button" class="kwc-link" data-js="backHome">→ رجوع</button>
+    <h3 class="kwc-title">إعداد السؤال</h3>
+
+    <label class="kwc-label" for="kwc-q">السؤال الذي سيُعرض على المشاركين</label>
+    <input id="kwc-q" type="text" class="kwc-input" data-js="setupQ" maxlength="140" placeholder="مثال: صِف درس اليوم بكلمة واحدة">
+
+    <div class="kwc-chips" data-js="chips">
+      <button type="button">صِف درس اليوم بكلمة واحدة</button>
+      <button type="button">ما أول كلمة تخطر ببالك عند سماع «الذكاء الاصطناعي»؟</button>
+      <button type="button">ماذا تتوقع أن تتعلم في هذه الورشة؟</button>
+      <button type="button">ما أصعب شيء في المذاكرة؟</button>
+      <button type="button">كلمة تصف فريقنا</button>
+    </div>
+
+    <div class="kwc-grid2">
+      <div>
+        <label class="kwc-label" for="kwc-max">عدد الإجابات لكل مشارك</label>
+        <select id="kwc-max" class="kwc-input" data-js="setupMax">
+          <option value="1">إجابة واحدة</option>
+          <option value="2">إجابتان</option>
+          <option value="3" selected>3 إجابات</option>
+          <option value="5">5 إجابات</option>
+        </select>
+      </div>
+      <label class="kwc-check">
+        <input type="checkbox" data-js="setupMulti">
+        <span>السماح للمشارك بالإرسال أكثر من مرة</span>
+      </label>
+    </div>
+
+    <div class="kwc-actions">
+      <button type="button" class="kwc-btn kwc-btn-gold kwc-btn-lg" data-js="startBtn">ابدأ الجلسة المباشرة</button>
+      <button type="button" class="kwc-btn" data-js="demoBtn">جرّب بمثال جاهز</button>
+    </div>
+    <p class="kwc-note">لا حاجة لحساب. أبقِ هذه الصفحة مفتوحة أثناء الجلسة؛ فجهازك هو الذي يستقبل الإجابات.</p>
+  </section>
+
+  <!-- ====== شاشة المقدّم ====== -->
+  <section class="kwc-view" data-view="present" hidden>
+    <div class="kwc-present">
+      <div class="kwc-main">
+        <div class="kwc-show" data-js="show">
+          <div class="kwc-show-head">
+            <h3 class="kwc-show-q" data-js="showQ"></h3>
+            <div class="kwc-show-join">
+              <div class="kwc-mini-qr" data-js="miniQr"></div>
+              <div><small>انضم بالرمز</small><b data-js="showCode" dir="ltr"></b></div>
+            </div>
+          </div>
+          <div class="kwc-stage" data-js="stage">
+            <div class="kwc-empty" data-js="empty">
+              <span>بانتظار الإجابات…</span>
+              <small>ستظهر الكلمات هنا فور وصولها</small>
+            </div>
+          </div>
+          <div class="kwc-show-foot">
+            <span><b data-js="stResp">0</b> إجابة</span>
+            <span><b data-js="stPeople">0</b> مشارك</span>
+            <span><b data-js="stUnique">0</b> كلمة مختلفة</span>
+            <span class="kwc-paused-tag" data-js="pausedTag" hidden>⏸ الاستقبال متوقف</span>
+            <button type="button" class="kwc-fs-exit" data-js="fsExit">إغلاق ملء الشاشة ✕</button>
+          </div>
+        </div>
+
+        <div class="kwc-toolbar">
+          <button type="button" class="kwc-btn" data-js="toggleOpen">⏸ إيقاف الاستقبال</button>
+          <button type="button" class="kwc-btn" data-js="fsBtn">⛶ ملء الشاشة</button>
+          <button type="button" class="kwc-btn" data-js="themeBtn">◐ خلفية فاتحة</button>
+          <button type="button" class="kwc-btn" data-js="pngBtn">⬇ صورة PNG</button>
+          <button type="button" class="kwc-btn" data-js="csvBtn">⬇ Excel / CSV</button>
+          <button type="button" class="kwc-btn" data-js="editQ">✎ تعديل السؤال</button>
+          <button type="button" class="kwc-btn kwc-btn-ghost" data-js="newBtn">جلسة جديدة</button>
+        </div>
+        <p class="kwc-hint">تلميح: اضغط على أي كلمة في السحابة لإخفائها (للإشراف على الإجابات غير المناسبة).</p>
+      </div>
+
+      <aside class="kwc-side">
+        <div class="kwc-panel kwc-join-card">
+          <div class="kwc-net" data-js="net"><i></i><span>جارٍ التجهيز…</span></div>
+          <div class="kwc-qr" data-js="qr" title="اضغط للتكبير"></div>
+          <div class="kwc-code" data-js="code" dir="ltr"></div>
+          <div class="kwc-row">
+            <input type="text" class="kwc-input kwc-link-input" data-js="joinLink" readonly dir="ltr">
+            <button type="button" class="kwc-btn" data-js="copyLink">نسخ</button>
+          </div>
+          <button type="button" class="kwc-btn kwc-btn-block" data-js="bigQr">تكبير رمز QR للعرض</button>
+          <p class="kwc-small">متصلون الآن: <b data-js="stLive">0</b></p>
+        </div>
+
+        <div class="kwc-panel">
+          <h4>إضافة يدوية</h4>
+          <p class="kwc-small">للإجابات الشفهية أو للصق قائمة (كل سطر أو فاصلة = إجابة).</p>
+          <textarea class="kwc-input" data-js="manual" rows="3" placeholder="إبداع، تعاون، فضول"></textarea>
+          <button type="button" class="kwc-btn kwc-btn-block" data-js="manualAdd">إضافة إلى السحابة</button>
+        </div>
+
+        <div class="kwc-panel" data-js="hiddenPanel" hidden>
+          <h4>كلمات مخفية</h4>
+          <div class="kwc-hidden-list" data-js="hiddenList"></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ====== شاشة المشارك ====== -->
+  <section class="kwc-view" data-view="join" hidden>
+    <div class="kwc-join">
+      <div class="kwc-jstate" data-jstate="connecting">
+        <div class="kwc-spinner"></div>
+        <p>جارٍ الاتصال بالجلسة <b data-js="jCode" dir="ltr"></b>…</p>
+      </div>
+
+      <div class="kwc-jstate" data-jstate="form" hidden>
+        <small class="kwc-jlabel">سؤال المقدّم</small>
+        <h3 class="kwc-jq" data-js="jQ"></h3>
+        <div class="kwc-jinputs" data-js="jInputs"></div>
+        <button type="button" class="kwc-btn kwc-btn-gold kwc-btn-lg kwc-btn-block" data-js="jSend">إرسال</button>
+        <p class="kwc-jmsg" data-js="jMsg"></p>
+      </div>
+
+      <div class="kwc-jstate" data-jstate="paused" hidden>
+        <div class="kwc-big-ico">⏸</div>
+        <h3>الاستقبال متوقف مؤقتاً</h3>
+        <p>ستظهر خانة الإجابة تلقائياً عندما يعيد المقدّم فتح الاستقبال.</p>
+      </div>
+
+      <div class="kwc-jstate" data-jstate="thanks" hidden>
+        <div class="kwc-big-ico kwc-ok">✓</div>
+        <h3>وصلت إجابتك!</h3>
+        <p>انظر إلى الشاشة لترى كلمتك في السحابة.</p>
+        <button type="button" class="kwc-btn" data-js="jAgain" hidden>إرسال إجابة أخرى</button>
+      </div>
+
+      <div class="kwc-jstate" data-jstate="error" hidden>
+        <div class="kwc-big-ico kwc-bad">!</div>
+        <h3>تعذّر الاتصال</h3>
+        <p data-js="jErr"></p>
+        <div class="kwc-row kwc-row-center">
+          <button type="button" class="kwc-btn kwc-btn-gold" data-js="jRetry">إعادة المحاولة</button>
+          <button type="button" class="kwc-btn" data-js="jHome">إدخال رمز آخر</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== نافذة QR الكبيرة ====== -->
+  <div class="kwc-modal" data-js="modal" hidden>
+    <div class="kwc-modal-box">
+      <button type="button" class="kwc-modal-x" data-js="modalX" aria-label="إغلاق">✕</button>
+      <p>امسح الرمز للمشاركة</p>
+      <div class="kwc-qr-big" data-js="qrBig"></div>
+      <div class="kwc-code kwc-code-big" data-js="codeBig" dir="ltr"></div>
+    </div>
+  </div>
+
+  <div class="kwc-toast" data-js="toast" hidden></div>
+  <div class="kwc-credit">أداة مجانية من <a href="https://www.kamirtyai.com" target="_blank" rel="noopener">Kamirty.ai</a></div>
+</div>
+
+<style>
+#kwc{
+  --ink:#0d0d0f;--ink2:#151518;--ink3:#1d1d22;--line:#2c2c33;
+  --gold:#d4a84b;--gold2:#f0d58c;--gold3:#a87d2a;--txt:#ece7da;--mute:#9a9486;
+  --ok:#5fbf8a;--bad:#e0675f;
+  font-family:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+  background:var(--ink);color:var(--txt);border-radius:18px;padding:22px;
+  max-width:1200px;margin:0 auto;line-height:1.7;text-align:right;
+  border:1px solid #23232a;position:relative;overflow:hidden;
+}
+#kwc *,#kwc *::before,#kwc *::after{box-sizing:border-box}
+#kwc [hidden]{display:none !important}
+#kwc h2,#kwc h3,#kwc h4,#kwc p{margin:0;color:inherit;font-family:inherit}
+#kwc a{color:var(--gold)}
+#kwc button,#kwc input,#kwc select,#kwc textarea{font-family:inherit;font-size:15px}
+
+/* الشعار */
+#kwc .kwc-brand{display:flex;align-items:center;gap:10px;margin-bottom:18px;color:var(--gold)}
+#kwc .kwc-logo{width:38px;height:38px}
+#kwc .kwc-brand-name{font-weight:700;font-size:18px;color:var(--txt);direction:ltr}
+#kwc .kwc-brand-name b{color:var(--gold)}
+#kwc .kwc-brand-tag{margin-inline-start:auto;font-size:13px;color:var(--mute);border:1px solid var(--line);padding:3px 12px;border-radius:99px}
+
+/* أزرار وحقول */
+#kwc .kwc-btn{background:var(--ink3);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:9px 16px;cursor:pointer;transition:.18s;white-space:nowrap;line-height:1.4;box-shadow:none;margin:0;text-transform:none}
+#kwc .kwc-btn:hover{border-color:var(--gold);color:var(--gold2)}
+#kwc .kwc-btn-gold{background:var(--gold);color:#16120a;border-color:var(--gold);font-weight:700}
+#kwc .kwc-btn-gold:hover{background:var(--gold2);color:#16120a}
+#kwc .kwc-btn-ghost{background:transparent}
+#kwc .kwc-btn-lg{padding:13px 26px;font-size:17px}
+#kwc .kwc-btn-block{display:block;width:100%;margin-top:10px}
+#kwc .kwc-btn:disabled{opacity:.5;cursor:not-allowed}
+#kwc .kwc-link{background:none;border:0;color:var(--mute);cursor:pointer;padding:0;margin-bottom:8px}
+#kwc .kwc-link:hover{color:var(--gold)}
+#kwc .kwc-input{width:100%;background:var(--ink2);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 14px;outline:none;transition:.18s;margin:0;box-shadow:none;height:auto}
+#kwc .kwc-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,168,75,.15)}
+#kwc textarea.kwc-input{resize:vertical;min-height:70px}
+#kwc .kwc-label{display:block;font-size:14px;color:var(--mute);margin:16px 0 6px}
+#kwc .kwc-row{display:flex;gap:8px;align-items:center}
+#kwc .kwc-row-center{justify-content:center;flex-wrap:wrap}
+#kwc .kwc-small{font-size:13px;color:var(--mute);margin-top:8px}
+#kwc .kwc-note{font-size:13px;color:var(--mute);margin-top:14px}
+#kwc .kwc-title{font-size:22px;margin-bottom:4px}
+
+/* الرئيسية */
+#kwc .kwc-hero{text-align:center;padding:10px 0 24px}
+#kwc .kwc-hero h2{font-size:clamp(22px,3.4vw,34px);line-height:1.5;font-weight:700}
+#kwc .kwc-hero h2 span{color:var(--gold)}
+#kwc .kwc-hero p{color:var(--mute);max-width:680px;margin:12px auto 0;font-size:16px}
+#kwc .kwc-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+#kwc .kwc-card{background:var(--ink2);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:10px}
+#kwc .kwc-card h3{font-size:19px}
+#kwc .kwc-card p{color:var(--mute);font-size:14px;flex:1}
+#kwc .kwc-card-ico{color:var(--gold);font-size:22px;line-height:1}
+#kwc .kwc-code-input{text-align:center;letter-spacing:4px;font-weight:700;text-transform:uppercase}
+#kwc .kwc-resume{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(90deg,rgba(212,168,75,.12),transparent);border:1px solid var(--gold3);border-radius:12px;padding:12px 16px;margin-bottom:16px;flex-wrap:wrap}
+#kwc .kwc-resume small{display:block;color:var(--mute);font-size:12px}
+#kwc .kwc-steps{list-style:none;padding:0;margin:22px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+#kwc .kwc-steps li{display:flex;gap:10px;align-items:center;color:var(--mute);font-size:14px;margin:0;padding:0}
+#kwc .kwc-steps b{flex:0 0 28px;height:28px;border:1px solid var(--gold);color:var(--gold);border-radius:8px;display:grid;place-items:center;font-size:14px}
+
+/* الإعداد */
+#kwc .kwc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+#kwc .kwc-chips button{background:transparent;border:1px dashed var(--line);color:var(--mute);border-radius:99px;padding:4px 12px;font-size:13px;cursor:pointer;margin:0}
+#kwc .kwc-chips button:hover{border-color:var(--gold);color:var(--gold2)}
+#kwc .kwc-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;align-items:end}
+#kwc .kwc-check{display:flex;gap:8px;align-items:center;cursor:pointer;color:var(--txt);font-size:14px;padding:10px 0}
+#kwc .kwc-check input{accent-color:var(--gold);width:18px;height:18px;margin:0}
+#kwc .kwc-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+
+/* شاشة المقدّم */
+#kwc .kwc-present{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:16px}
+#kwc .kwc-show{--bg:#0a0a0c;--fg:#ece7da;--sub:#8e8879;
+  --c0:#f0d58c;--c1:#d4a84b;--c2:#ece7da;--c3:#b8913f;--c4:#c9c2b0;--c5:#e3bf6a;
+  background:radial-gradient(ellipse at center,#16161b 0%,var(--bg) 70%);color:var(--fg);
+  border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column}
+#kwc .kwc-show.kwc-light{--bg:#faf7ef;--fg:#141416;--sub:#7b7464;
+  --c0:#9a6f17;--c1:#141416;--c2:#b8862e;--c3:#3a3a40;--c4:#7d5a14;--c5:#5a5650;
+  background:radial-gradient(ellipse at center,#ffffff 0%,var(--bg) 75%);border-color:#e4dccb}
+#kwc .kwc-show-head{display:flex;align-items:center;gap:14px;justify-content:space-between}
+#kwc .kwc-show-q{font-size:clamp(17px,2.2vw,26px);font-weight:700;line-height:1.45;flex:1}
+#kwc .kwc-show-join{display:flex;align-items:center;gap:8px;color:var(--sub);font-size:12px;text-align:center}
+#kwc .kwc-show-join b{display:block;color:var(--c1);font-size:18px;letter-spacing:3px}
+#kwc .kwc-mini-qr{display:none;width:84px;background:#fff;padding:4px;border-radius:6px}
+#kwc .kwc-mini-qr svg,#kwc .kwc-qr svg,#kwc .kwc-qr-big svg{display:block;width:100%;height:auto}
+#kwc .kwc-stage{position:relative;width:100%;aspect-ratio:16/9;min-height:300px;overflow:hidden;margin-top:6px}
+#kwc .kwc-word{position:absolute;left:0;top:0;white-space:nowrap;line-height:1;font-weight:700;cursor:pointer;user-select:none;
+  transition:transform .7s cubic-bezier(.2,.8,.2,1),font-size .7s cubic-bezier(.2,.8,.2,1),opacity .5s,color .4s;will-change:transform}
+#kwc .kwc-word.kwc-new{transition:none;opacity:0}
+#kwc .kwc-word.kwc-gone{opacity:0;pointer-events:none}
+#kwc .kwc-word:hover{filter:brightness(1.25)}
+#kwc .kwc-c0{color:var(--c0)}#kwc .kwc-c1{color:var(--c1)}#kwc .kwc-c2{color:var(--c2)}
+#kwc .kwc-c3{color:var(--c3)}#kwc .kwc-c4{color:var(--c4)}#kwc .kwc-c5{color:var(--c5)}
+#kwc .kwc-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--sub);gap:4px;text-align:center}
+#kwc .kwc-empty span{font-size:20px}
+#kwc .kwc-show-foot{display:flex;gap:18px;flex-wrap:wrap;align-items:center;color:var(--sub);font-size:13px;border-top:1px solid rgba(128,128,128,.18);padding-top:8px;margin-top:6px}
+#kwc .kwc-show-foot b{color:var(--c1);font-size:15px}
+#kwc .kwc-paused-tag{color:var(--bad)}
+#kwc .kwc-fs-exit{display:none;margin-inline-start:auto;background:transparent;border:1px solid rgba(128,128,128,.35);color:var(--sub);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px}
+#kwc .kwc-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+#kwc .kwc-toolbar .kwc-btn{font-size:14px;padding:8px 12px}
+#kwc .kwc-hint{font-size:12px;color:var(--mute);margin-top:8px}
+
+/* ملء الشاشة */
+#kwc .kwc-show.kwc-fs{position:fixed;inset:0;z-index:2147483000;border-radius:0;border:0;padding:24px 32px}
+#kwc .kwc-show.kwc-fs .kwc-stage{flex:1;aspect-ratio:auto;height:auto}
+#kwc .kwc-show.kwc-fs .kwc-mini-qr{display:block}
+#kwc .kwc-show.kwc-fs .kwc-show-q{font-size:clamp(22px,3vw,40px)}
+#kwc .kwc-show.kwc-fs .kwc-fs-exit{display:inline-block}
+
+/* الجانب */
+#kwc .kwc-side{display:flex;flex-direction:column;gap:14px}
+#kwc .kwc-panel{background:var(--ink2);border:1px solid var(--line);border-radius:14px;padding:14px}
+#kwc .kwc-panel h4{font-size:15px;margin-bottom:2px}
+#kwc .kwc-panel textarea{margin-top:8px}
+#kwc .kwc-join-card{text-align:center}
+#kwc .kwc-qr{background:#fff;border-radius:10px;padding:8px;width:180px;max-width:100%;margin:10px auto;cursor:zoom-in}
+#kwc .kwc-code{font-size:28px;font-weight:700;letter-spacing:6px;color:var(--gold);margin-bottom:10px}
+#kwc .kwc-link-input{font-size:12px;padding:8px 10px}
+#kwc .kwc-net{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mute);background:var(--ink);border:1px solid var(--line);border-radius:99px;padding:3px 10px}
+#kwc .kwc-net i{width:8px;height:8px;border-radius:50%;background:var(--gold);display:inline-block}
+#kwc .kwc-net.kwc-on i{background:var(--ok);box-shadow:0 0 0 3px rgba(95,191,138,.2)}
+#kwc .kwc-net.kwc-wait i{animation:kwcPulse 1s infinite}
+#kwc .kwc-net.kwc-off i{background:var(--bad)}
+#kwc .kwc-hidden-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+#kwc .kwc-hidden-list button{background:var(--ink);border:1px solid var(--line);color:var(--mute);border-radius:99px;padding:2px 10px;font-size:13px;cursor:pointer;margin:0}
+#kwc .kwc-hidden-list button:hover{color:var(--gold2);border-color:var(--gold)}
+#kwc .kwc-hidden-list button s{opacity:.8}
+
+/* المشارك */
+#kwc .kwc-join{max-width:520px;margin:0 auto;text-align:center;padding:10px 0 20px}
+#kwc .kwc-jlabel{color:var(--mute);font-size:13px}
+#kwc .kwc-jq{font-size:clamp(20px,5vw,26px);line-height:1.5;margin:4px 0 18px}
+#kwc .kwc-jinputs{display:flex;flex-direction:column;gap:10px}
+#kwc .kwc-jinputs .kwc-input{font-size:18px;padding:13px 16px;text-align:center}
+#kwc .kwc-jinputs .kwc-input::placeholder{color:#5f5a50}
+#kwc .kwc-join .kwc-btn-block{margin-top:14px}
+#kwc .kwc-jmsg{min-height:24px;margin-top:10px;font-size:14px;color:var(--bad)}
+#kwc .kwc-jstate h3{font-size:22px;margin:8px 0}
+#kwc .kwc-jstate p{color:var(--mute)}
+#kwc .kwc-big-ico{width:64px;height:64px;margin:6px auto;border-radius:50%;border:2px solid var(--gold);color:var(--gold);display:grid;place-items:center;font-size:28px}
+#kwc .kwc-big-ico.kwc-ok{border-color:var(--ok);color:var(--ok)}
+#kwc .kwc-big-ico.kwc-bad{border-color:var(--bad);color:var(--bad)}
+#kwc .kwc-jstate .kwc-btn{margin-top:14px}
+#kwc .kwc-spinner{width:42px;height:42px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;margin:20px auto 12px;animation:kwcSpin .8s linear infinite}
+
+/* نافذة وتنبيه */
+#kwc .kwc-modal{position:fixed;inset:0;z-index:2147483600;background:rgba(5,5,7,.88);display:grid;place-items:center;padding:16px}
+#kwc .kwc-modal-box{background:var(--ink2);border:1px solid var(--gold3);border-radius:18px;padding:24px;text-align:center;position:relative;width:min(520px,100%)}
+#kwc .kwc-modal-box p{color:var(--mute);font-size:18px}
+#kwc .kwc-qr-big{background:#fff;border-radius:12px;padding:12px;margin:14px auto;width:min(380px,100%)}
+#kwc .kwc-code-big{font-size:clamp(32px,8vw,52px);margin:0}
+#kwc .kwc-modal-x{position:absolute;top:10px;left:10px;background:none;border:0;color:var(--mute);font-size:20px;cursor:pointer}
+#kwc .kwc-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--gold);color:#16120a;font-weight:600;padding:10px 20px;border-radius:10px;z-index:2147483647;box-shadow:0 8px 30px rgba(0,0,0,.4);font-size:14px;max-width:90vw;text-align:center}
+#kwc .kwc-credit{text-align:center;font-size:12px;color:var(--mute);margin-top:20px}
+#kwc .kwc-credit a{text-decoration:none}
+
+@keyframes kwcSpin{to{transform:rotate(360deg)}}
+@keyframes kwcPulse{50%{opacity:.25}}
+
+@media (max-width:860px){
+  #kwc .kwc-present{grid-template-columns:1fr}
+  #kwc .kwc-side{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+}
+@media (max-width:520px){
+  #kwc{padding:16px;border-radius:14px}
+  #kwc .kwc-brand-tag{display:none}
+  #kwc .kwc-stage{aspect-ratio:4/5}
+  #kwc .kwc-show{padding:12px}
+  #kwc .kwc-show-join{display:none}
+  #kwc .kwc-show.kwc-fs .kwc-show-join{display:flex}
+  #kwc .kwc-toolbar .kwc-btn{flex:1 1 45%}
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>
+//<![CDATA[
+(function(){
+  'use strict';
+  var root = document.getElementById('kwc');
+  if (!root || root.dataset.ready) return;
+  root.dataset.ready = '1';
+
+  /* ---------- أدوات عامة ---------- */
+  function $(n){ return root.querySelector('[data-js="'+n+'"]'); }
+  var PREFIX = 'kamirtywc-v1-';
+  var ALPH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  var MAXLEN = 30, MAX_SHOWN = 120;
+  var FONT = '"IBM Plex Sans Arabic", Tahoma, "Segoe UI", sans-serif';
+  var store = {
+    get:function(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+    set:function(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+    del:function(k){ try{ localStorage.removeItem(k); }catch(e){} }
+  };
+  function randCode(n){
+    var a = new Uint32Array(n), s = '';
+    (window.crypto || window.msCrypto).getRandomValues(a);
+    for (var i=0;i<n;i++) s += ALPH[a[i] % ALPH.length];
+    return s;
+  }
+  function hash(s){ var h=2166136261; for (var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+  function isArabic(s){ return /[؀-ۿ]/.test(s); }
+
+  var toastTimer;
+  function toast(msg){
+    var t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.hidden = true; }, 2600);
+  }
+  function show(view){
+    root.querySelectorAll('.kwc-view').forEach(function(v){ v.hidden = v.getAttribute('data-view') !== view; });
+  }
+  function download(name, blob){
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
+  /* ---------- تنظيف وتوحيد الكلمات ---------- */
+  var EDGE = /^[\s.,،؛;:!?؟"'«»()\[\]{}\-_*#…]+|[\s.,،؛;:!?؟"'«»()\[\]{}\-_*#…]+$/g;
+  function clean(w){
+    return String(w == null ? '' : w)
+      .replace(/[\u0000-\u001F\u007F​-‏‪-‮⁦-⁩﻿]/g,'')
+      .replace(/\s+/g,' ').replace(EDGE,'').trim().slice(0, MAXLEN).trim();
+  }
+  // مفتاح التجميع: يدمج «أ/إ/آ» و«ة/ه» و«ى/ي» ويحذف التشكيل والتطويل وحالة الأحرف
+  function norm(w){
+    var s = w.normalize ? w.normalize('NFKC') : w;
+    return s.toLowerCase()
+      .replace(/[ً-ٰٟـ]/g,'')
+      .replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/ؤ/g,'و').replace(/ئ/g,'ي')
+      .replace(EDGE,'').replace(/\s+/g,' ').trim();
+  }
+
+  /* ---------- حالة المقدّم ---------- */
+  var SKEY = 'kwc_session_v1';
+  var S = null;           // {code,question,max,multi,open,light,entries:[{w,k,p,t}],hidden:[]}
+  var conns = [];
+  var peer = null, hostRetry = 0, hostTimer = null;
+
+  function save(){ if (S) store.set(SKEY, S); }
+  function newSession(q, max, multi){
+    S = { code:randCode(6), question:q, max:max, multi:multi, open:true, light:false, entries:[], hidden:[] };
+    save();
+  }
+  function hasSubmitted(pid){
+    for (var i=0;i<S.entries.length;i++) if (S.entries[i].p === pid) return true;
+    return false;
+  }
+  function addEntry(w, pid){
+    var c = clean(w); if (!c) return false;
+    var k = norm(c); if (!k) return false;
+    S.entries.push({ w:c, k:k, p:pid, t:Date.now() });
+    return true;
+  }
+  function aggregate(){
+    var map = {}, list = [], hid = {};
+    S.hidden.forEach(function(k){ hid[k]=1; });
+    S.entries.forEach(function(e, i){
+      if (hid[e.k]) return;
+      var m = map[e.k];
+      if (!m){ m = map[e.k] = { key:e.k, count:0, forms:{}, first:i }; list.push(m); }
+      m.count++; m.forms[e.w] = (m.forms[e.w]||0) + 1;
+    });
+    list.forEach(function(m){
+      var best = '', bc = -1;
+      for (var f in m.forms) if (m.forms[f] > bc){ bc = m.forms[f]; best = f; }
+      m.text = best;
+    });
+    list.sort(function(a,b){ return b.count - a.count || a.first - b.first; });
+    return list;
+  }
+
+  /* ---------- خوارزمية توزيع السحابة ---------- */
+  var mctx = document.createElement('canvas').getContext('2d');
+  function measure(text, size){ mctx.font = '700 '+size+'px '+FONT; return mctx.measureText(text).width; }
+
+  function computeLayout(items, W, H){
+    if (!items.length || W < 50 || H < 50) return [];
+    var maxC = items[0].count, minC = items[items.length-1].count;
+    var base = Math.min(W, H*1.7);
+    var maxF = Math.max(26, base*0.15), minF = Math.max(13, maxF*0.2);
+    var scale = 1, best = [];
+    for (var attempt=0; attempt<8; attempt++){
+      var placed = [], complete = true;
+      for (var i=0;i<items.length;i++){
+        var it = items[i];
+        var r = maxC === minC ? (items.length === 1 ? 1 : 0.45) : (it.count - minC)/(maxC - minC);
+        var size = (minF + (maxF - minF)*Math.sqrt(r)) * scale;
+        var unit = measure(it.text, 100)/100 || 0.5;
+        size = Math.max(10, Math.min(size, (W*0.9)/unit, H*0.42));
+        var w = unit*size + size*0.35, h = size*1.22;
+        var pos = findSpot(placed, w, h, W, H, it.key, i);
+        if (!pos){
+          if (i < 60){ complete = false; break; }
+          continue; // الكلمات النادرة جداً قد لا تجد مكاناً — تُتجاهل
+        }
+        placed.push({ key:it.key, text:it.text, count:it.count, size:size, x:pos.x, y:pos.y, w:w, h:h, rank:i });
+      }
+      if (placed.length > best.length) best = placed;
+      if (complete) return placed;
+      scale *= 0.84;
+    }
+    return best;
+  }
+  function findSpot(placed, w, h, W, H, key, i){
+    var cx = W/2, cy = H/2, ex = Math.max(1, W/H);
+    var start = i === 0 ? 0 : (hash(key) % 628) / 100;
+    var limit = Math.max(W, H);
+    for (var t=0; ; t += 0.09){
+      var r = t*2.2;
+      if (r > limit) return null;
+      var x = cx + r*Math.cos(t+start)*Math.sqrt(ex);
+      var y = cy + r*Math.sin(t+start)/Math.sqrt(ex);
+      var x1 = x - w/2, y1 = y - h/2, x2 = x + w/2, y2 = y + h/2;
+      if (x1 < 2 || y1 < 2 || x2 > W-2 || y2 > H-2) continue;
+      var hit = false;
+      for (var j=0;j<placed.length;j++){
+        var p = placed[j];
+        if (x1 < p.x + p.w/2 && x2 > p.x - p.w/2 && y1 < p.y + p.h/2 && y2 > p.y - p.h/2){ hit = true; break; }
+      }
+      if (!hit) return { x:x, y:y };
+    }
+  }
+
+  /* ---------- رسم السحابة ---------- */
+  var stage = $('stage'), spans = {}, lastLayout = [], renderTimer = null;
+  function scheduleRender(){ clearTimeout(renderTimer); renderTimer = setTimeout(render, 120); }
+  function colorClass(p){ return p.rank === 0 ? 'kwc-c0' : 'kwc-c' + (1 + hash(p.key) % 5); }
+
+  function render(){
+    if (!S) return;
+    var items = aggregate();
+    var W = stage.clientWidth, H = stage.clientHeight;
+    var lay = computeLayout(items.slice(0, MAX_SHOWN), W, H);
+    lastLayout = lay;
+    var seen = {};
+    lay.forEach(function(p){
+      seen[p.key] = 1;
+      var el = spans[p.key], isNew = !el;
+      if (isNew){
+        el = document.createElement('span');
+        el.className = 'kwc-word kwc-new';
+        el.setAttribute('dir','auto');
+        el.dataset.key = p.key;
+        stage.appendChild(el);
+        spans[p.key] = el;
+      }
+      el.classList.remove('kwc-gone');
+      el.textContent = p.text;
+      el.title = p.text + ' — ' + p.count;
+      el.style.fontSize = p.size.toFixed(1) + 'px';
+      el.style.transform = 'translate(' + p.x.toFixed(1) + 'px,' + p.y.toFixed(1) + 'px) translate(-50%,-50%)';
+      el.className = el.className.replace(/\bkwc-c\d\b/g,'').trim() + ' ' + colorClass(p);
+      if (isNew){
+        void el.offsetWidth;
+        requestAnimationFrame(function(){ el.classList.remove('kwc-new'); });
+      }
+    });
+    Object.keys(spans).forEach(function(k){
+      if (seen[k]) return;
+      var el = spans[k]; delete spans[k];
+      el.classList.add('kwc-gone');
+      setTimeout(function(){ el.remove(); }, 500);
+    });
+    $('empty').hidden = lay.length > 0;
+    updStats(items);
+  }
+
+  function updStats(items){
+    if (!S) return;
+    items = items || aggregate();
+    var people = {}; S.entries.forEach(function(e){ people[e.p] = 1; });
+    var visible = 0; items.forEach(function(m){ visible += m.count; });
+    $('stResp').textContent = visible;
+    $('stPeople').textContent = Object.keys(people).length;
+    $('stUnique').textContent = items.length;
+    $('stLive').textContent = conns.length;
+  }
+
+  stage.addEventListener('click', function(e){
+    var el = e.target.closest('.kwc-word'); if (!el || !S) return;
+    var k = el.dataset.key;
+    if (confirm('إخفاء «' + el.textContent + '» من السحابة؟\n(يمكنك إظهارها لاحقاً من قائمة الكلمات المخفية)')){
+      if (S.hidden.indexOf(k) < 0) S.hidden.push(k);
+      save(); render(); renderHidden();
+    }
+  });
+  function renderHidden(){
+    var box = $('hiddenList'); box.textContent = '';
+    $('hiddenPanel').hidden = !S.hidden.length;
+    S.hidden.forEach(function(k){
+      var form = k;
+      for (var i=0;i<S.entries.length;i++) if (S.entries[i].k === k){ form = S.entries[i].w; break; }
+      var b = document.createElement('button'); b.type = 'button';
+      var s = document.createElement('s'); s.textContent = form;
+      b.appendChild(s); b.appendChild(document.createTextNode(' ↺'));
+      b.title = 'إظهار مرة أخرى';
+      b.onclick = function(){ S.hidden = S.hidden.filter(function(x){ return x !== k; }); save(); render(); renderHidden(); };
+      box.appendChild(b);
+    });
+  }
+
+  if (window.ResizeObserver){
+    var lastW = 0, lastH = 0;
+    new ResizeObserver(function(){
+      if (stage.clientWidth === lastW && stage.clientHeight === lastH) return;
+      lastW = stage.clientWidth; lastH = stage.clientHeight; scheduleRender();
+    }).observe(stage);
+  } else {
+    window.addEventListener('resize', scheduleRender);
+  }
+
+  /* ---------- رابط ورمز QR ---------- */
+  function joinUrl(code){
+    var u = new URL(location.href);
+    u.hash = ''; u.searchParams.delete('wc'); u.searchParams.set('wc', code);
+    return u.toString();
+  }
+  function qrSvg(text){
+    if (!window.qrcode) return '';
+    var q = window.qrcode(0, 'M'); q.addData(text); q.make();
+    return q.createSvgTag({ cellSize:4, margin:1, scalable:true });
+  }
+  function paintJoin(){
+    var url = joinUrl(S.code), svg = qrSvg(url);
+    $('code').textContent = S.code; $('codeBig').textContent = S.code; $('showCode').textContent = S.code;
+    $('joinLink').value = url;
+    ['qr','qrBig','miniQr'].forEach(function(n){
+      $(n).innerHTML = svg || '<p style="color:#333;font-size:12px;padding:20px 4px">تعذّر تحميل مولّد QR — استخدم الرابط أو الرمز</p>';
+    });
+  }
+
+  /* ---------- شاشة المقدّم ---------- */
+  function openPresent(){
+    show('present');
+    $('showQ').textContent = S.question;
+    $('show').classList.toggle('kwc-light', !!S.light);
+    $('themeBtn').textContent = S.light ? '◑ خلفية داكنة' : '◐ خلفية فاتحة';
+    paintOpen();
+    paintJoin();
+    renderHidden();
+    var go = function(){ render(); };
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else go();
+    setTimeout(render, 600);
+    startHost();
+  }
+  function paintOpen(){
+    $('toggleOpen').textContent = S.open ? '⏸ إيقاف الاستقبال' : '▶ استئناف الاستقبال';
+    $('pausedTag').hidden = S.open;
+  }
+  function stateMsg(pid){
+    return { t:'state', q:S.question, max:S.max, open:S.open, multi:S.multi, done:!S.multi && hasSubmitted(pid) };
+  }
+  function broadcast(){
+    conns.forEach(function(c){ try{ c.send(stateMsg(c._pid)); }catch(e){} });
+  }
+
+  function setNet(state, text){
+    var n = $('net'); n.className = 'kwc-net kwc-' + state;
+    n.querySelector('span').textContent = text;
+  }
+  function stopHost(){
+    clearTimeout(hostTimer);
+    conns.forEach(function(c){ try{ c.close(); }catch(e){} });
+    conns = [];
+    if (peer){ var p = peer; peer = null; try{ p.destroy(); }catch(e){} }
+  }
+  function retryHost(ms){
+    clearTimeout(hostTimer);
+    hostTimer = setTimeout(function(){ if (S && !root.querySelector('[data-view="present"]').hidden) startHost(); }, ms);
+  }
+  function startHost(){
+    stopHost();
+    if (!window.Peer){
+      setNet('off','تعذّر تحميل مكتبة الاتصال — الإضافة اليدوية متاحة');
+      return;
+    }
+    setNet('wait','جارٍ تجهيز الجلسة…');
+    var me = peer = new window.Peer(PREFIX + S.code, { debug:0 });
+    me.on('open', function(){
+      if (peer !== me) return;
+      hostRetry = 0; setNet('on','مباشر — بانتظار المشاركين');
+    });
+    me.on('connection', function(c){
+      c.on('open', function(){ conns.push(c); updStats(); });
+      c.on('data', function(d){ onHostData(c, d); });
+      c.on('close', function(){ conns = conns.filter(function(x){ return x !== c; }); updStats(); });
+      c.on('error', function(){});
+    });
+    me.on('disconnected', function(){
+      if (peer !== me || me.destroyed) return;
+      setNet('wait','انقطع الاتصال بالخادم… إعادة المحاولة');
+      setTimeout(function(){ if (peer === me && !me.destroyed){ try{ me.reconnect(); }catch(e){ retryHost(3000); } } }, 2000);
+    });
+    me.on('error', function(err){
+      if (peer !== me) return;
+      var type = err && err.type;
+      if (type === 'unavailable-id'){
+        // غالباً الجلسة نفسها ما زالت مسجّلة من تحديث سابق للصفحة
+        if (hostRetry++ < 8){ setNet('wait','استعادة الجلسة… لحظات'); retryHost(3000); }
+        else setNet('off','رمز الجلسة مشغول في نافذة أخرى. أغلقها أو أنشئ جلسة جديدة');
+      } else if (type === 'peer-unavailable'){
+        /* لا يخص المقدّم */
+      } else if (type === 'browser-incompatible'){
+        setNet('off','المتصفح لا يدعم الاتصال المباشر — الإضافة اليدوية متاحة');
+      } else {
+        setNet('off','تعذّر الوصول لخادم الاتصال — إعادة المحاولة…');
+        retryHost(5000);
+      }
+    });
+  }
+
+  function onHostData(c, d){
+    if (!d || typeof d !== 'object' || !S) return;
+    if (d.t === 'hello'){
+      c._pid = String(d.pid || c.peer).slice(0, 40);
+      try{ c.send(stateMsg(c._pid)); }catch(e){}
+      return;
+    }
+    if (d.t !== 'words') return;
+    var pid = c._pid || c.peer, reply = function(o){ o.t = 'ack'; try{ c.send(o); }catch(e){} };
+    if (!S.open) return reply({ ok:false, why:'closed' });
+    if (!S.multi && hasSubmitted(pid)) return reply({ ok:false, why:'done' });
+    var now = Date.now();
+    if (c._last && now - c._last < 1500) return reply({ ok:false, why:'fast' });
+    var words = (Array.isArray(d.words) ? d.words : []).slice(0, S.max).map(clean).filter(Boolean);
+    if (!words.length) return reply({ ok:false, why:'empty' });
+    c._last = now;
+    var added = 0;
+    words.forEach(function(w){ if (addEntry(w, pid)) added++; });
+    if (!added) return reply({ ok:false, why:'empty' });
+    save(); scheduleRender();
+    reply({ ok:true, multi:S.multi });
+  }
+
+  /* ---------- أزرار المقدّم ---------- */
+  $('toggleOpen').onclick = function(){
+    S.open = !S.open; save(); paintOpen(); broadcast();
+    toast(S.open ? 'تم استئناف استقبال الإجابات' : 'تم إيقاف استقبال الإجابات');
+  };
+  $('editQ').onclick = function(){
+    var q = prompt('عدّل نص السؤال:', S.question);
+    if (q == null) return;
+    q = q.replace(/\s+/g,' ').trim().slice(0, 140);
+    if (!q) return;
+    S.question = q; save(); $('showQ').textContent = q; broadcast();
+  };
+  $('themeBtn').onclick = function(){
+    S.light = !S.light; save();
+    $('show').classList.toggle('kwc-light', S.light);
+    this.textContent = S.light ? '◑ خلفية داكنة' : '◐ خلفية فاتحة';
+  };
+  $('newBtn').onclick = function(){
+    if (S.entries.length && !confirm('ستُحذف السحابة الحالية نهائياً (يمكنك تنزيلها كصورة أو CSV قبل ذلك). متابعة؟')) return;
+    stopHost(); store.del(SKEY); S = null;
+    Object.keys(spans).forEach(function(k){ spans[k].remove(); }); spans = {};
+    openSetup();
+  };
+  $('copyLink').onclick = function(){
+    var inp = $('joinLink');
+    var done = function(){ toast('تم نسخ رابط المشاركة'); };
+    if (navigator.clipboard) navigator.clipboard.writeText(inp.value).then(done, function(){ inp.select(); document.execCommand('copy'); done(); });
+    else { inp.select(); document.execCommand('copy'); done(); }
+  };
+  $('bigQr').onclick = $('qr').onclick = function(){ $('modal').hidden = false; };
+  $('modalX').onclick = function(){ $('modal').hidden = true; };
+  $('modal').addEventListener('click', function(e){ if (e.target === this) this.hidden = true; });
+
+  $('manualAdd').onclick = function(){
+    var parts = $('manual').value.split(/[\n,،;؛]+/), n = 0;
+    parts.forEach(function(p){ if (addEntry(p, 'host')) n++; });
+    if (!n) return toast('اكتب كلمة واحدة على الأقل');
+    $('manual').value = ''; save(); render();
+    toast('أُضيفت ' + n + (n === 1 ? ' إجابة' : ' إجابات'));
+  };
+
+  // ملء الشاشة
+  function setFs(on){
+    var s = $('show');
+    s.classList.toggle('kwc-fs', on);
+    document.documentElement.style.overflow = on ? 'hidden' : '';
+    if (on && s.requestFullscreen && !document.fullscreenElement) s.requestFullscreen().catch(function(){});
+    if (!on && document.fullscreenElement) document.exitFullscreen().catch(function(){});
+    scheduleRender();
+  }
+  $('fsBtn').onclick = function(){ setFs(true); };
+  $('fsExit').onclick = function(){ setFs(false); };
+  document.addEventListener('fullscreenchange', function(){
+    if (!document.fullscreenElement && $('show').classList.contains('kwc-fs')) setFs(false);
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape'){
+      if (!$('modal').hidden) $('modal').hidden = true;
+      else if ($('show').classList.contains('kwc-fs')) setFs(false);
+    }
+  });
+
+  // تصدير صورة
+  $('pngBtn').onclick = function(){
+    if (!lastLayout.length) return toast('لا توجد كلمات بعد');
+    var W = stage.clientWidth, H = stage.clientHeight, k = 2, head = 90, foot = 46;
+    var cv = document.createElement('canvas');
+    cv.width = W*k; cv.height = (H + head + foot)*k;
+    var g = cv.getContext('2d'); g.scale(k, k);
+    var cs = getComputedStyle($('show'));
+    var bg = cs.getPropertyValue('--bg').trim() || '#0a0a0c';
+    var fg = cs.getPropertyValue('--fg').trim() || '#ece7da';
+    var sub = cs.getPropertyValue('--sub').trim() || '#8e8879';
+    g.fillStyle = bg; g.fillRect(0, 0, W, H + head + foot);
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.direction = 'rtl';
+    g.fillStyle = fg; g.font = '700 ' + Math.min(30, W/24) + 'px ' + FONT;
+    g.fillText(S.question, W/2, head/2, W - 40);
+    lastLayout.forEach(function(p){
+      var el = spans[p.key];
+      g.fillStyle = el ? getComputedStyle(el).color : fg;
+      g.font = '700 ' + p.size + 'px ' + FONT;
+      g.direction = isArabic(p.text) ? 'rtl' : 'ltr';
+      g.fillText(p.text, p.x, head + p.y);
+    });
+    g.direction = 'rtl';
+    g.fillStyle = sub; g.font = '400 13px ' + FONT;
+    g.fillText('صُنعت بأداة سحابة الكلمات من Kamirty.ai — kamirtyai.com', W/2, head + H + foot/2);
+    cv.toBlob(function(b){ download('word-cloud-' + S.code + '.png', b); });
+  };
+  // تصدير CSV
+  $('csvBtn').onclick = function(){
+    var items = aggregate();
+    if (!items.length) return toast('لا توجد كلمات بعد');
+    var q = function(s){ return '"' + String(s).replace(/"/g,'""') + '"'; };
+    var rows = ['الكلمة,العدد'].concat(items.map(function(m){ return q(m.text) + ',' + m.count; }));
+    rows.push('', q('السؤال: ' + S.question));
+    download('word-cloud-' + S.code + '.csv', new Blob(['﻿' + rows.join('\r\n')], { type:'text/csv;charset=utf-8' }));
+  };
+
+  /* ---------- الإعداد ---------- */
+  function openSetup(){
+    show('setup');
+    setTimeout(function(){ $('setupQ').focus(); }, 50);
+  }
+  $('goSetup').onclick = openSetup;
+  $('backHome').onclick = openHome;
+  $('chips').addEventListener('click', function(e){
+    if (e.target.tagName === 'BUTTON'){ $('setupQ').value = e.target.textContent; $('setupQ').focus(); }
+  });
+  $('startBtn').onclick = function(){
+    var q = $('setupQ').value.replace(/\s+/g,' ').trim();
+    if (!q){ $('setupQ').focus(); return toast('اكتب السؤال أولاً'); }
+    newSession(q, +$('setupMax').value, $('setupMulti').checked);
+    openPresent();
+  };
+  $('demoBtn').onclick = function(){
+    newSession('ما أول كلمة تخطر ببالك عند سماع «الذكاء الاصطناعي»؟', 3, true);
+    var demo = ('مستقبل مستقبل مستقبل مستقبل مستقبل مستقبل إبداع إبداع إبداع إبداع إبداع تقنية تقنية تقنية تقنية ' +
+      'روبوت روبوت روبوت سرعة سرعة سرعة فرص فرص فرص خوف خوف تعلم تعلم تعلم تعلم بيانات بيانات ذكاء ذكاء ' +
+      'ابتكار ابتكار وظائف وظائف مساعد مساعد ChatGPT ChatGPT دقة أتمتة أخلاقيات خيال تطور تحدي فضول ' +
+      'إنتاجية مستقبل تطور برمجة برمجة لغة ترجمة تعليم تعليم تعليم ثورة ثورة').split(' ');
+    demo.forEach(function(w, i){ addEntry(w, 'demo' + (i % 23)); });
+    save(); openPresent();
+  };
+
+  /* ---------- الرئيسية ---------- */
+  function openHome(){
+    show('home');
+    var saved = store.get(SKEY);
+    var ok = saved && saved.code && Array.isArray(saved.entries);
+    $('resume').hidden = !ok;
+    if (ok) $('resumeQ').textContent = '«' + saved.question + '» — ' + saved.entries.length + ' إجابة';
+  }
+  $('resumeBtn').onclick = function(){
+    S = store.get(SKEY);
+    if (!S || !S.code) return openHome();
+    S.hidden = S.hidden || []; S.entries = S.entries || [];
+    openPresent();
+  };
+  function readCode(v){ return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+  $('homeJoin').onclick = function(){
+    var c = readCode($('homeCode').value);
+    if (c.length !== 6) return toast('الرمز يتكوّن من 6 خانات');
+    startJoin(c);
+  };
+  $('homeCode').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('homeJoin').click(); });
+
+  /* ---------- المشارك ---------- */
+  var PID = store.get('kwc_pid');
+  if (!PID){ PID = 'p' + randCode(10); store.set('kwc_pid', PID); }
+  var J = { code:'', peer:null, conn:null, state:null, timer:null, live:false };
+
+  function jShow(name){
+    root.querySelectorAll('.kwc-jstate').forEach(function(s){ s.hidden = s.getAttribute('data-jstate') !== name; });
+  }
+  function jFail(msg){
+    clearTimeout(J.timer);
+    if (J.peer){ try{ J.peer.destroy(); }catch(e){} J.peer = null; }
+    J.live = false;
+    $('jErr').textContent = msg; jShow('error');
+  }
+  function startJoin(code){
+    J.code = code; J.live = false; J.state = null;
+    show('join'); jShow('connecting'); $('jCode').textContent = code;
+    if (J.peer){ try{ J.peer.destroy(); }catch(e){} }
+    if (!window.Peer) return jFail('تعذّر تحميل مكتبة الاتصال. تحقّق من الإنترنت ثم أعد المحاولة.');
+    var p = J.peer = new window.Peer({ debug:0 });
+    clearTimeout(J.timer);
+    J.timer = setTimeout(function(){ if (!J.live) jFail('استغرق الاتصال وقتاً طويلاً. تأكد من الرمز ومن أن صفحة المقدّم مفتوحة، ثم أعد المحاولة.'); }, 20000);
+    p.on('open', function(){
+      var c = J.conn = p.connect(PREFIX + code, { reliable:true });
+      c.on('open', function(){ c.send({ t:'hello', pid:PID }); });
+      c.on('data', onJoinData);
+      c.on('close', function(){ if (J.peer === p) jFail('انتهت الجلسة أو انقطع الاتصال بجهاز المقدّم.'); });
+      c.on('error', function(){});
+    });
+    p.on('error', function(err){
+      if (J.peer !== p) return;
+      if (err && err.type === 'peer-unavailable') jFail('لا توجد جلسة نشطة بهذا الرمز. تأكد من الرمز، أو أن صفحة المقدّم ما زالت مفتوحة.');
+      else jFail('تعذّر الاتصال. قد تمنع بعض شبكات المدارس والشركات الاتصال المباشر؛ جرّب بيانات الجوال.');
+    });
+  }
+  function buildInputs(n){
+    var box = $('jInputs');
+    if (box.children.length === n) return;
+    box.textContent = '';
+    for (var i=0;i<n;i++){
+      var inp = document.createElement('input');
+      inp.type = 'text'; inp.className = 'kwc-input'; inp.maxLength = MAXLEN; inp.dir = 'auto';
+      inp.placeholder = n === 1 ? 'اكتب إجابتك هنا' : 'الإجابة ' + (i+1) + (i ? ' (اختياري)' : '');
+      inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') $('jSend').click(); });
+      box.appendChild(inp);
+    }
+  }
+  function onJoinData(d){
+    if (!d || typeof d !== 'object') return;
+    if (d.t === 'state'){
+      var first = !J.live;
+      J.live = true; clearTimeout(J.timer); J.state = d;
+      $('jQ').textContent = d.q;
+      buildInputs(Math.max(1, Math.min(5, d.max|0)));
+      var cur = root.querySelector('.kwc-jstate:not([hidden])');
+      var curName = cur && cur.getAttribute('data-jstate');
+      if (d.done) jShow('thanks');
+      else if (!d.open) jShow('paused');
+      else if (first || curName === 'paused' || curName === 'connecting'){
+        jShow('form'); $('jMsg').textContent = '';
+        var f = $('jInputs').querySelector('input'); if (f) f.focus();
+      }
+      $('jAgain').hidden = !d.multi;
+    } else if (d.t === 'ack'){
+      $('jSend').disabled = false;
+      if (d.ok){
+        $('jInputs').querySelectorAll('input').forEach(function(i){ i.value = ''; });
+        $('jAgain').hidden = !d.multi; jShow('thanks');
+      } else {
+        var msgs = { closed:'أوقف المقدّم الاستقبال حالياً.', done:'سبق أن أرسلت إجابتك في هذه الجلسة.', fast:'تمهّل قليلاً ثم أعد الإرسال.', empty:'اكتب كلمة واحدة على الأقل.' };
+        if (d.why === 'done') jShow('thanks');
+        else if (d.why === 'closed') jShow('paused');
+        else $('jMsg').textContent = msgs[d.why] || 'لم تُرسل الإجابة، حاول مجدداً.';
+      }
+    }
+  }
+  $('jSend').onclick = function(){
+    var words = [];
+    $('jInputs').querySelectorAll('input').forEach(function(i){ var c = clean(i.value); if (c) words.push(c); });
+    if (!words.length){ $('jMsg').textContent = 'اكتب كلمة واحدة على الأقل.'; return; }
+    if (!J.conn || !J.conn.open) return jFail('انقطع الاتصال بجهاز المقدّم.');
+    $('jMsg').textContent = ''; this.disabled = true;
+    var btn = this; setTimeout(function(){ btn.disabled = false; }, 5000);
+    J.conn.send({ t:'words', words:words });
+  };
+  $('jAgain').onclick = function(){ jShow('form'); var f = $('jInputs').querySelector('input'); if (f) f.focus(); };
+  $('jRetry').onclick = function(){ startJoin(J.code); };
+  $('jHome').onclick = function(){
+    if (J.peer){ try{ J.peer.destroy(); }catch(e){} J.peer = null; }
+    try{ var u = new URL(location.href); u.searchParams.delete('wc'); history.replaceState(null, '', u.toString()); }catch(e){}
+    openHome(); $('homeCode').focus();
+  };
+
+  /* ---------- البدء ---------- */
+  var urlCode = readCode(new URLSearchParams(location.search).get('wc'));
+  if (urlCode.length === 6) startJoin(urlCode);
+  else openHome();
+})();
+//]]>
+</script>
