@@ -74,7 +74,10 @@
         <small>لديك جلسة سابقة</small>
         <strong data-js="resumeQ"></strong>
       </div>
-      <button type="button" class="kwc-btn kwc-btn-gold" data-js="resumeBtn">استئناف الجلسة</button>
+      <div class="kwc-row">
+        <button type="button" class="kwc-btn kwc-btn-gold" data-js="resumeBtn">استئناف الجلسة</button>
+        <button type="button" class="kwc-btn kwc-btn-danger" data-js="deleteBtn">حذف الجلسة</button>
+      </div>
     </div>
 
     <div class="kwc-cards">
@@ -305,6 +308,8 @@
 #kwc .kwc-btn-gold{background:var(--btn);color:#111114;border-color:var(--btn);font-weight:700}
 #kwc .kwc-btn-gold:hover{background:var(--btn2);border-color:var(--btn2);color:#111114}
 #kwc .kwc-btn-ghost{background:transparent}
+#kwc .kwc-btn-danger{color:#b3261e;border-color:#efc4bf;background:#fff}
+#kwc .kwc-btn-danger:hover{color:#fff;background:#b3261e;border-color:#b3261e}
 #kwc .kwc-btn-lg{padding:13px 26px;font-size:17px}
 #kwc .kwc-btn-block{display:block;width:100%;margin-top:10px}
 #kwc .kwc-btn:disabled{opacity:.5;cursor:not-allowed}
@@ -1077,6 +1082,12 @@ html.kwc-js #kwc .kwc-boot{display:none}
       if (!S || !S.code) return openHome();
       S.hidden = S.hidden || []; S.entries = S.entries || [];
       openPresent();
+    },
+    deleteBtn: function(){
+      if (!confirm('حذف الجلسة السابقة وكل إجاباتها نهائياً؟ (يمكنك استئنافها أولاً لتنزيلها كصورة أو CSV)')) return;
+      stopHost(); store.del(SKEY); S = null;
+      Object.keys(spans).forEach(function(k){ spans[k].remove(); }); spans = {};
+      openHome(); toast('حُذفت الجلسة');
     },
     homeJoin: function(){
       var c = readCode($('homeCode').value);
