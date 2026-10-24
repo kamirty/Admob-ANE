@@ -787,7 +787,7 @@ h1 { font-weight: 700; }
 .grade-chip { background: var(--surface); border-radius: 6px; min-height: 48px; font-size: 1.02rem; }
 .band { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-block: 18px 6px;
   padding: 16px 18px; border-radius: var(--r); background: var(--board); color: var(--board-ink); }
-.band div { display: grid; gap: 2px; }
+.band > div:not(.row):not(.vol-faces) { display: grid; gap: 2px; }
 .band b { font-size: 1.1rem; }
 .band .btn-primary { background: var(--board-ink); color: var(--board); border-color: var(--board-ink); }
 .feat { grid-template-columns: minmax(0, 200px) minmax(0, 1fr); padding: 10px; background: var(--surface); border: 1px solid var(--line); }
@@ -836,3 +836,43 @@ h1 { font-weight: 700; }
 .row-more > summary::-webkit-details-marker { display: none; }
 .row-more[open] > summary { background: var(--sunk); }
 .row-more .menu { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+
+/* تقويم الحصص القادمة (7 أيام) */
+.section > * { min-width: 0; }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; max-width: 100%; }
+.cal-day { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 10px 8px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.cal-day.today { border-color: var(--board); box-shadow: inset 0 3px 0 var(--board); }
+.cal-day.empty { background: var(--sunk); }
+.cal-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.cal-head span { font-size: .85rem; color: var(--muted); font-weight: 600; }
+.cal-head b { font-size: 1.35rem; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.cal-day.today .cal-head span, .cal-day.today .cal-head b { color: var(--board); }
+.cal-item { display: grid; gap: 1px; padding: 6px 8px; border-radius: 6px; background: var(--board-soft); color: var(--ink); text-decoration: none; border-inline-start: 3px solid var(--board); min-width: 0; }
+.cal-item.is-live { background: var(--live-soft); border-inline-start-color: var(--live); }
+.cal-item:hover { filter: brightness(.97); }
+.cal-time { font-size: .78rem; font-weight: 700; color: var(--board); font-variant-numeric: tabular-nums; }
+.cal-item.is-live .cal-time { color: var(--live-text); }
+.cal-item b { font-size: .86rem; }
+.cal-t { font-size: .8rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-g { font-size: .72rem; color: var(--muted); }
+.cal-more { font-size: .8rem; color: var(--board); font-weight: 700; text-align: center; }
+.cal-none { color: var(--line); text-align: center; padding-block: 8px; }
+@media (max-width: 900px) {
+  .cal { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
+  .cal-day { flex: 0 0 150px; scroll-snap-align: start; }
+}
+
+/* معلمونا المتطوعون */
+.band-teachers { flex-direction: column; align-items: stretch; gap: 14px; }
+.vol-head { display: grid; gap: 2px; }
+.band .vol-faces { display: flex; flex-wrap: wrap; gap: 14px 10px; }
+.band-teachers .row { justify-content: flex-start; }
+.vol { display: grid; justify-items: center; gap: 4px; width: 76px; color: var(--board-ink); text-decoration: none; text-align: center; }
+.vol span:last-child { font-size: .78rem; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.av.av-vol { width: 56px; height: 56px; font-size: 1.3rem; background: var(--board-ink); color: var(--board); border: 3px solid color-mix(in srgb, var(--board-ink) 40%, transparent); }
+.vol:hover .av-vol { transform: translateY(-2px); }
+.band-teachers .vol-all { color: var(--board-ink); }
+
+/* رابط الحصة لصاحبها */
+.note.mylink { margin-top: 10px; }
+.note.mylink a { overflow-wrap: anywhere; font-weight: 600; }

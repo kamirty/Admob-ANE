@@ -324,6 +324,23 @@
       <div class="act" data-act>${actionHtml(s, true)}</div>
     </article>`;
   }
+  // تقويم الأيام السبعة القادمة: لكل يوم حصصه بالساعة
+  function calendarHtml(list, showGrade) {
+    const days = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(new Date()), i));
+    const by = {};
+    list.forEach((s) => { (by[dayKey(s.starts_at)] = by[dayKey(s.starts_at)] || []).push(s); });
+    return `<div class="cal">${days.map((d, i) => {
+      const items = (by[dayKey(d)] || []).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+      return `<div class="cal-day${i === 0 ? ' today' : ''}${items.length ? '' : ' empty'}">
+        <div class="cal-head"><span>${i === 0 ? 'اليوم' : i === 1 ? 'غداً' : esc(fWd.format(d))}</span><b>${esc(fNum(d.getDate()))}</b></div>
+        ${items.length ? items.slice(0, 4).map((s) => `<a class="cal-item${s.kind === 'live' ? ' is-live' : ''} s-${stateOf(s).key}" href="#/s/${esc(s.id)}">
+            <span class="cal-time">${esc(time(s.starts_at))}</span><b>${esc(subjOf(s))}</b><span class="cal-t">${esc(s.title)}</span>
+            ${showGrade ? `<span class="cal-g">${esc(gradeName(s.grade))}</span>` : ''}</a>`).join('')
+          + (items.length > 4 ? `<span class="cal-more">+${fNum(items.length - 4)}</span>` : '')
+          : '<span class="cal-none">—</span>'}
+      </div>`;
+    }).join('')}</div>`;
+  }
   const upNow = (list) => list.filter((s) => s.status === 'scheduled' && ['upcoming', 'soon', 'premiere'].includes(stateOf(s).key));
   const upCards = (list, showGrade) => `<div class="slot-cards up-cards">${list.map((s) => cardHtml(s, { showGrade })).join('')}</div>`;
   function vidHtml(s, showGrade) {
@@ -431,7 +448,7 @@
     setNav('home'); setTitle('');
     const mine = store.get('grade');
     const upSec = `<section class="section" id="up-sec" hidden>
-        <div class="section-head"><h2>القادم</h2><span class="muted" id="up-for"></span><span class="spacer"></span><a class="btn btn-ghost btn-sm" id="up-all" hidden>جدول صفّي</a></div>
+        <div class="section-head"><h2>تقويم الحصص القادمة</h2><span class="muted" id="up-for"></span><span class="spacer"></span><a class="btn btn-ghost btn-sm" id="up-all" hidden>جدول صفّي</a></div>
         <div id="up-list"></div>
       </section>`;
     view.innerHTML = `
@@ -446,7 +463,7 @@
         <div class="section-head"><span class="dot-live"></span><h2>مباشر الآن</h2><span class="muted" id="live-count"></span></div>
         <div class="live-strip" id="live-list"></div>
       </section>
-      ${mine && GRADES[mine] ? upSec : ''}
+      ${upSec}
       <section class="section">
         <div class="section-head"><h2>اختر صفّك</h2></div>
         <div class="stages">${C.STAGES.map((st) => `
@@ -455,7 +472,6 @@
           </div>`).join('')}
         </div>
       </section>
-      ${mine && GRADES[mine] ? '' : upSec}
       <section class="section" id="feat-sec" hidden></section>
       <section class="section" id="cont-sec" hidden>
         <div class="section-head"><h2>تابع من حيث توقفت</h2><span class="spacer"></span><button type="button" class="btn btn-ghost btn-sm" id="clear-watch">مسح السجل</button></div>
@@ -465,10 +481,18 @@
         <div class="section-head"><h2>أحدث الدروس</h2><span class="muted" id="new-for"></span></div>
         <div class="vids" id="new-list"></div>
       </section>
-      <section class="band">
-        <div><b>أنت معلم؟</b><span>اشرح حصة مباشرة لطلاب صفك، وننشر تسجيلها باسمك.</span></div>
-        <a class="btn btn-primary" href="#/teach">تطوّع معنا</a>
+      <section class="band band-teachers">
+        <div class="vol-head"><b>معلمونا المتطوعون</b><span>شكراً لكل معلم يمنح وقته وعلمه. أنت معلم؟ انضم إليهم.</span></div>
+        <div class="vol-faces" id="vol-faces"></div>
+        <div class="row"><a class="btn btn-primary" href="#/teach">تطوّع معنا</a><a class="btn btn-ghost vol-all" href="#/teachers">كل المعلمين</a></div>
       </section>`;
+    API.listTeachers().then((list) => {
+      const box = document.getElementById('vol-faces');
+      if (tok !== app.token || !box || !list || !list.length) return;
+      const shown = list.slice(0, 12);
+      box.innerHTML = shown.map((t) => `<a class="vol" href="#/t/${esc(t.id)}" title="${esc(t.display_name)}">${avatar(t.display_name, t.avatar_url, 'av-vol')}<span>${esc(t.display_name)}</span></a>`).join('')
+        + (list.length > shown.length ? `<a class="vol vol-more" href="#/teachers"><span class="av av-vol">+${fNum(list.length - shown.length)}</span><span>والمزيد</span></a>` : '');
+    }).catch(() => { /* اختياري */ });
     const conts = Object.entries(watch.read().items).map(([id, w]) => Object.assign({ id }, w))
       .filter((w) => !w.done && w.p >= 30 && Date.now() - w.at < 60 * DAY).sort((a, b) => b.at - a.at).slice(0, 4);
     if (conts.length) {
@@ -498,13 +522,13 @@
       try {
         const g = mine && GRADES[mine] ? mine : '';
         // الحصة التي تبدأ خلال ربع ساعة تظهر في «مباشر الآن»
-        const rows = remember(upNow(await API.listUpcoming({ grade: g, limit: 30 })).filter((x) => !(x.kind === 'live' && stateOf(x).key === 'soon'))).slice(0, g ? 4 : 3);
+        const rows = remember(upNow(await API.listUpcoming({ grade: g, limit: 80 })));
         const sec = document.getElementById('up-sec');
         if (tok !== app.token || !rows.length || !sec) return;
         sec.hidden = false;
         document.getElementById('up-for').textContent = g ? gradeName(g) : 'كل الصفوف';
         if (g) { const a = document.getElementById('up-all'); a.hidden = false; a.href = '#/g/' + g + '/plan'; }
-        document.getElementById('up-list').innerHTML = upCards(rows, !g);
+        document.getElementById('up-list').innerHTML = calendarHtml(rows, !g);
       } catch (e) { /* القسم اختياري */ }
     })();
     // أحدث الدروس: لصف الطالب إن اختاره من قبل، وإلا لكل الصفوف
@@ -1323,6 +1347,7 @@
       <div class="sess">
         <div class="stack">
           <div class="player" id="player">${playerHtml(s)}</div>
+          <div id="mylink"></div>
           <div class="row" id="watchrow"></div>
           <div id="thanks"></div>
           <div id="quiz"></div>
@@ -1481,6 +1506,16 @@
     }
     bindFacade();
     drawWatchRow();
+    // رابط الحصة لصاحبها في أي وقت، ليجهّز نفسه ويختبره
+    if (mine && s.kind === 'live' && API.myLinks) {
+      API.myLinks([s.id]).then((m) => {
+        const box = $('#mylink'); const u = m && m[s.id];
+        if (tok !== app.token || !box || !u) return;
+        box.innerHTML = `<div class="note mylink"><b>رابط حصتك</b><a href="${esc(u)}" target="_blank" rel="noopener" dir="ltr">${esc(u)}</a>
+          <div class="row"><button type="button" class="btn btn-sm" id="ml-copy">نسخ الرابط</button><span class="small muted">يراه الطلاب قبل الحصة بربع ساعة.</span></div></div>`;
+        $('#ml-copy').addEventListener('click', () => copyText(u));
+      }).catch(() => { /* اختياري */ });
+    }
     // حصة Meet: زر الدخول (يظهر الرابط قبل الحصة بربع ساعة)
     let joinAt = 0; let joinUrl = null;
     async function fillJoin() {
@@ -2377,6 +2412,7 @@
           <a class="btn btn-sm" href="#/dashboard/edit/${esc(s.id)}">${!s.upload_state && s.kind === 'recorded' && !hasLink && s.status === 'scheduled' ? 'أضف الفيديو' : !s.upload_state && !hasLink && s.status === 'scheduled' && st.key !== 'ended' ? 'أضف الرابط' : 'تعديل'}</a>
           <details class="row-more"><summary class="btn btn-sm btn-ghost">المزيد</summary><div class="menu">
             ${s.status === 'scheduled' && +new Date(s.starts_at) > now && (s.review || 'ok') === 'ok' ? `<a class="btn btn-sm" href="${esc(whatsappUrl(s))}" target="_blank" rel="noopener">شارك الموعد</a>` : ''}
+            ${links[s.id] ? `<button type="button" class="btn btn-sm" data-copylink="${esc(s.id)}">نسخ رابط الحصة</button>` : ''}
             ${s.kind === 'recorded' ? '' : `<a class="btn btn-sm" href="#/dashboard/copy/${esc(s.id)}">نسخ لموعد آخر</a>`}
             ${!isDone(s) ? `<button type="button" class="btn btn-sm" data-toggle="${esc(s.id)}">${s.status === 'cancelled' ? 'إعادة إلى الجدول' : s.kind === 'recorded' ? 'إلغاء النشر' : 'إلغاء الحصة'}</button>` : ''}
             <button type="button" class="btn btn-sm btn-danger" data-del="${esc(s.id)}">حذف</button>
@@ -2418,6 +2454,7 @@
       <div id="impact"></div><div id="mypaths"></div>
       <div class="row" style="padding-bottom:12px"><span class="spacer"></span><button type="button" class="btn btn-ghost" id="out">تسجيل الخروج</button></div>`;
     $('#out').addEventListener('click', signOut);
+    $$('[data-copylink]').forEach((b) => b.addEventListener('click', () => copyText(links[b.getAttribute('data-copylink')])));
     $$('[data-start]').forEach((b) => b.addEventListener('click', () => { const s = list.find((x) => x.id === b.getAttribute('data-start')); if (s) startClass(s, links[s.id], b); }));
     $$('[data-toggle]').forEach((b) => {
       const s = list.find((x) => x.id === b.getAttribute('data-toggle'));
