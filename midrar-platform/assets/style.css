@@ -821,25 +821,18 @@ h1 { font-weight: 700; }
 .foot-links { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; }
 .foot-links b { color: var(--ink); }
 
-/* v5.4: خطوات واضحة للمعلم */
+/* v5.4: شريط المعلم في الرئيسية */
 .teacher-bar { background: var(--surface); border: 1px solid var(--board); margin-top: 14px; }
-.how3, .live-steps { list-style: none; margin: 8px 0 4px; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
-.how3 li { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: start; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--sunk); }
-.how3 li b, .how3 li > span:last-child { grid-column: 2; }
-.how3 li > span:last-child { font-size: .85rem; color: var(--muted); }
-.ls-n { grid-row: span 2; display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--board); color: var(--board-ink); font-weight: 700; }
-.live-steps { grid-template-columns: minmax(0, 1fr); max-width: 640px; }
-.live-steps li { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
-.live-steps li > div { display: grid; gap: 8px; justify-items: start; min-width: 0; }
-.live-steps b { font-size: 1.1rem; }
-.live-steps .ls-n { flex: none; width: 34px; height: 34px; }
 .player .ph-join .btn-sm { color: var(--ink); }
 @media (max-width: 560px) {
   .dash-actions { grid-template-columns: 1fr 1fr; }
-  .act-tile.act-main { grid-column: 1 / -1; }
   .act-tile { padding: 12px; }
-  .how3 { gap: 2px; }
-  .how3 li { padding: 6px 2px; background: none; border: 0; align-items: center; }
-  .how3 li > span:last-child { display: none; }
-  .how3 .ls-n { width: 24px; height: 24px; font-size: .85rem; grid-row: auto; }
 }
+
+/* v5.5: زر لكل وقت، والباقي تحت «المزيد» */
+.row-more { display: inline-block; }
+.row-more[open] { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.row-more > summary { list-style: none; }
+.row-more > summary::-webkit-details-marker { display: none; }
+.row-more[open] > summary { background: var(--sunk); }
+.row-more .menu { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }

@@ -1233,8 +1233,8 @@
     const head = `<b>${live ? 'الحصة بدأت الآن' : 'الحصة تبدأ ' + esc(rel(new Date(s.starts_at) - Date.now()))}</b>`;
     if (j && j.url) {
       const app2 = meetApp(j.url);
-      if (mine) return `${head}<a class="btn btn-live btn-lg" href="#/studio/live/${esc(s.id)}">ابدأ الحصة وسجّلها</a>
-        <a class="btn btn-sm" href="${esc(j.url)}" target="_blank" rel="noopener">افتح ${esc(app2)} فقط</a>`;
+      if (mine) return `${head}<a class="btn btn-live btn-lg" href="${esc(j.url)}" target="_blank" rel="noopener">ادخل الحصة عبر ${esc(app2)}</a>
+        <span class="small">سجّل الحصة من زر التسجيل في ${esc(app2)} لترفعها بعدها.</span>`;
       return `${head}<a class="btn btn-live btn-lg" href="${esc(j.url)}" target="_blank" rel="noopener">ادخل الحصة عبر ${esc(app2)}</a>
         <span class="small">ادخل باسمك الأول فقط.</span>`;
     }
@@ -2426,17 +2426,19 @@
         <div class="what"><b><a href="#/s/${esc(s.id)}">${esc(s.title)}</a></b>
           <div class="row"><span>${esc(gradeName(s.grade))}</span><span>·</span><span>${esc(subjOf(s))}</span><span>·</span>${badgeHtml(s)}
             ${s.upload_state === 'uploading' ? '<span class="pill pill-warn">لم يكتمل الإرسال</span>' : s.upload_state === 'waiting' ? '<span class="pill">وصل للإدارة · بانتظار النشر على القناة</span>'
-              : s.status === 'scheduled' ? `<span class="linkflag ${hasLink ? 'ok' : 'no'}">${hasLink ? 'الرابط موجود' : 'بلا رابط'}</span>` : ''}${s.hidden ? '<span class="pill pill-bad">مخفية</span>' : ''}${s.review === 'pending' ? '<span class="pill pill-warn">بانتظار المراجعة</span>' : s.review === 'rejected' ? '<span class="pill pill-bad">لم يُعتمد</span>' : ''}<span class="rs" data-rs="${esc(s.id)}"></span></div>
+              : s.status === 'scheduled' && !hasLink && st.key !== 'ended' ? '<span class="linkflag no">بلا رابط</span>' : ''}${s.hidden ? '<span class="pill pill-bad">مخفية</span>' : ''}${s.review === 'pending' ? '<span class="pill pill-warn">بانتظار المراجعة</span>' : s.review === 'rejected' ? '<span class="pill pill-bad">لم يُعتمد</span>' : ''}<span class="rs" data-rs="${esc(s.id)}"></span></div>
           ${s.review === 'rejected' ? `<span class="small reject-note">${s.review_note ? 'السبب: ' + esc(s.review_note) + ' — ' : ''}${s.kind === 'recorded' && !hasLink && !s.upload_state ? 'أرسل الفيديو من جديد بعد تصحيحه، فيعود إلى المراجعة.' : 'عدّل الدرس فيعود إلى المراجعة.'}</span>` : ''}</div>
         <div class="tools">
           ${s.upload_state === 'uploading' ? `<a class="btn btn-sm btn-primary" href="#/dashboard/resume/${esc(s.id)}">أكمل الإرسال</a>` : ''}
-          ${startsSoon ? `<a class="btn btn-sm btn-live" href="#/studio/live/${esc(s.id)}">ابدأ الحصة</a>` : ''}
-          ${needRec(s) && isDone(s) ? `<a class="btn btn-sm btn-primary" href="#/dashboard/rec/${esc(s.id)}">أرسل تسجيل الحصة</a>` : ''}
-          ${s.status === 'scheduled' && +new Date(s.starts_at) > now && (s.review || 'ok') === 'ok' ? `<a class="btn btn-sm btn-ghost" href="${esc(whatsappUrl(s))}" target="_blank" rel="noopener">شارك الموعد</a>` : ''}
+          ${startsSoon ? `<a class="btn btn-sm btn-live" href="${esc(links[s.id])}" target="_blank" rel="noopener">ادخل الحصة</a>` : ''}
+          ${needRec(s) && isDone(s) ? `<a class="btn btn-sm btn-primary" href="#/dashboard/rec/${esc(s.id)}">ارفع التسجيل</a>` : ''}
           <a class="btn btn-sm" href="#/dashboard/edit/${esc(s.id)}">${!s.upload_state && s.kind === 'recorded' && !hasLink && s.status === 'scheduled' ? 'أضف الفيديو' : !s.upload_state && !hasLink && s.status === 'scheduled' && st.key !== 'ended' ? 'أضف الرابط' : 'تعديل'}</a>
-          ${s.kind === 'recorded' ? '' : `<a class="btn btn-sm btn-ghost" href="#/dashboard/copy/${esc(s.id)}">نسخ</a>`}
-          ${!isDone(s) ? `<button type="button" class="btn btn-sm btn-ghost" data-toggle="${esc(s.id)}">${s.status === 'cancelled' ? 'إعادة إلى الجدول' : s.kind === 'recorded' ? 'إلغاء النشر' : 'إلغاء الحصة'}</button>` : ''}
-          <button type="button" class="btn btn-sm btn-ghost btn-danger" data-del="${esc(s.id)}">حذف</button>
+          <details class="row-more"><summary class="btn btn-sm btn-ghost">المزيد</summary><div class="menu">
+            ${s.status === 'scheduled' && +new Date(s.starts_at) > now && (s.review || 'ok') === 'ok' ? `<a class="btn btn-sm" href="${esc(whatsappUrl(s))}" target="_blank" rel="noopener">شارك الموعد</a>` : ''}
+            ${s.kind === 'recorded' ? '' : `<a class="btn btn-sm" href="#/dashboard/copy/${esc(s.id)}">نسخ لموعد آخر</a>`}
+            ${!isDone(s) ? `<button type="button" class="btn btn-sm" data-toggle="${esc(s.id)}">${s.status === 'cancelled' ? 'إعادة إلى الجدول' : s.kind === 'recorded' ? 'إلغاء النشر' : 'إلغاء الحصة'}</button>` : ''}
+            <button type="button" class="btn btn-sm btn-danger" data-del="${esc(s.id)}">حذف</button>
+          </div></details>
         </div></div>`;
     };
     view.innerHTML = `
@@ -2446,22 +2448,16 @@
         ${p.is_admin ? '<a class="btn" href="#/admin">الإدارة <span class="badge-n" data-admin-n hidden></span></a>' : ''}
       </header>
       ${p.status !== 'suspended' ? `<div class="dash-actions">
-        <a class="act-tile act-main" href="#/dashboard/live"><b>حصة مباشرة جديدة</b><span>Meet · Zoom · Teams</span></a>
-        <a class="act-tile" href="#/studio"><b>سجّل درساً جديداً</b><span>شاشتك وصوتك</span></a>
-        <a class="act-tile" href="#/dashboard/new"><b>أضف درساً جاهزاً</b><span>فيديو من جهازك</span></a>
+        <a class="act-tile act-main" href="#/dashboard/live"><b>حصة مباشرة جديدة</b></a>
+        <a class="act-tile" href="#/dashboard/new"><b>أضف درساً جاهزاً</b></a>
       </div>` : ''}
-      ${p.status !== 'suspended' && !list.some((s) => s.kind === 'live') ? `<ol class="how3">
-        <li><span class="ls-n">١</span><b>حصة مباشرة جديدة</b><span>الموعد ورابط Meet أو Zoom أو Teams</span></li>
-        <li><span class="ls-n">٢</span><b>في الموعد: «ابدأ الحصة»</b><span>يفتح حصتك ويسجّلها</span></li>
-        <li><span class="ls-n">٣</span><b>بعدها: «أرسل التسجيل»</b><span>ننشره على قناة المنصة باسمك</span></li>
-      </ol>` : ''}
-      <nav class="dash-links"><a href="#/tools">أدوات للشرح</a><a href="#/profile">ملفي</a><a href="#/t/${esc(p.id)}">صفحتي العامة</a>${(p.status === 'approved' && p.trusted) || p.is_admin ? '<a href="#/dashboard/path/new">مسار جديد</a>' : ''}<a href="#/guide">دليل المعلم</a></nav>
+      <nav class="dash-links"><a href="#/studio">سجّل درساً من شاشتك</a><a href="#/tools">أدوات للشرح</a><a href="#/profile">ملفي</a><a href="#/t/${esc(p.id)}">صفحتي العامة</a>${(p.status === 'approved' && p.trusted) || p.is_admin ? '<a href="#/dashboard/path/new">مسار جديد</a>' : ''}<a href="#/guide">دليل المعلم</a></nav>
       ${p.status === 'pending' ? '<div class="note warn"><b>حسابك قيد المراجعة.</b><span>تظهر حصصك للطلاب بعد اعتماده.</span></div>' : ''}
       ${p.status === 'suspended' ? '<div class="note bad"><b>حسابك موقوف.</b><span>تواصل مع إدارة المنصة.</span></div>' : ''}
       ${fl && fl.kind === 'sent' && fl.rec ? `<div class="note ok-note" style="margin-top:10px" role="status"><b>وصل تسجيل حصتك «${esc(fl.title)}» 🎉</b><span>تنشره الإدارة على قناة «مدرار العلم» باسمك، ثم يظهر في صفحة الحصة لمن فاته الحضور.</span></div>` : ''}
       ${fl && fl.kind === 'sent' && !fl.rec ? `<div class="note ok-note" style="margin-top:10px" role="status"><b>وصل درسك «${esc(fl.title)}» 🎉</b><span>ستراجعه الإدارة وتنشره على قناة «مدرار العلم» باسمك، ثم يظهر للطلاب ${fl.at ? `في موعده: ${esc(dayLabel(new Date(fl.at)))} الساعة ${esc(time(fl.at))}` : 'فور نشره'}.</span></div>` : ''}
       ${missingLinks ? `<div class="note warn" style="margin-top:10px"><b>${plural(missingLinks, 'حصة واحدة', 'حصتان', 'حصص', 'حصة')} خلال 24 ساعة بلا رابط.</b><span>أضف رابط الحصة من Google Meet أو Zoom أو Teams حتى يتمكن الطلاب من الدخول.</span></div>` : ''}
-      ${noRec ? `<div class="note" style="margin-top:10px"><b>${plural(noRec, 'حصة انتهت', 'حصتان انتهتا', 'حصص انتهت', 'حصة انتهت')} دون تسجيل.</b><span>أرسل تسجيلها من زر «أرسل تسجيل الحصة»، فننشره على قناة «مدرار العلم» لمن فاته الحضور.</span></div>` : ''}
+      ${noRec ? `<div class="note" style="margin-top:10px"><b>${plural(noRec, 'حصة انتهت', 'حصتان انتهتا', 'حصص انتهت', 'حصة انتهت')} دون تسجيل.</b><span>اضغط «ارفع التسجيل» بجانبها، فننشره لمن فاته الحضور.</span></div>` : ''}
       ${p.status === 'approved' && p.trusted !== undefined && !p.trusted && !p.is_admin ? (() => {
         const n = C.TRUST_AFTER || 3;
         const ok = list.filter((s) => (s.review || 'ok') === 'ok').length;
@@ -2685,7 +2681,7 @@
   const recTargets = (list) => list.filter((x) => x.kind === 'live' && x.status === 'scheduled' && !x.upload_state && !x.video_url && !x.recording_url
     && +new Date(x.starts_at) <= Date.now() && Date.now() - +new Date(x.ends_at) < 3 * DAY).sort((a, b) => b.starts_at.localeCompare(a.starts_at));
   async function pageRecording(tok, id) {
-    setNav(''); setTitle('أرسل تسجيل الحصة');
+    setNav(''); setTitle('ارفع التسجيل');
     const p = await requireTeacher(tok, location.hash);
     if (!p) return;
     let s = null;
@@ -2694,18 +2690,13 @@
     if (!s || s.kind !== 'live') return pageNotFound('لم نجد هذه الحصة في حصصك.');
     if (s.upload_state === 'uploading') { location.replace('#/dashboard/resume/' + s.id); return; }
     const head = `<header class="page-head"><nav class="crumbs"><a href="#/dashboard">لوحتي</a><span>›</span><span>تسجيل الحصة</span></nav>
-        <h1>أرسل تسجيل «${esc(s.title)}»</h1>
+        <h1>ارفع تسجيل «${esc(s.title)}»</h1>
         <p class="muted">${esc(gradeName(s.grade))} · ${esc(subjOf(s))} · ${esc(dayLabel(new Date(s.starts_at)))} ${esc(time(s.starts_at))}</p></header>`;
     if (s.upload_state === 'waiting') { view.innerHTML = head + '<div class="note ok-note"><b>وصل تسجيل هذه الحصة.</b><span>تنشره الإدارة على قناة «مدرار العلم» قريباً.</span></div>'; return; }
     if (s.video_url || s.recording_url) { view.innerHTML = head + `<div class="note"><b>لهذه الحصة تسجيل منشور.</b><span><a href="#/s/${esc(s.id)}">افتح صفحة الحصة</a></span></div>`; return; }
     if (+new Date(s.starts_at) > Date.now()) { view.innerHTML = head + '<div class="note"><b>لم تبدأ الحصة بعد.</b><span>بعد انتهائها ارجع إلى هنا وأرسل تسجيلها.</span></div>'; return; }
     view.innerHTML = head + `
       <form class="form" id="rc" novalidate>
-        <fieldset class="src-pick"><legend>من أين التسجيل؟</legend>
-          <label class="src-opt"><input type="radio" name="rc-src" value="file" checked><span><b>ملف من جهازي</b>
-            <small>ننشره على قناة المنصة باسمك</small></span></label>
-          <label class="src-opt"><input type="radio" name="rc-src" value="link"><span><b>رابط من قناتي في يوتيوب</b>
-            <small>فيديو «عام» أو «غير مدرج» على قناتك</small></span></label></fieldset>
         <div id="rc-file-box">
           <div class="field"><label for="rc-file">ملف التسجيل</label><input class="input" id="rc-file" type="file" accept="video/*">
             <span class="hint" id="rc-info">حتى 500 ميغابايت</span></div>
@@ -2713,13 +2704,15 @@
         <div class="field" id="rc-link-box" hidden><label for="rc-url">رابط التسجيل على يوتيوب</label>
           <input class="input" id="rc-url" type="url" inputmode="url" maxlength="300" placeholder="https://youtu.be/..."></div>
         <div id="rc-prog" hidden></div>
-        <div class="form-actions"><button class="btn btn-primary" type="submit" id="rc-go">أرسل التسجيل</button><a class="btn" href="#/dashboard">رجوع</a></div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit" id="rc-go">أرسل</button><a class="btn" href="#/dashboard">رجوع</a></div>
+        <button type="button" class="btn btn-ghost btn-sm" id="rc-swap">التسجيل على قناتي في يوتيوب؟ الصق رابطه</button>
       </form>`;
     let mode = 'file';
-    $$('input[name=rc-src]').forEach((r) => r.addEventListener('change', () => {
-      mode = r.value; $('#rc-file-box').hidden = mode !== 'file'; $('#rc-link-box').hidden = mode !== 'link';
-      $('#rc-go').textContent = mode === 'file' ? 'أرسل التسجيل' : 'احفظ الرابط';
-    }));
+    $('#rc-swap').addEventListener('click', () => {
+      mode = mode === 'file' ? 'link' : 'file';
+      $('#rc-file-box').hidden = mode !== 'file'; $('#rc-link-box').hidden = mode !== 'link';
+      $('#rc-swap').textContent = mode === 'file' ? 'التسجيل على قناتي في يوتيوب؟ الصق رابطه' : 'ارفع ملفاً بدلاً من ذلك';
+    });
     const fileIn = $('#rc-file');
     fileIn.addEventListener('change', () => {
       const f = fileIn.files && fileIn.files[0];
@@ -2742,7 +2735,6 @@
       const f = (fileIn.files || [])[0];
       if (!f) return bad('#rc-file', 'اختر ملف التسجيل من جهازك.');
       if (f.size > API.uploadLimit) return bad('#rc-file', 'حجم التسجيل أكبر من 500 ميغابايت. قسّمه إلى جزأين، أو ارفعه على قناتك والصق رابطه.');
-      if (!$('#rc-consent').checked) return bad('#rc-consent', 'وافق على نشر التسجيل في قناة «مدرار العلم» أولاً.');
       btn.disabled = true;
       const box = $('#rc-prog');
       try { await sendRec(s, f, box); sentDoneRec(tok, s.title); }
@@ -2768,7 +2760,7 @@
     try { await API.setJoinLink(id, url || null); }
     catch (e) { toast('حُفظت الحصة، لكن تعذّر حفظ رابطها: ' + errMsg(e) + ' أضفه من «تعديل».', true); }
   }
-  const consentHtml = (id) => `<label class="check consent"><input type="checkbox" id="${id}"><span>أوافق على نشره في قناة «مدرار العلم» باسمي وفق <a href="#/about" target="_blank">الميثاق</a>.</span></label>`;
+  const consentHtml = (id) => `<p class="hint consent" id="${id}">بالإرسال توافق على نشره في قناة «مدرار العلم» باسمك وفق <a href="#/about" target="_blank">الميثاق</a>.</p>`;
 
   async function pageSessionForm(tok, mode, id) {
     setNav(''); setTitle(mode === 'edit' ? 'تعديل الدرس' : mode === 'live' ? 'حصة مباشرة جديدة' : 'نشر درس');
@@ -2840,22 +2832,12 @@
           <div class="field"><label for="sf-subj">المادة</label><select class="input" id="sf-subj" required></select></div>
         </div>
         <div class="field"><label for="sf-title">عنوان ${noun}</label>
-          <input class="input" id="sf-title" required minlength="3" maxlength="120" value="${esc(src.title || '')}" placeholder="مثال: الفصل الثالث — حل المعادلات من الدرجة الثانية"></div>
-        ${rec0 ? placeHtml() : ''}
-        <div class="field"><label for="sf-desc">وصف ${noun} (اختياري)</label>
-          <textarea class="input" id="sf-desc" maxlength="1500" rows="2" placeholder="ماذا سيتعلم الطالب؟">${esc(src.description || '')}</textarea></div>
-        ${rec0 ? quizEditorHtml(src.quiz) + filesEditorHtml(src.attachments) : ''}
-        ${rec0 ? `${whenHtml('sf', editing && +new Date(src.starts_at) > Date.now() ? new Date(src.starts_at) : null, published)}
-        <div class="field" style="max-width:320px"><label for="sf-dur" id="lbl-dur">طول الفيديو تقريباً</label><select class="input" id="sf-dur">${durs.map((m) => `<option value="${m}"${m === dur ? ' selected' : ''}>${fNum(m)} دقيقة</option>`).join('')}</select></div>`
-        : `<div class="grid3">
+          <input class="input" id="sf-title" required minlength="3" maxlength="120" value="${esc(src.title || '')}" placeholder="مثال: حل المعادلات من الدرجة الثانية"></div>
+        ${rec0 ? '' : `<div class="grid3">
           <div class="field"><label for="sf-date" id="lbl-date">التاريخ</label><input class="input" id="sf-date" type="date" required value="${dVal}"></div>
-          <div class="field"><label for="sf-time" id="lbl-time">وقت البدء</label><input class="input" id="sf-time" type="time" required value="${tVal}" step="300"></div>
+          <div class="field"><label for="sf-time" id="lbl-time">الساعة</label><input class="input" id="sf-time" type="time" required value="${tVal}" step="300"></div>
           <div class="field"><label for="sf-dur" id="lbl-dur">المدة</label><select class="input" id="sf-dur">${durs.map((m) => `<option value="${m}"${m === dur ? ' selected' : ''}>${fNum(m)} دقيقة</option>`).join('')}</select></div>
         </div>`}
-        ${editing || rec0 ? '' : `<div class="field" id="rep-field"><label for="sf-rep">التكرار</label>
-          <select class="input" id="sf-rep"><option value="1">مرة واحدة</option>${[2, 3, 4, 6, 8, 10, 12, 16].map((n) => `<option value="${n}">${n === 2 ? 'كل أسبوع لمدة أسبوعين' : `كل أسبوع لمدة ${fNum(n)} ${n <= 10 ? 'أسابيع' : 'أسبوعاً'}`}</option>`).join('')}</select>
-</div>`}
-        <div id="peers"></div>
         ${srcPick ? `<div id="sf-file-box"${srcMode === 'file' ? '' : ' hidden'}>
           ${presetFile ? `<div class="note"><b>الفيديو جاهز من الاستوديو</b><span>${esc(mbs(presetFile.size))}${pre.minutes ? ' · ' + esc(minsTxt(pre.minutes)) : ''}</span></div>`
             : `<div class="field"><label for="sf-file">ملف الفيديو</label><input class="input" id="sf-file" type="file" accept="video/*">
@@ -2863,10 +2845,20 @@
           ${consentHtml('sf-consent')}</div>` : ''}
         <div class="field" id="sf-link-box"${(srcPick && srcMode !== 'link') || upPending ? ' hidden' : ''}><label for="sf-url" id="lbl-url">رابط البث على يوتيوب</label>
           <input class="input" id="sf-url" type="url" inputmode="url" maxlength="300" value="${esc(kind === 'live' ? link0 || (mode === 'copy' ? '' : src.video_url || '') : (src.video_url || ''))}" placeholder="${kind === 'live' ? 'https://meet.google.com/...' : 'https://youtu.be/...'}">
-          <span class="hint" id="hint-url">يمكنك إضافته لاحقاً. أنشئ بثاً مجدولاً في YouTube Studio وضع رابطه هنا، وسيصبح نفس الرابط هو التسجيل بعد الحصة. <a href="#/guide" target="_blank">كيف؟</a></span></div>
-        <div class="field" id="rec-field"${editing || isPast ? '' : ' hidden'}><label for="sf-rec">رابط التسجيل (إذا كان مختلفاً عن رابط البث)</label>
-          <input class="input" id="sf-rec" type="url" inputmode="url" maxlength="300" value="${esc(src.recording_url || '')}" placeholder="https://youtu.be/...">
-          <span class="hint">اتركه فارغاً إذا بقي التسجيل على نفس رابط البث.</span></div>
+          <span class="hint" id="hint-url"></span></div>
+        <details class="more extra"${editing ? ' open' : ''}><summary>خيارات إضافية</summary>
+        ${rec0 ? placeHtml() : ''}
+        <div class="field"><label for="sf-desc">وصف ${noun}</label>
+          <textarea class="input" id="sf-desc" maxlength="1500" rows="2" placeholder="ماذا سيتعلم الطالب؟">${esc(src.description || '')}</textarea></div>
+        ${rec0 ? quizEditorHtml(src.quiz) + filesEditorHtml(src.attachments) : ''}
+        ${rec0 ? `${whenHtml('sf', editing && +new Date(src.starts_at) > Date.now() ? new Date(src.starts_at) : null, published)}
+        <div class="field" style="max-width:320px"><label for="sf-dur" id="lbl-dur">طول الفيديو تقريباً</label><select class="input" id="sf-dur">${durs.map((m) => `<option value="${m}"${m === dur ? ' selected' : ''}>${fNum(m)} دقيقة</option>`).join('')}</select></div>` : ''}
+        ${editing || rec0 ? '' : `<div class="field" id="rep-field"><label for="sf-rep">التكرار</label>
+          <select class="input" id="sf-rep"><option value="1">مرة واحدة</option>${[2, 3, 4, 6, 8, 10, 12, 16].map((n) => `<option value="${n}">${n === 2 ? 'كل أسبوع لمدة أسبوعين' : `كل أسبوع لمدة ${fNum(n)} ${n <= 10 ? 'أسابيع' : 'أسبوعاً'}`}</option>`).join('')}</select></div>`}
+        <div class="field" id="rec-field"${editing || isPast ? '' : ' hidden'}><label for="sf-rec">رابط التسجيل على يوتيوب</label>
+          <input class="input" id="sf-rec" type="url" inputmode="url" maxlength="300" value="${esc(src.recording_url || '')}" placeholder="https://youtu.be/..."></div>
+        </details>
+        <div id="peers"></div>
         <div id="sf-prog" hidden></div>
         <div class="form-actions">
           <button class="btn btn-primary" type="submit" id="sf-go">${srcPick && srcMode === 'file' ? 'أرسل الدرس' : editing ? 'حفظ التعديلات' : rec0 ? 'نشر الدرس' : 'نشر الحصة'}</button>
@@ -2887,8 +2879,8 @@
     function applyKind() {
       const rec = kindNow() === 'recorded';
       if (!rec) { $('#lbl-date').textContent = 'التاريخ'; $('#lbl-time').textContent = 'وقت البدء'; $('#lbl-dur').textContent = 'المدة'; }
-      $('#lbl-url').textContent = rec ? 'رابط الفيديو على يوتيوب' : 'رابط الحصة (Google Meet أو Zoom أو Teams)';
-      $('#hint-url').innerHTML = rec ? '' : 'يظهر للطلاب قبل الحصة بربع ساعة. يمكنك إضافته لاحقاً.';
+      $('#lbl-url').textContent = rec ? 'رابط الفيديو على يوتيوب' : 'رابط الحصة (Meet أو Zoom أو Teams)';
+      $('#hint-url').innerHTML = rec ? '' : 'يراه الطلاب وقت الحصة فقط.';
       const rf = $('#rep-field'); if (rf) rf.hidden = rec;
       peers();
     }
@@ -2988,7 +2980,6 @@
         file = presetFile || ((fileIn && fileIn.files) || [])[0] || null;
         if (!file) return bad('#sf-file', 'اختر ملف الفيديو من جهازك.');
         if (file.size > API.uploadLimit) return bad(fileIn ? '#sf-file' : '#sf-title', 'حجم الفيديو أكبر من 500 ميغابايت. صوّره بدقة 720p أو قسّمه إلى جزأين.');
-        if (!$('#sf-consent').checked) return bad('#sf-consent', 'وافق على نشر الدرس في قناة «مدرار العلم» أولاً.');
       }
       const base = {
         grade: gSel.value, subject: sSel.value, title, description: $('#sf-desc').value.trim() || null, kind: k,
@@ -3151,7 +3142,7 @@
     { k: ['مجاني', 'مجانا', 'رسوم', 'فلوس', 'سعر', 'اشتراك', 'كم', 'بفلوس', 'مدفوع'], q: 'هل المنصة مجانية؟',
       a: 'نعم، مجانية بالكامل للطلاب والمعلمين، بلا اشتراك وبلا إعلانات.' },
     { k: ['تطوع', 'اتطوع', 'متطوع', 'انضم', 'انضمام', 'اشارك', 'مشاركه', 'اسجل كمعلم', 'معلم جديد', 'ابي اشرح', 'ابغى اشرح', 'اشرح'], q: 'كيف أتطوع بالشرح؟',
-      a: 'ادخل بحساب Google، ثم من «لوحتي» اضغط «حصة مباشرة جديدة»: حدد الموعد وضع رابط Meet أو Zoom أو Teams، وبعد الحصة أرسل تسجيلها فننشره على قناة «مدرار العلم» باسمك. أو سجّل درساً واحداً في الاستوديو. لا تحتاج قناة يوتيوب. أو املأ نموذج «تطوّع بالشرح» فنتواصل معك عبر واتساب ونساعدك.', l: [['#/teach', 'تطوّع بالشرح'], ['#/volunteer', 'تفاصيل التطوع']] },
+      a: 'ادخل بحساب Google، ثم من «لوحتي» اضغط «حصة مباشرة جديدة»، واكتب الموعد ورابط Meet أو Zoom أو Teams. وبعد الحصة ارفع تسجيلها فننشره باسمك. أو املأ نموذج «تطوّع بالشرح» فنتواصل معك عبر واتساب.', l: [['#/teach', 'تطوّع بالشرح'], ['#/volunteer', 'تفاصيل التطوع']] },
     { k: ['اسجل الدرس', 'تسجيل', 'اصور', 'تصوير', 'استوديو', 'سجل الشاشه', 'برنامج', 'كاميرا', 'مايك', 'صوت'], q: 'كيف أسجّل درسي؟',
       a: 'من «استوديو المنصة» تسجّل شاشتك وصوتك من المتصفح بلا برامج وبلا كاميرا، أو صوّر بجوالك. الصوت الواضح أهم من الصورة.', l: [['#/studio', 'استوديو المنصة'], ['#/guide', 'دليل المعلم']] },
     { k: ['يوتيوب', 'قناه', 'قناتي', 'ارفع', 'رفع', 'احتاج قناه', 'ما عندي قناه', 'غير مدرج'], q: 'هل أحتاج قناة على يوتيوب؟',
@@ -3185,11 +3176,11 @@
   ];
   FAQ.push(
     { k: ['اسجل حصتي', 'تسجيل الحصه', 'سجل الحصه', 'اسجل الحصه', 'ابدا الحصه', 'ابدأ الحصه'], q: 'كيف أسجّل حصتي المباشرة؟',
-      a: 'في موعد الحصة اضغط «ابدأ الحصة» في «لوحتي»: افتح الحصة، ثم «ابدأ التسجيل» فيسجّل استوديو المنصة شاشتك وصوتك. بعد انتهائها اضغط «إنهاء التسجيل» ثم «أرسل تسجيل الحصة».', l: [['#/dashboard', 'لوحتي']] },
+      a: 'سجّلها من زر التسجيل في Zoom أو Teams. وبعد الحصة اضغط «ارفع التسجيل» بجانبها في «لوحتي».', l: [['#/dashboard', 'لوحتي']] },
     { k: ['ادوات المنصه', 'استخدم الادوات', 'كيف استخدم', 'المحاكاه', 'المختبر'], q: 'كيف أستخدم أدوات المنصة؟',
       a: 'من «الأدوات» في أعلى الصفحة. الطالب يفتح الأداة ويجرّب بنفسه، والمعلم يفتحها أثناء حصته ويشارك شاشته في Meet أو Zoom أو Teams.', l: [['#/tools', 'الأدوات']] },
     { k: ['حصه مباشره', 'مباشره', 'مباشر', 'meet', 'ميت', 'جوجل ميت', 'zoom', 'زوم', 'teams', 'تيمز', 'رابط الحصه', 'اونلاين', 'بث مباشر'], q: 'كيف أقدّم حصة مباشرة؟',
-      a: 'من «لوحتي» اضغط «حصة مباشرة جديدة»، واختر الصف والمادة والعنوان واليوم والساعة، والصق رابط الحصة من Google Meet أو Zoom أو Teams. تظهر في جدول الصف، ورابطها لا يظهر للطلاب إلا قبل الحصة بربع ساعة. وبعدها اضغط «أرسل تسجيل الحصة» فننشره على قناة «مدرار العلم».', l: [['#/dashboard/live', 'حصة مباشرة جديدة'], ['#/guide', 'دليل المعلم']] },
+      a: 'من «لوحتي» اضغط «حصة مباشرة جديدة»، واختر الصف والمادة والعنوان واليوم والساعة، والصق رابط الحصة من Google Meet أو Zoom أو Teams. تظهر في جدول الصف، ورابطها يراه الطلاب وقت الحصة فقط. وبعدها اضغط «ارفع التسجيل».', l: [['#/dashboard/live', 'حصة مباشرة جديدة'], ['#/guide', 'دليل المعلم']] },
     { k: ['ادخل الحصه', 'دخول الحصه', 'رابط الدخول', 'احضر', 'حضور', 'كيف ادخل', 'وين الرابط'], q: 'كيف أدخل الحصة المباشرة؟',
       a: 'افتح الحصة من جدول صفك أو «مباشر الآن». قبل موعدها بربع ساعة يظهر زر «ادخل الحصة»، فتُفتح في Meet أو Zoom أو Teams. ادخل باسمك الأول فقط. وإن فاتتك فشاهد تسجيلها في الصفحة نفسها بعد نشره.', l: [['#/', 'الدروس']] },
     { k: ['موعد', 'احدد', 'وقت الدرس', 'جدوله', 'اجدول', 'عرض اول'], q: 'كيف أحدد موعداً يشاهد فيه الطلاب الدرس؟',
@@ -3747,42 +3738,6 @@
     });
   }
 
-  async function studioLive(tok, id) {
-    view.innerHTML = '<p class="loading">جارٍ التحميل…</p>';
-    let s = null; let link = '';
-    try {
-      s = (await API.mySessions()).find((x) => x.id === id && x.kind === 'live') || null;
-      if (s) link = (await API.myLinks([s.id]))[s.id] || '';
-    } catch (e) { /* أدناه */ }
-    if (tok !== app.token || !/^#\/studio\/live\//.test(location.hash)) return;
-    if (!s) return pageNotFound('لم نجد هذه الحصة في حصصك.');
-    setTitle('ابدأ الحصة');
-    const can = ST && ST.supported();
-    view.innerHTML = `<header class="page-head"><nav class="crumbs"><a href="#/dashboard">لوحتي</a><span>›</span><span>ابدأ الحصة</span></nav>
-        <h1>${esc(s.title)}</h1><p class="muted">${esc(gradeName(s.grade))} · ${esc(subjOf(s))} · ${esc(dayLabel(new Date(s.starts_at)))} ${esc(time(s.starts_at))}</p></header>
-      ${ST.error ? `<div class="note bad"><b>توقف التسجيل.</b><span>${esc(studioErr(ST.error))}</span></div>` : ''}
-      <ol class="live-steps">
-        <li><span class="ls-n">١</span><div><b>افتح الحصة</b>
-          ${link ? `<a class="btn btn-primary btn-lg" href="${esc(link)}" target="_blank" rel="noopener" id="lv-open">افتح ${esc(meetApp(link))}</a>`
-            : `<a class="btn btn-lg" href="#/dashboard/edit/${esc(s.id)}">أضف رابط الحصة</a>`}</div></li>
-        <li><span class="ls-n">٢</span><div><b>سجّل الحصة</b>
-          ${can ? `<button type="button" class="btn btn-live btn-lg" id="lv-rec"><span class="rec-dot" aria-hidden="true"></span>ابدأ التسجيل</button>
-            <span class="hint">اختر «الشاشة بالكامل» ثم «مشاركة». يُسجَّل صوتك وشاشتك فقط.</span>`
-            : '<span class="hint">التسجيل من هذا الجهاز غير متاح. سجّل الحصة من Zoom أو Teams، ثم أرسل الملف من «لوحتي».</span>'}</div></li>
-        <li><span class="ls-n">٣</span><div><b>بعد الحصة</b><span class="hint">ارجع هنا واضغط «إنهاء التسجيل»، ثم «أرسل تسجيل الحصة».</span></div></li>
-      </ol>
-      <p class="small"><a href="#/tools" target="_blank">أدوات تساعدك في الشرح</a></p>`;
-    const rb = $('#lv-rec');
-    if (rb) rb.addEventListener('click', async () => {
-      // نافذة اختيار الشاشة تُفتح داخل الضغطة نفسها
-      rb.disabled = true;
-      try {
-        await ST.start({ micId: store.get('mic') || '', systemAudio: false, label: s.title,
-          info: { grade: s.grade, subject: s.subject, title: s.title, live: s.id } });
-      } catch (e) { if (rb.isConnected) rb.disabled = false; toast(studioErr(e), true); }
-    });
-  }
-
   async function pageStudio(tok) {
     setNav(''); setTitle('استوديو التسجيل');
     const p = await requireTeacher(tok, location.hash);
@@ -3923,7 +3878,6 @@
         if (!info) return toForm({ _file: fileOf() });
         const w = readWhen();
         if (!w) return;
-        if (!$('#st-consent').checked) { $('#st-consent').focus(); return toast('وافق على نشر الدرس في قناة «مدرار العلم» أولاً.', true); }
         if (r.bytes > API.uploadLimit) return toast('التسجيل أكبر من 500 ميغابايت. سجّل الدرس على جزأين.', true);
         const btn = $('#st-send'); btn.disabled = true;
         const box = $('#st-prog');
@@ -3954,7 +3908,6 @@
         $('#st-lv-send').addEventListener('click', async () => {
           const x = targets.find((y) => y.id === $('#st-lv').value);
           if (!x) return;
-          if (!$('#st-lv-consent').checked) { $('#st-lv-consent').focus(); return toast('وافق على نشر التسجيل في قناة «مدرار العلم» أولاً.', true); }
           if (r.bytes > API.uploadLimit) return toast('التسجيل أكبر من 500 ميغابايت. احفظه على جهازك وارفعه على قناتك، ثم الصق رابطه من «لوحتي».', true);
           const b = $('#st-lv-send'); b.disabled = true;
           const box = $('#st-lv-prog');
@@ -3993,9 +3946,6 @@
       return;
     }
 
-    // بدء حصة مباشرة: افتح الرابط، وسجّل، ثم أرسل التسجيل
-    const lm = /^#\/studio\/live\/([\w-]+)$/.exec(location.hash);
-    if (lm) { studioLive(tok, lm[1]); return; }
     // الإعداد قبل التسجيل
     const err = ST.error;
     const req = pendingReq();
@@ -4145,18 +4095,9 @@
         </ol>
         <h2>ثانياً: الحصة المباشرة</h2>
         <ol>
-          <li><b>أنشئ رابط الحصة</b> في الأداة التي تفضّلها:
-            <ul>
-              <li><b>Google Meet</b> (الأسهل، ومجاني بحسابك في Google): افتح <a href="https://meet.google.com" target="_blank" rel="noopener">meet.google.com</a> ثم «اجتماع جديد» ثم «إنشاء اجتماع لاحقاً»، وانسخ الرابط.</li>
-              <li><b>Zoom</b>: «Schedule» ثم انسخ رابط الدعوة. الحساب المجاني يحدّ الحصة بـ40 دقيقة.</li>
-              <li><b>Microsoft Teams</b>: من «التقويم» أنشئ «اجتماعاً جديداً» وانسخ رابط الانضمام.</li>
-            </ul></li>
-          <li>من <a href="#/dashboard">لوحتي</a> اضغط <b>حصة مباشرة جديدة</b>: اختر الصف والمادة، واكتب عنوان الحصة، وحدّد اليوم والساعة والمدة، والصق الرابط. ويمكنك تكرارها كل أسبوع في الموعد نفسه.</li>
-          <li>تظهر الحصة للطلاب في جدول صفهم و«الدروس القادمة» مع تذكير في التقويم. <b>رابطها لا يظهر إلا قبل الحصة بربع ساعة</b>، فلا ينتشر مسبقاً. وأرسل الموعد لطلابك بزر «شارك الموعد».</li>
-          <li>في الموعد اضغط <b>ابدأ الحصة</b> في «لوحتي»، ثم <b>افتح الحصة</b> و<b>ابدأ التسجيل</b> (اختر «الشاشة بالكامل»). يسجّل استوديو المنصة شاشتك وصوتك فقط. ويُستحسن تفعيل «غرفة الانتظار» في أداتك.</li>
-          <li>بعد انتهاء الحصة ارجع إلى صفحة المنصة واضغط <b>إنهاء التسجيل</b> ثم <b>أرسل تسجيل الحصة</b>. تنشره الإدارة على قناة «مدرار العلم» باسمك، فيظهر في صفحة الحصة لمن فاته الحضور.</li>
-          <li>سجّلت من Zoom أو Teams؟ اضغط <b>أرسل تسجيل الحصة</b> في «لوحتي» واختر الملف.</li>
-          <li><b>أدوات للشرح:</b> افتح أي أداة من <a href="#/tools">الأدوات</a> أثناء حصتك وشارك شاشتك.</li>
+          <li>من <a href="#/dashboard">لوحتي</a> اضغط <b>حصة مباشرة جديدة</b>: الصف، والمادة، والعنوان، والموعد، ورابط الحصة من Google Meet أو Zoom أو Teams.</li>
+          <li>في الموعد اضغط <b>ادخل الحصة</b> واشرح كعادتك. وسجّلها من زر التسجيل في Zoom أو Teams.</li>
+          <li>بعد الحصة اضغط <b>ارفع التسجيل</b>، فننشره على قناة «مدرار العلم» باسمك.</li>
         </ol>
         <div class="note warn"><b>خصوصية الطلاب</b><span>التسجيل يُنشر على يوتيوب، فاجعله شاشتك وصوتك فقط: لا تُظهر فيه أسماء الطلاب أو صورهم أو أصواتهم، وإن تحدّث طالب فاحذف ذلك الجزء أو أخبر الإدارة. ولا تطلب من الطلاب أرقام هواتفهم أو حساباتهم.</span></div>
         <h2>ثالثاً: أو سجّل درساً في الاستوديو</h2>
@@ -4302,7 +4243,7 @@
     [/^#\/dashboard\/path\/(new|[\w-]+)$/, (t, m) => pagePathForm(t, m[1])],
     [/^#\/c\/([A-Za-z0-9-]{10,16})(?:\/([mf]))?$/, (t, m) => pageCertificate(t, m[1], m[2])],
     [/^#\/guide$/, () => pageGuide()],
-    [/^#\/studio(?:\/[\w-]+){0,2}$/, (t) => pageStudio(t)],
+    [/^#\/studio(?:\/[\w-]+)?$/, (t) => pageStudio(t)],
     [/^#\/about$/, () => pageAbout()],
     [/^#\/dashboard$/, (t) => pageDashboard(t)],
     [/^#\/dashboard\/new$/, (t) => pageSessionForm(t, 'new')],
