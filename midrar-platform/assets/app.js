@@ -1069,52 +1069,6 @@
       return r;
     } catch (e) { store.del('join'); toast(errMsg(e), true); return null; }
   }
-  async function pageJoin(tok, code) {
-    setNav(''); setTitle('دعوة للتطوع');
-    const c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    store.set('join', JSON.stringify({ code: c, at: Date.now() }));
-    view.innerHTML = '<p class="loading">جارٍ التحقق من الدعوة…</p>';
-    let info = null;
-    try { info = API.inviteInfo ? await API.inviteInfo(c) : null; }
-    catch (e) { if (tok === app.token) view.innerHTML = errorBox(e); return; }
-    if (tok !== app.token) return;
-    if (!info) {
-      store.del('join');
-      view.innerHTML = `<div class="empty" style="margin-top:28px"><b>رابط الدعوة غير صالح أو انتهى</b>
-        <span>اطلب من الجهة التي دعتك رابطاً جديداً، أو اطلب الانضمام وستراجع الإدارة طلبك.</span><a class="btn btn-primary" href="#/volunteer">تطوّع معنا</a></div>`;
-      return;
-    }
-    if (app.user && app.profile === undefined) { try { await loadProfile(); } catch (e) { /* يظهر لاحقاً */ } }
-    if (tok !== app.token) return;
-    // دخل ولم يكمل ملفه: نكمل الملف أولاً، ثم تُستخدم الدعوة تلقائياً
-    if (app.user && !app.profile) return pageProfile(tok, true);
-    const inv = info.kind === 'invite';
-    view.innerHTML = `
-      <div class="box sign-in stack join">
-        <span class="pill pill-ok">${inv ? 'دعوة' : 'ترشيح'}</span>
-        <h1>أهلاً بك في ${esc(C.SITE_NAME)}</h1>
-        <p>${inv ? `دعتك <b>${esc(info.label)}</b> للتطوع بشرح دروس مسجّلة لطلاب سلطنة عُمان.` : `رشّحك <b>${esc(info.label)}</b> للتطوع بشرح دروس مسجّلة لطلاب سلطنة عُمان.`}</p>
-        <p class="muted">${inv ? 'بهذه الدعوة يُعتمد حسابك مباشرة، وتُنشر دروسك للطلاب فوراً.' : `بهذا الترشيح يُعتمد حسابك مباشرة، وتراجع الإدارة أول ${fNum(C.TRUST_AFTER || 3)} دروس قبل ظهورها، ثم تُنشر دروسك فوراً.`}</p>
-        <ol class="plain" style="text-align:start">
-          <li>ادخل بحساب Google.</li><li>أكمل ملفك ووافق على ميثاق المعلم المتطوع.</li><li>سجّل درسك الأول في استوديو المنصة بشاشتك وصوتك.</li>
-        </ol>
-        ${app.user ? '<button type="button" class="btn btn-primary btn-lg" id="join-ok">قبول الدعوة</button>'
-          : `<button type="button" class="btn g-btn" id="gsign">${G_ICON}<span>الدخول بحساب Google</span></button>`}
-        <p class="small muted">بدخولك توافق على <a href="#/about">ميثاق المعلم المتطوع</a>. لا يظهر بريدك الإلكتروني للعامة.</p>
-      </div>`;
-    const ok = $('#join-ok');
-    if (ok) ok.addEventListener('click', async () => {
-      ok.disabled = true;
-      const r = await redeemStored();
-      if (r) location.hash = '#/dashboard'; else ok.disabled = false;
-    });
-    const g = $('#gsign');
-    if (g) g.addEventListener('click', async () => {
-      g.disabled = true;
-      try { await API.signIn('#/join/' + c); if (API.mode === 'demo') route(); }
-      catch (e) { toast(errMsg(e), true); g.disabled = false; }
-    });
-  }
 
   // ------------------------------------------------------------------
   //  صفحتا «تطوّع معنا» و«لأولياء الأمور»
@@ -1133,8 +1087,7 @@
         </ul>
         <h2>كيف تنضم؟</h2>
         <ol>
-          <li><b>برابط دعوة</b> من مدرستك أو جهتك، أو <b>برابط ترشيح</b> من معلم موثوق في المنصة: يُعتمد حسابك مباشرة.</li>
-          <li><b>أو اطلب الانضمام مباشرة:</b> ادخل بحساب Google وأكمل ملفك، وتراجع الإدارة حسابك وقناتك على يوتيوب.</li>
+          <li>ادخل بحساب Google وأكمل ملفك، وتراجع الإدارة حسابك.</li>
           <li>أول ${n} دروس للمتطوع الجديد تراجعها الإدارة قبل ظهورها للطلاب، ثم تُنشر دروسك مباشرة.</li>
         </ol>
         <h2>كيف تشرح؟</h2>
@@ -2160,21 +2113,6 @@
       } catch (e) { toast(errMsg(e), true); }
     }));
   }
-  // رابط ترشيح للمعلم الموثوق: يدعو به زميلاً يعرفه ويضمنه
-  async function dashNominate(tok, p) {
-    const box = $('#nominate');
-    if (!box || !API.myNomination || p.status !== 'approved' || !p.trusted) return;
-    let nm;
-    try { nm = await API.myNomination(); } catch (e) { return; }
-    if (tok !== app.token || !nm || !$('#nominate')) return;
-    const link = pageUrl('#/join/' + nm.code);
-    box.innerHTML = `<section class="section"><details class="more nominate"><summary>رشّح زميلاً</summary>
-      <div class="row"><input class="input" readonly value="${esc(link)}" aria-label="رابط الترشيح" style="flex:1 1 240px;direction:ltr">
-        <button type="button" class="btn" id="nm-copy">نسخ الرابط</button>
-        <a class="btn" href="https://wa.me/?text=${encodeURIComponent('أدعوك للتطوع معي في ' + C.SITE_NAME + ': ' + link)}" target="_blank" rel="noopener">إرسال عبر واتساب</a></div>
-      <span class="hint">باقٍ ${plural(nm.uses_left, 'ترشيح واحد', 'ترشيحان', 'ترشيحات', 'ترشيحاً')}. رشّح من تعرفه شخصياً فقط.</span></details></section>`;
-    $('#nm-copy').addEventListener('click', () => copyText(link));
-  }
   // مساراتي: للمعلم الموثوق والمشرف
   async function dashPaths(tok, p) {
     const box = $('#mypaths');
@@ -2474,7 +2412,7 @@
         ${past.length ? `<div class="list">${past.slice(0, 60).map(row).join('')}</div>${past.length > 60 ? '<p class="muted small">تظهر آخر 60 درساً.</p>' : ''}`
           : `<div class="empty"><b>لم تنشر أي درس بعد</b>${p.status !== 'suspended' ? '<div class="row"><a class="btn btn-primary" href="#/dashboard/live">أنشئ حصتك الأولى</a><a class="btn" href="#/studio">سجّل درسك الأول</a></div>' : ''}</div>`}
       </section>
-      <div id="impact"></div><div id="mypaths"></div><div id="nominate"></div>
+      <div id="impact"></div><div id="mypaths"></div>
       <div class="row" style="padding-bottom:12px"><span class="spacer"></span><button type="button" class="btn btn-ghost" id="out">تسجيل الخروج</button></div>`;
     $('#out').addEventListener('click', signOut);
     $$('[data-toggle]').forEach((b) => {
@@ -2499,7 +2437,6 @@
     }).catch(() => { /* التخزين غير متاح */ });
     dashImpact(tok, p, list).catch(() => { /* اختياري */ });
     dashRequests(tok, p, list).catch(() => { /* اختياري */ });
-    dashNominate(tok, p).catch(() => { /* اختياري */ });
     dashPaths(tok, p).catch(() => { /* اختياري */ });
     refreshBadge();
   }
@@ -3243,7 +3180,7 @@
     if (!p) return;
     if (!p.is_admin) { view.innerHTML = '<div class="empty" style="margin-top:24px"><b>هذه الصفحة للمشرفين فقط</b><a class="btn" href="#/dashboard">لوحتي</a></div>'; return; }
     tab = tab || 'overview';
-    const tabs = [['overview', 'نظرة عامة'], ['uploads', 'الرفع على القناة'], ['review', 'المراجعة'], ['teachers', 'المعلمون'], ['invites', 'الدعوات'], ['requests', 'طلبات الطلاب'], ['reports', 'البلاغات'], ['tools', 'الأدوات'], ['settings', 'الإعدادات']];
+    const tabs = [['overview', 'نظرة عامة'], ['uploads', 'الرفع على القناة'], ['review', 'المراجعة'], ['teachers', 'المعلمون'], ['requests', 'طلبات الطلاب'], ['reports', 'البلاغات'], ['tools', 'الأدوات'], ['settings', 'الإعدادات']];
     view.innerHTML = `
       <header class="page-head"><nav class="crumbs"><a href="#/dashboard">لوحتي</a><span>›</span><span>الإدارة</span></nav><h1>إدارة المنصة</h1>
         <nav class="tabs">${tabs.map(([k, n]) => `<a href="#/admin/${k}"${tab === k ? ' aria-current="page"' : ''}>${n}</a>`).join('')}</nav>
@@ -3475,35 +3412,6 @@
             try { await API.adminReview(id, false, $('input', f).value.trim()); done(id, 'رُفض الدرس، وسيرى المعلم السبب'); }
             catch (e) { toast(errMsg(e), true); }
           });
-        }));
-      } else if (tab === 'invites') {
-        const list = await API.adminInvites();
-        if (tok !== app.token) return;
-        const link = (c) => pageUrl('#/join/' + c);
-        box.innerHTML = `<p class="muted">أنشئ رابط دعوة لكل مدرسة أو جهة أو شخص تثق به. من يسجّل عبره يُعتمد مباشرة ويصبح موثوقاً، ويظهر في صفحته «بدعوة من …». روابط الترشيح ينشئها المعلمون الموثوقون لزملائهم.</p>
-          <form class="box" id="inv-form"><h2>رابط دعوة جديد</h2>
-            <div class="grid2"><div class="field"><label for="inv-label">اسم الجهة أو الشخص</label><input class="input" id="inv-label" maxlength="60" placeholder="مثال: مدرسة الخوض للتعليم الأساسي"></div>
-              <div class="field"><label for="inv-uses">عدد مرات الاستخدام</label><input class="input" id="inv-uses" type="number" min="1" max="500" value="10" inputmode="numeric"></div></div>
-            <div><button class="btn btn-primary" type="submit">أنشئ الرابط</button></div></form>
-          ${list.length ? `<div class="list">${list.map((i) => `<div class="item" style="grid-template-columns:minmax(0,1fr) auto">
-            <div class="what"><b>${esc(i.label)}</b><div class="row"><span class="pill${i.kind === 'invite' ? ' pill-ok' : ''}">${i.kind === 'invite' ? 'دعوة' : 'ترشيح'}</span>
-              <span>استُخدم ${fNum(i.used || 0)}</span><span>·</span><span>باقٍ ${fNum(i.uses_left)}</span>${i.active ? '' : '<span class="pill pill-bad">موقوف</span>'}</div>
-              <span class="email small">${esc(link(i.code))}</span></div>
-            <div class="tools"><button type="button" class="btn btn-sm" data-copy="${esc(i.code)}">نسخ الرابط</button>
-              <button type="button" class="btn btn-sm${i.active ? ' btn-ghost btn-danger' : ''}" data-act="${esc(i.code)}" data-on="${i.active ? '0' : '1'}">${i.active ? 'إيقاف' : 'تفعيل'}</button></div></div>`).join('')}</div>`
-            : '<p class="muted">لا توجد روابط بعد.</p>'}`;
-        $('#inv-form').addEventListener('submit', async (ev) => {
-          ev.preventDefault();
-          const label = $('#inv-label').value.trim();
-          if (label.length < 2) { $('#inv-label').setAttribute('aria-invalid', 'true'); $('#inv-label').focus(); return toast('اكتب اسم الجهة أو الشخص.', true); }
-          try { const code = await API.adminCreateInvite(label, Number($('#inv-uses').value) || 1); await copyText(link(code)); route(); }
-          catch (e) { toast(errMsg(e), true); }
-        });
-        $$('[data-copy]', box).forEach((b) => b.addEventListener('click', () => copyText(link(b.getAttribute('data-copy')))));
-        $$('[data-act]', box).forEach((b) => b.addEventListener('click', async () => {
-          b.disabled = true;
-          try { await API.adminSetInvite(b.getAttribute('data-act'), b.getAttribute('data-on') === '1'); route(); }
-          catch (e) { toast(errMsg(e), true); b.disabled = false; }
         }));
       } else if (tab === 'tools') {
         const list = await API.adminTools();
@@ -4134,11 +4042,9 @@
           <li>في نموذج الدرس («أضف درساً جاهزاً»، أو «تعديل بيانات الدرس» بعد التسجيل، أو تعديل درس منشور) أضف حتى <b>5 أسئلة</b> اختيار من متعدد. يجيب عنها الطالب بعد الدرس ويعرف فوراً إن فهم، ولا تُحفظ إجاباته في أي مكان.</li>
           <li>وأضف حتى <b>3 روابط</b> لملخص أو ورقة عمل من Google Drive أو OneDrive أو Dropbox، بعد أن تجعل مشاركة الملف «أي شخص لديه الرابط».</li>
         </ul>
-        <h2>المراجعة، والثقة، والترشيح</h2>
+        <h2>المراجعة والثقة</h2>
         <ul>
           <li>أول ${fNum(C.TRUST_AFTER || 3)} دروس للمتطوع الجديد تراجعها الإدارة قبل ظهورها للطلاب. بعدها تصبح <b>متطوعاً موثوقاً</b> وتُنشر دروسك مباشرة. إن لم يُعتمد درس ترى السبب في «لوحتي»، فعدّله ويعود إلى المراجعة.</li>
-          <li>من جاء <b>برابط دعوة</b> من الإدارة يصبح موثوقاً من البداية.</li>
-          <li>المتطوع الموثوق يجد في «لوحتي» <b>رابط ترشيح</b> يرسله لزميل يعرفه، فيُعتمد حسابه مباشرة ويظهر في صفحته «رشّحه …».</li>
           <li>المتطوع الموثوق يستطيع إنشاء <b>مسارات</b>: دروس مرتبة (له أو لغيره) يتابعها الطالب خطوة بخطوة، مثل «استعد لاختبار الرياضيات».</li>
         </ul>
         <h2>طلبات الطلاب، وأثر دروسك، وشهادة الشكر</h2>
@@ -4236,7 +4142,6 @@
     [/^#\/teachers$/, (t) => pageTeachers(t)],
     [/^#\/k(?:\/(sk_[a-z_]+))?$/, (t, m) => pageSkills(t, m[1])],
     [/^#\/p\/([\w-]+)$/, (t, m) => pagePath(t, m[1])],
-    [/^#\/join\/([A-Za-z0-9-]{8,16})$/, (t, m) => pageJoin(t, m[1])],
     [/^#\/volunteer$/, () => pageVolunteer()],
     [/^#\/teach$/, () => pageTeach()],
     [/^#\/tools$/, (t) => pageTools(t)],
@@ -4254,7 +4159,7 @@
     [/^#\/dashboard\/copy\/([\w-]+)$/, (t, m) => pageSessionForm(t, 'copy', m[1])],
     [/^#\/dashboard\/resume\/([\w-]+)$/, (t, m) => pageResume(t, m[1])],
     [/^#\/profile$/, (t) => pageProfile(t, false)],
-    [/^#\/admin(?:\/(overview|uploads|review|teachers|invites|requests|reports|tools|settings))?$/, (t, m) => pageAdmin(t, m[1])],
+    [/^#\/admin(?:\/(overview|uploads|review|teachers|requests|reports|tools|settings))?$/, (t, m) => pageAdmin(t, m[1])],
   ];
   let lastHash = null;
   let booted = false;
