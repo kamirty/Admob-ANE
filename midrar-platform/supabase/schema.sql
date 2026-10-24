@@ -1582,6 +1582,13 @@ revoke execute on function public.join_link(uuid) from public;
 grant  execute on function public.join_link(uuid) to anon, authenticated;
 
 -- =====================================================================
+--  14) أيقونة المعلم: رجل بالكُمّة أو امرأة بالحجاب بدل الحرف الأول
+-- =====================================================================
+alter table public.teachers add column if not exists gender text;
+alter table public.teachers drop constraint if exists teachers_gender_check;
+alter table public.teachers add constraint teachers_gender_check check (gender is null or gender in ('m', 'f'));
+
+-- =====================================================================
 --  بعد أول دخول لك كمعلم من الموقع، اجعل نفسك مشرفاً بتشغيل هذا السطر
 --  (ضع بريدك بدل المثال):
 --

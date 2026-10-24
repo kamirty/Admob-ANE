@@ -287,7 +287,14 @@
   //  عناصر مشتركة
   // ------------------------------------------------------------------
   function initial(name) { return String(name || '؟').replace(/^(أ\.|د\.|م\.|ا\.)\s*/, '').trim().charAt(0) || '؟'; }
-  function avatar(name, url, cls) {
+  // أيقونتا المعلم: رجل بالكُمّة والدشداشة، وامرأة بالحجاب
+  const FACE = {
+    m: '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M7 66c0-12.5 10.5-19.5 25-19.5S57 53.5 57 66z" fill="#fff" stroke="#C9D6D0"/><path d="M26.5 42h11v6.5c0 2.6-2.4 4.5-5.5 4.5s-5.5-1.9-5.5-4.5z" fill="#D9A97E"/><path d="M32 52.5v7" stroke="#B08D5B" stroke-width="1.4"/><circle cx="32" cy="60.5" r="1.7" fill="#B08D5B"/><ellipse cx="32" cy="33" rx="10.5" ry="12" fill="#E8BE95"/><path d="M22.5 35.5c.6 7 4.6 10.5 9.5 10.5s8.9-3.5 9.5-10.5c-1.8 2.8-4 4.2-6 4.2-1.2-1-2.3-1.4-3.5-1.4s-2.3.4-3.5 1.4c-2 0-4.2-1.4-6-4.2z" fill="#4A3A30"/><path d="M20.8 27.2V13.6c0-1.5 5-2.6 11.2-2.6s11.2 1.1 11.2 2.6v13.6c-3 .9-6.8 1.3-11.2 1.3s-8.2-.4-11.2-1.3z" fill="#fff" stroke="#C9D6D0"/><ellipse cx="32" cy="13.6" rx="11.2" ry="2.3" fill="#F4F8F6" stroke="#C9D6D0" stroke-width=".8"/><path d="M20.9 24.6c3 .9 6.8 1.3 11.1 1.3s8.1-.4 11.1-1.3" fill="none" stroke="#0E5A46" stroke-width="1.6"/><path d="M22.5 21.2l1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2" fill="none" stroke="#B9770E" stroke-width="1.1"/><path d="M24 17.2h16" stroke="#0E5A46" stroke-width="1" stroke-dasharray="1.6 1.6"/></svg>',
+    f: '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M8 66c0-11.5 10-18 24-18s24 6.5 24 18z" fill="#1F5A4C"/><path d="M32 17.5c-7.8 0-12.6 6-12.6 14.6 0 5.4 1.5 9.6 4.2 12.6-.7 4.4-2 8.6-3.6 12 3.8 2.2 7.7 3.2 12 3.2s8.2-1 12-3.2c-1.6-3.4-2.9-7.6-3.6-12 2.7-3 4.2-7.2 4.2-12.6 0-8.6-4.8-14.6-12.6-14.6z" fill="#1F5A4C"/><path d="M23.6 44.7c-.7 4.4-2 8.6-3.6 12M40.4 44.7c.7 4.4 2 8.6 3.6 12" fill="none" stroke="#174A3E" stroke-width="1.1"/><ellipse cx="32" cy="33.5" rx="8.2" ry="10" fill="#E8BE95"/><path d="M23.8 31.5c.4-6 3.8-9.4 8.2-9.4s7.8 3.4 8.2 9.4" fill="none" stroke="#2C7462" stroke-width="2"/><path d="M25.2 43.4c1.9 2.2 4.2 3.3 6.8 3.3s4.9-1.1 6.8-3.3" fill="none" stroke="#174A3E" stroke-width="1.3"/></svg>',
+  };
+  function gOf(t) { return t ? t.gender || app.genders[t.id] : undefined; }
+  function avatar(name, url, cls, g) {
+    if (FACE[g]) return `<span class="av av-ic ${cls || ''}" data-g="${g}">${FACE[g]}</span>`;
     const letter = esc(initial(name));
     if (url && /^https:\/\/lh\d+\.googleusercontent\.com\//.test(url)) {
       return `<img class="av ${cls || ''}" src="${esc(url)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-letter="${letter}">`;
@@ -310,7 +317,7 @@
   }, true);
   function teacherLink(t) {
     if (!t) return '';
-    return `<a class="who" href="#/t/${esc(t.id)}">${avatar(t.display_name, t.avatar_url)}<span>${esc(t.display_name)}</span></a>`;
+    return `<a class="who" href="#/t/${esc(t.id)}">${avatar(t.display_name, t.avatar_url, '', gOf(t))}<span>${esc(t.display_name)}</span></a>`;
   }
   function cardHtml(s, opts) {
     opts = opts || {};
@@ -412,7 +419,7 @@
   // ------------------------------------------------------------------
   //  حالة التطبيق والمستخدم
   // ------------------------------------------------------------------
-  const app = { user: null, profile: undefined, settings: {}, token: 0, prefill: null, afterProfile: null };
+  const app = { user: null, profile: undefined, settings: {}, genders: {}, token: 0, prefill: null, afterProfile: null };
 
   async function loadProfile() {
     if (!app.user) { app.profile = null; return null; }
@@ -424,7 +431,7 @@
     if (app.user) {
       const name = (app.profile && app.profile.display_name) || app.user.name || 'لوحتي';
       const pic = (app.profile && app.profile.avatar_url) || app.user.avatar;
-      box.innerHTML = `<a class="btn btn-sm" href="#/dashboard">${avatar(name, pic)}<span>لوحتي</span>${app.profile && app.profile.is_admin ? `<span class="badge-n" data-admin-n${badgeN ? '' : ' hidden'}>${badgeN ? fNum(badgeN) : ''}</span>` : ''}</a>`;
+      box.innerHTML = `<a class="btn btn-sm" href="#/dashboard">${avatar(name, pic, '', app.profile && app.profile.gender)}<span>لوحتي</span>${app.profile && app.profile.is_admin ? `<span class="badge-n" data-admin-n${badgeN ? '' : ' hidden'}>${badgeN ? fNum(badgeN) : ''}</span>` : ''}</a>`;
     } else {
       box.innerHTML = '<a class="btn btn-primary btn-sm" href="#/dashboard">دخول المعلمين</a>';
     }
@@ -490,7 +497,7 @@
       const box = document.getElementById('vol-faces');
       if (tok !== app.token || !box || !list || !list.length) return;
       const shown = list.slice(0, 12);
-      box.innerHTML = shown.map((t) => `<a class="vol" href="#/t/${esc(t.id)}" title="${esc(t.display_name)}">${avatar(t.display_name, t.avatar_url, 'av-vol')}<span>${esc(t.display_name)}</span></a>`).join('')
+      box.innerHTML = shown.map((t) => `<a class="vol" href="#/t/${esc(t.id)}" title="${esc(t.display_name)}">${avatar(t.display_name, t.avatar_url, 'av-vol', gOf(t))}<span>${esc(t.display_name)}</span></a>`).join('')
         + (list.length > shown.length ? `<a class="vol vol-more" href="#/teachers"><span class="av av-vol">+${fNum(list.length - shown.length)}</span><span>والمزيد</span></a>` : '');
     }).catch(() => { /* اختياري */ });
     const conts = Object.entries(watch.read().items).map(([id, w]) => Object.assign({ id }, w))
@@ -1380,7 +1387,7 @@
               ${s.exam_year ? `<dt>الامتحان</dt><dd>${esc(examLine(s))}</dd>` : ''}
             </dl>
           </div>
-          <a class="box tcard" id="tcard" href="#/t/${esc(t.id || s.teacher_id)}">${avatar(t.display_name, t.avatar_url, 'av-md')}<div><b>${esc(t.display_name || 'المعلم')}</b><span>كل دروس المعلم</span></div></a>
+          <a class="box tcard" id="tcard" href="#/t/${esc(t.id || s.teacher_id)}">${avatar(t.display_name, t.avatar_url, 'av-md', gOf(t) || app.genders[s.teacher_id])}<div><b>${esc(t.display_name || 'المعلم')}</b><span>كل دروس المعلم</span></div></a>
           ${mine || admin ? `<div class="box"><h2>${mine ? (s.kind === 'recorded' ? 'درسك' : 'حصتك') : 'إدارة'}</h2><div class="row">
             ${mine ? `<a class="btn btn-sm" href="#/dashboard/edit/${esc(s.id)}">${s.kind === 'recorded' ? 'تعديل الدرس' : 'تعديل الحصة'}</a>` : ''}
             ${admin ? `<button type="button" class="btn btn-sm${s.hidden ? '' : ' btn-danger'}" id="hide">${s.hidden ? 'إظهار للطلاب' : 'إخفاء عن الطلاب'}</button>` : ''}
@@ -1627,7 +1634,7 @@
         if (tok !== app.token || !alts.length) return;
         remember(alts);
         $('#alts').innerHTML = `<div class="box"><h2>خيارات أخرى لصفك في نفس الوقت</h2><div class="alts">${alts.map((a) => `
-          <a class="alt" href="#/s/${esc(a.id)}">${avatar(a.teacher && a.teacher.display_name, a.teacher && a.teacher.avatar_url, 'av-md')}
+          <a class="alt" href="#/s/${esc(a.id)}">${avatar(a.teacher && a.teacher.display_name, a.teacher && a.teacher.avatar_url, 'av-md', gOf(a.teacher))}
             <div><b>${esc(subjectName(a.subject))}: ${esc(a.title)}</b><span>${esc((a.teacher && a.teacher.display_name) || '')} · ${esc(time(a.starts_at))}</span></div></a>`).join('')}</div></div>`;
       } catch (e) { /* اختياري */ }
     }
@@ -1653,7 +1660,7 @@
     const areas = Array.from(new Set(recs.map((s) => (isSkills(s.grade) ? subjOf(s) : `${subjectName(s.subject)} (${GRADES[s.grade] ? GRADES[s.grade].short : gradeName(s.grade)})`)))).slice(0, 10);
     const port = t.trusted && /^https:\/\//i.test(t.portfolio_url || '') ? t.portfolio_url : '';
     view.innerHTML = `
-      <header class="prof">${avatar(t.display_name, t.avatar_url, 'av-lg')}
+      <header class="prof">${avatar(t.display_name, t.avatar_url, 'av-lg', gOf(t))}
         <div class="info"><h1>${esc(t.display_name)}${t.verified ? ' <span class="verified" title="تحقّقت منه إدارة المنصة">✓ موثّق</span>' : ''}</h1>${t.specialty ? `<span class="muted">${esc(t.specialty)}</span>` : ''}
           ${t.vouch ? `<span class="vouch">${esc(t.vouch)}</span>` : ''}
           ${t.bio ? `<p class="desc">${esc(t.bio)}</p>` : ''}
@@ -1679,7 +1686,7 @@
       const list = await API.listTeachers();
       if (tok !== app.token) return;
       $('#tlist').innerHTML = list.length
-        ? `<div class="tgrid">${list.map((t) => `<a class="tcard" href="#/t/${esc(t.id)}">${avatar(t.display_name, t.avatar_url, 'av-md')}<div><b>${esc(t.display_name)}${t.verified ? ' <span class="verified" aria-label="موثّق">✓</span>' : ''}</b><span>${esc(t.specialty || 'معلم متطوع')}</span></div></a>`).join('')}</div>`
+        ? `<div class="tgrid">${list.map((t) => `<a class="tcard" href="#/t/${esc(t.id)}">${avatar(t.display_name, t.avatar_url, 'av-md', gOf(t))}<div><b>${esc(t.display_name)}${t.verified ? ' <span class="verified" aria-label="موثّق">✓</span>' : ''}</b><span>${esc(t.specialty || 'معلم متطوع')}</span></div></a>`).join('')}</div>`
         : '<div class="empty"><b>لا يوجد معلمون بعد</b><a class="btn btn-primary" href="#/dashboard">كن أول المتطوعين</a></div>';
     } catch (e) { if (tok === app.token) $('#tlist').innerHTML = errorBox(e); }
   }
@@ -1742,7 +1749,9 @@
       <header class="page-head"><h1>${first ? 'أهلاً بك معلماً متطوعاً' : 'ملفي'}</h1>
         <p class="muted">${first ? 'خطوة واحدة: أكمل ملفك ليعرفك الطلاب. يظهر اسمك وتخصصك ونبذتك للعامة، ولا يظهر بريدك.' : 'هذه المعلومات تظهر في صفحتك العامة.'}</p></header>
       <form class="form" id="pf" novalidate>
-        <div class="row">${avatar(p.display_name || app.user.name, avatarUrl, 'av-lg')}<span class="muted small">الصورة من حساب Google<br><span class="email">${esc(app.user.email || '')}</span></span></div>
+        <fieldset class="field pick-g"><legend>صورتك في المنصة</legend>
+          <div class="g-opts">${[['m', 'معلم'], ['f', 'معلمة']].map(([g, l]) => `<label class="g-opt"><input type="radio" name="pf-g" value="${g}"${p.gender === g ? ' checked' : ''}>${avatar('', '', 'av-lg', g)}<span>${l}</span></label>`).join('')}</div>
+          <span class="hint email">${esc(app.user.email || '')}</span></fieldset>
         <div class="field"><label for="pf-name">الاسم الذي يظهر للطلاب</label>
           <input class="input" id="pf-name" required minlength="2" maxlength="60" value="${esc(p.display_name || (app.user.name ? 'أ. ' + app.user.name : ''))}" placeholder="مثال: أ. علي حسين">
           <span class="hint">يُفضّل أن يبدأ بـ «أ.» أو «د.»</span></div>
@@ -1783,10 +1792,13 @@
       const port = $('#pf-port').value.trim();
       $('#pf-port').removeAttribute('aria-invalid');
       if (port && !/^https:\/\/[^\s<>"]+\.[^\s<>"]+$/i.test(port)) { $('#pf-port').setAttribute('aria-invalid', 'true'); $('#pf-port').focus(); return toast('رابط الأعمال يجب أن يبدأ بـ https://', true); }
+      const gEl = document.querySelector('input[name="pf-g"]:checked');
+      if (!gEl) { document.querySelector('input[name="pf-g"]').focus(); return toast('اختر: معلم أو معلمة.', true); }
       if (first && !$('#pf-ok').checked) return toast('يرجى الموافقة على ميثاق المعلم المتطوع.', true);
       const btn = $('#pf button[type=submit]'); btn.disabled = true;
       try {
-        app.profile = await API.saveProfile({ display_name: name, specialty: $('#pf-spec').value.trim(), bio: $('#pf-bio').value.trim(), youtube_channel: yt, avatar_url: avatarUrl, portfolio_url: port || null }, !first);
+        app.profile = await API.saveProfile({ display_name: name, specialty: $('#pf-spec').value.trim(), bio: $('#pf-bio').value.trim(), youtube_channel: yt, avatar_url: avatarUrl, portfolio_url: port || null, gender: gEl.value }, !first);
+        if (app.profile && app.profile.gender) app.genders[app.profile.id] = app.profile.gender;
         renderAuth();
         if (first && joinCode()) await redeemStored();
         toast(first ? 'تم إنشاء ملفك. سجّل درسك الأول!' : 'حُفظت التعديلات');
@@ -2420,7 +2432,7 @@
         </div></div>`;
     };
     view.innerHTML = `
-      <header class="dash-head">${avatar(p.display_name, p.avatar_url || app.user.avatar, 'av-lg')}
+      <header class="dash-head">${avatar(p.display_name, p.avatar_url || app.user.avatar, 'av-lg', p.gender)}
         <div class="who-big"><h1>${esc(p.display_name)}</h1><div class="row">${statusPill(p.status)}${p.is_admin ? '<span class="pill">مشرف</span>' : ''}</div></div>
         <span class="spacer"></span>
         ${p.is_admin ? '<a class="btn" href="#/admin">الإدارة <span class="badge-n" data-admin-n hidden></span></a>' : ''}
@@ -3525,7 +3537,7 @@
         box.innerHTML = `<p class="muted">${plural(list.length, 'معلم واحد', 'معلمان', 'معلمين', 'معلماً')} · ${pending ? `<b>${fNum(pending)} بانتظار المراجعة</b>` : 'لا أحد بانتظار المراجعة'}</p>
           <div class="atable-wrap"><table class="atable"><thead><tr><th>المعلم</th><th>البريد</th><th>التخصص والقناة</th><th>الدروس</th><th>الحالة والثقة</th><th>إجراء</th></tr></thead><tbody>
           ${list.map((t) => `<tr>
-            <td><a class="who" href="#/t/${esc(t.id)}">${avatar(t.display_name, t.avatar_url)}<span>${esc(t.display_name)}</span></a><span class="muted small">انضم ${esc(fDateShort.format(new Date(t.created_at)))}</span></td>
+            <td><a class="who" href="#/t/${esc(t.id)}">${avatar(t.display_name, t.avatar_url, '', gOf(t))}<span>${esc(t.display_name)}</span></a><span class="muted small">انضم ${esc(fDateShort.format(new Date(t.created_at)))}</span></td>
             <td class="email">${esc(t.email || '')}</td>
             <td>${esc(t.specialty || '—')}<br>${t.youtube_channel && isYouTube(t.youtube_channel) ? `<a href="${esc(t.youtube_channel)}" target="_blank" rel="noopener">القناة</a>` : '<span class="pill pill-warn">بلا قناة</span>'}
               ${/^https:\/\//i.test(t.portfolio_url || '') ? ` · <a href="${esc(t.portfolio_url)}" target="_blank" rel="noopener nofollow">الأعمال</a>` : ''}</td>
@@ -4280,7 +4292,8 @@
     if (app.user) await loadProfile().catch(() => {});
     renderAuth();
     refreshBadge();
-    try { app.settings = await API.settings(); } catch (e) { app.settings = {}; }
+    const [st, gm] = await Promise.all([API.settings().catch(() => ({})), API.teacherGenders().catch(() => ({}))]);
+    app.settings = st || {}; app.genders = gm || {};
     renderBanners();
     document.querySelector('.skip').addEventListener('click', (e) => { e.preventDefault(); view.focus(); });
     window.addEventListener('hashchange', route);

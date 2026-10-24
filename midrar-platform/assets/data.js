@@ -377,6 +377,13 @@
         return rest('sessions', [['select', LIST_COLS], ['teacher_id', 'eq.' + id], ['status', 'eq.scheduled'],
           ['order', 'starts_at.desc'], ['limit', '200']]);
       },
+      // أيقونة كل معلم (رجل أو امرأة): قاعدة قديمة بلا العمود تعطي خريطة فارغة
+      async teacherGenders() {
+        try {
+          const rows = await restRaw('teachers', [['select', 'id,gender'], ['gender', 'not.is.null'], ['limit', '2000']]);
+          const m = {}; rows.forEach((r) => { m[r.id] = r.gender; }); return m;
+        } catch (e) { return {}; }
+      },
       async listTeachers() {
         const q = (cols) => restRaw('teachers', [['select', cols], ['status', 'eq.approved'], ['order', 'display_name.asc'], ['limit', '1000']]);
         try { return await q('id,display_name,specialty,avatar_url,verified'); }
@@ -424,11 +431,13 @@
         const row = {
           display_name: p.display_name, specialty: p.specialty || null, bio: p.bio || null,
           youtube_channel: p.youtube_channel || null, avatar_url: p.avatar_url || null, portfolio_url: p.portfolio_url || null,
+          gender: p.gender || null,
         };
         const go = (x) => (exists
           ? c.from('teachers').update(x).eq('id', user.id).select().single()
           : c.from('teachers').insert(Object.assign({ id: user.id }, x)).select().single());
         let r = await go(row);
+        if (oldDb(r.error)) { delete row.gender; r = await go(row); }
         if (oldDb(r.error)) { delete row.portfolio_url; r = await go(row); }
         return check(r);
       },
@@ -720,6 +729,7 @@
         trusted: id !== 't-new', verified: id === 't-ali' || id === 't-zainab' || id === 't-eng', trust_lock: false,
         vouch: id === 't-ali' ? 'بدعوة من مدرسة الخوض' : id === 't-eng' ? 'بدعوة من جامعة السلطان قابوس' : id === 't-new' ? 'رشّحه أ. سالم البلوشي' : null,
         portfolio_url: id === 't-eng' ? 'https://www.linkedin.com/in/example' : null,
+        gender: ['t-zainab', 't-noor', 't-maryam', 't-new'].includes(id) ? 'f' : 'm',
       }));
       const day0 = new Date(); day0.setHours(0, 0, 0, 0);
       const at = (dayOff, h, m) => { const d = new Date(day0); d.setDate(d.getDate() + dayOff); d.setHours(h, m || 0, 0, 0); return d; };
@@ -840,7 +850,7 @@
           items: kept.filter((s) => s.subject === 'sk_ai').map((s) => s.id), published: true, created_at: iso(Date.now() - 4 * 864e5), updated_at: iso(Date.now() - 2 * 864e5) },
       ];
       const invites = [{ code: 'KHWDSCHL26', kind: 'invite', label: 'مدرسة الخوض', created_by: null, uses_left: 8, active: true, created_at: iso(Date.now() - 10 * 864e5), used: 2 }];
-      return { v: 8, links, tools: seedTools(), teachers, sessions: kept, reports: [], requests, stats, certificates: [], paths, invites, inviteUses: [],
+      return { v: 9, links, tools: seedTools(), teachers, sessions: kept, reports: [], requests, stats, certificates: [], paths, invites, inviteUses: [],
         settings: { auto_approve: true, site_notice: '', requests_on: true, views_on: true, request_min_votes: 2, featured_session: quad ? quad.id : null }, me: null };
     }
     function seedTools() {
@@ -852,7 +862,7 @@
     function load() {
       if (db) return db;
       try { db = JSON.parse(storeGet(KEY) || 'null'); } catch (e) { db = null; }
-      if (!db || db.v !== 8) { db = seed(); save(); }
+      if (!db || db.v !== 9) { db = seed(); save(); }
       return db;
     }
     function save() { storeSet(KEY, JSON.stringify(db)); }
@@ -1128,6 +1138,12 @@
         return delay(db.sessions.filter((s) => s.teacher_id === id && s.status === 'scheduled' && visible(s))
           .sort((a, b) => b.starts_at.localeCompare(a.starts_at)).map(withTeacher));
       },
+      async teacherGenders() {
+        load();
+        const m = {};
+        db.teachers.forEach((t) => { if (t.gender && (t.status === 'approved' || (user && t.id === user.id))) m[t.id] = t.gender; });
+        return delay(m);
+      },
       async listTeachers() {
         load();
         return delay(db.teachers.filter((t) => t.status === 'approved').map(clone)
@@ -1154,6 +1170,7 @@
         Object.assign(t, {
           display_name: p.display_name, specialty: p.specialty || null, bio: p.bio || null,
           youtube_channel: p.youtube_channel || null, avatar_url: p.avatar_url || null, portfolio_url: p.portfolio_url || null,
+          gender: p.gender || null,
         });
         save();
         return delay(clone(t));
