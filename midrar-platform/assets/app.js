@@ -172,10 +172,11 @@
     return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
   }
   const isYouTube = (url) => /^https:\/\/(www\.|m\.|music\.)?(youtube\.com|youtu\.be)\/\S+$/i.test(url || '');
-  // رابط الحصة المباشرة: Google Meet (وتُقبل روابط Zoom وTeams)
+  // رابط الحصة المباشرة: Jitsi Meet تنشئه المنصة، أو رابط يضعه المعلم من Google Meet أو Zoom أو Teams
+  const newRoom = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'; const r = new Uint32Array(14); crypto.getRandomValues(r); return 'https://meet.jit.si/MidrarElm-' + Array.from(r, (x) => a[x % a.length]).join(''); };
   const isZoom = (url) => /^https:\/\/([a-z0-9-]+\.)*zoom\.us\/[^\s<>"]+$/i.test(url || '') && url.length <= 300;
-  const isMeet = (url) => /^https:\/\/(meet\.google\.com|([a-z0-9-]+\.)*zoom\.us|teams\.microsoft\.com|teams\.live\.com)\/[^\s<>"]+$/i.test(url || '') && url.length <= 300;
-  const meetApp = (url) => (/zoom\.us/i.test(url) ? 'Zoom' : /teams\./i.test(url) ? 'Microsoft Teams' : 'Google Meet');
+  const isMeet = (url) => /^https:\/\/(meet\.jit\.si|meet\.google\.com|([a-z0-9-]+\.)*zoom\.us|teams\.microsoft\.com|teams\.live\.com)\/[^\s<>"]+$/i.test(url || '') && url.length <= 300;
+  const meetApp = (url) => (/zoom\.us/i.test(url) ? 'Zoom' : /teams\./i.test(url) ? 'Microsoft Teams' : /jit\.si/i.test(url) ? 'Jitsi Meet' : 'Google Meet');
   // رابط قناة المعلم: نقبل «@الاسم» أو رابط القناة بأي صيغة، ونرفض روابط الفيديو
   function channelUrl(raw) {
     let v = String(raw || '').trim().replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '');
@@ -1091,7 +1092,7 @@
           <li>أول ${n} دروس للمتطوع الجديد تراجعها الإدارة قبل ظهورها للطلاب، ثم تُنشر دروسك مباشرة.</li>
         </ol>
         <h2>كيف تشرح؟</h2>
-        <p><b>حصة مباشرة:</b> تحدد اليوم والساعة وتضع رابط حصة Google Meet، فيحضرها الطلاب من المنصة في موعدها. وبعدها ترسل تسجيلها فننشره على قناة «مدرار العلم» في يوتيوب باسمك لمن فاته الحضور.</p>
+        <p><b>حصة مباشرة:</b> تحدد اليوم والساعة وتحدد الموعد، والمنصة تنشئ رابط الحصة، فيحضرها الطلاب من المنصة في موعدها. وبعدها ترسل تسجيلها فننشره على قناة «مدرار العلم» في يوتيوب باسمك لمن فاته الحضور.</p>
         <p><b>أو درس مسجّل:</b> في استوديو المنصة تسجّل شاشتك وصوتك فقط بلا برامج، أو تصوّر بجوالك، ثم تضغط «أرسل الدرس». لا تحتاج قناة يوتيوب في الحالتين. <a href="#/guide">دليل المعلم خطوة بخطوة</a>.</p>
         <h2>ماذا تجد في المنصة؟</h2>
         <ul>
@@ -1115,7 +1116,7 @@
         <p>يختار صفّه، فيحضر الحصص المباشرة في مواعيدها، ويشاهد الدروس المسجّلة مرتبة كما في كتابه المدرسي. وفي قسم المهارات دورات مثل الذكاء الاصطناعي والتصميم والبرمجة.</p>
         <h2>الأمان</h2>
         <ul>
-          <li><b>لا تواصل خاص:</b> لا دردشة ولا رسائل داخل المنصة. الحصة المباشرة تُعقد في Google Meet، ويدخلها الطالب باسمه الأول فقط، ورابطها لا يظهر إلا قبل الحصة بربع ساعة.</li>
+          <li><b>لا تواصل خاص:</b> لا دردشة ولا رسائل داخل المنصة. الحصة المباشرة تُعقد في Jitsi Meet برابط تنشئه المنصة، ويدخلها الطالب باسمه الأول فقط، ورابطها لا يظهر إلا قبل الحصة بربع ساعة.</li>
           <li><b>تسجيل الحصة</b> فيه الشرح والأصوات فقط: الكاميرا مغلقة، ولا تظهر صور الطلاب.</li>
           <li><b>المتطوعون تحت المراجعة:</b> كل متطوع جديد تراجع الإدارة حسابه، وأول ${fNum(C.TRUST_AFTER || 3)} دروس له قبل ظهورها، وشارة «موثّق ✓» لمن تحقّقت منه الإدارة.</li>
           <li><b>الإبلاغ:</b> تحت كل درس زر «الإبلاغ عن مشكلة»، والإدارة تُخفي أي درس مخالف وتوقف صاحبه.</li>
@@ -1188,9 +1189,9 @@
     if (j && j.url) {
       const app2 = meetApp(j.url);
       if (mine) return `${head}<button type="button" class="btn btn-live btn-lg" data-start-class>ابدأ الحصة</button>
-        <span class="small">تُسجَّل الحصة تلقائياً، ثم تفتح ${esc(app2)} بضغطة.</span>`;
-      return `${head}<a class="btn btn-live btn-lg" href="${esc(j.url)}" target="_blank" rel="noopener">ادخل الحصة عبر ${esc(app2)}</a>
-        <span class="small">ادخل باسمك الأول، والكاميرا مغلقة.</span>`;
+        <span class="small">تُسجَّل الحصة، ثم تفتحها بضغطة.</span>`;
+      return `${head}<a class="btn btn-live btn-lg" href="${esc(j.url)}" target="_blank" rel="noopener">ادخل الحصة</a>
+        <span class="small">اكتب اسمك الأول، وأبقِ الكاميرا مغلقة.</span>`;
     }
     if (j && j.has) return `${head}<span>يظهر زر الدخول هنا قبل الحصة بربع ساعة.</span>`;
     return `${head}<span>لم يضع المعلم رابط الحصة بعد. ستتحدّث هذه الصفحة تلقائياً عند إضافته.</span>`;
@@ -2758,6 +2759,10 @@
     const upPending = editing && !!src.upload_state;
     const published = editing && rec0 && !needVideo && +new Date(src.starts_at) <= Date.now();
 
+    // رابط الفيديو للدرس، أو رابط آخر للحصة (وإلا تنشئ المنصة رابط Jitsi)
+    const linkBox = `<div class="field" id="sf-link-box"${(srcPick && srcMode !== 'link') || upPending ? ' hidden' : ''}><label for="sf-url" id="lbl-url">رابط البث على يوتيوب</label>
+          <input class="input" id="sf-url" type="url" inputmode="url" maxlength="300" value="${esc(kind === 'live' ? (link0 && !/jit\.si/i.test(link0) ? link0 : '') || (mode === 'copy' ? '' : src.video_url || '') : (src.video_url || ''))}" placeholder="${kind === 'live' ? 'https://meet.google.com/...' : 'https://youtu.be/...'}">
+          <span class="hint" id="hint-url"></span></div>`;
     view.innerHTML = `
       <header class="page-head"><nav class="crumbs"><a href="#/dashboard">لوحتي</a><span>›</span><span>${editing ? 'تعديل' : mode === 'copy' ? 'نسخ حصة' : mode === 'live' ? 'حصة مباشرة' : 'درس جديد'}</span></nav>
         <h1>${editing ? 'تعديل ' + noun : mode === 'copy' ? 'نسخ الحصة إلى موعد جديد' : mode === 'live' ? 'حصة مباشرة جديدة' : 'درس جديد'}</h1>
@@ -2794,10 +2799,9 @@
             : `<div class="field"><label for="sf-file">ملف الفيديو</label><input class="input" id="sf-file" type="file" accept="video/*">
               <span class="hint" id="sf-file-info">حتى 500 ميغابايت</span></div>`}
           ${consentHtml('sf-consent')}</div>` : ''}
-        <div class="field" id="sf-link-box"${(srcPick && srcMode !== 'link') || upPending ? ' hidden' : ''}><label for="sf-url" id="lbl-url">رابط البث على يوتيوب</label>
-          <input class="input" id="sf-url" type="url" inputmode="url" maxlength="300" value="${esc(kind === 'live' ? link0 || (mode === 'copy' ? '' : src.video_url || '') : (src.video_url || ''))}" placeholder="${kind === 'live' ? 'https://meet.google.com/...' : 'https://youtu.be/...'}">
-          <span class="hint" id="hint-url"></span></div>
+        ${rec0 ? linkBox : ''}
         <details class="more extra"${editing ? ' open' : ''}><summary>خيارات إضافية</summary>
+        ${rec0 ? '' : linkBox}
         ${rec0 ? placeHtml() : ''}
         <div class="field"><label for="sf-desc">وصف ${noun}</label>
           <textarea class="input" id="sf-desc" maxlength="1500" rows="2" placeholder="ماذا سيتعلم الطالب؟">${esc(src.description || '')}</textarea></div>
@@ -2830,8 +2834,8 @@
     function applyKind() {
       const rec = kindNow() === 'recorded';
       if (!rec) { $('#lbl-date').textContent = 'التاريخ'; $('#lbl-time').textContent = 'وقت البدء'; $('#lbl-dur').textContent = 'المدة'; }
-      $('#lbl-url').textContent = rec ? 'رابط الفيديو على يوتيوب' : 'رابط حصة Google Meet';
-      $('#hint-url').innerHTML = rec ? '' : 'من meet.google.com ← «اجتماع جديد». يراه الطلاب وقت الحصة فقط.';
+      $('#lbl-url').textContent = rec ? 'رابط الفيديو على يوتيوب' : 'رابط آخر للحصة (اختياري)';
+      $('#hint-url').innerHTML = rec ? '' : 'تنشئ المنصة رابط الحصة تلقائياً. ضع هنا رابط Google Meet أو Zoom فقط إن أردت استخدامه بدلاً منه.';
       const rf = $('#rep-field'); if (rf) rf.hidden = rec;
       peers();
     }
@@ -2970,7 +2974,10 @@
       try {
         if (editing) {
           await API.updateSession(id, base);
-          if (k === 'live' && meet !== link0) await saveLink(id, meet);
+          if (k === 'live' && !base.video_url) {
+            const want = meet || (link0 && /jit\.si/i.test(link0) ? link0 : newRoom());
+            if (want !== link0) await saveLink(id, want);
+          }
           toast('حُفظت التعديلات');
           location.hash = '#/dashboard';
         } else {
@@ -2980,7 +2987,7 @@
             video_url: i === 0 ? base.video_url : null,
           }));
           const made = await API.createSessions(rows);
-          if (meet) for (const m of made || []) await saveLink(m.id, meet);
+          if (k === 'live' && !base.video_url) for (const m of made || []) await saveLink(m.id, meet || newRoom());
           if (base.request_id && req) store.del('st-req');
           // التسجيل نُشر: لا حاجة لنسخته في المتصفح، ولا لتنبيه «تسجيل لم يُنشر»
           if (pre && pre._rec && ST) { if (pre._rec.saved) ST.remove(pre._rec.id).catch(() => {}); else ST.discard(); }
@@ -3006,7 +3013,7 @@
         <figcaption>رواه مسلم</figcaption>
       </figure>
       <ol class="steps3 teach-steps">
-        <li><b>حدّد موعد حصتك</b><span class="muted">على Google Meet.</span></li>
+        <li><b>حدّد موعد حصتك</b><span class="muted">والمنصة تنشئ الرابط.</span></li>
         <li><b>اشرح لطلابك مباشرة</b><span class="muted">يدخلون من المنصة.</span></li>
         <li><b>أرسل التسجيل</b><span class="muted">ننشره باسمك على قناة المنصة.</span></li>
       </ol>
@@ -3093,7 +3100,7 @@
     { k: ['مجاني', 'مجانا', 'رسوم', 'فلوس', 'سعر', 'اشتراك', 'كم', 'بفلوس', 'مدفوع'], q: 'هل المنصة مجانية؟',
       a: 'نعم، مجانية بالكامل للطلاب والمعلمين، بلا اشتراك وبلا إعلانات.' },
     { k: ['تطوع', 'اتطوع', 'متطوع', 'انضم', 'انضمام', 'اشارك', 'مشاركه', 'اسجل كمعلم', 'معلم جديد', 'ابي اشرح', 'ابغى اشرح', 'اشرح'], q: 'كيف أتطوع بالشرح؟',
-      a: 'ادخل بحساب Google، ثم من «لوحتي» اضغط «حصة مباشرة جديدة»، واكتب الموعد ورابط حصة Google Meet. وبعد الحصة ارفع تسجيلها فننشره باسمك. أو املأ نموذج «تطوّع بالشرح» فنتواصل معك عبر واتساب.', l: [['#/teach', 'تطوّع بالشرح'], ['#/volunteer', 'تفاصيل التطوع']] },
+      a: 'ادخل بحساب Google، ثم من «لوحتي» اضغط «حصة مباشرة جديدة»، واكتب الموعد، والمنصة تنشئ رابط الحصة. وبعد الحصة ارفع تسجيلها فننشره باسمك. أو املأ نموذج «تطوّع بالشرح» فنتواصل معك عبر واتساب.', l: [['#/teach', 'تطوّع بالشرح'], ['#/volunteer', 'تفاصيل التطوع']] },
     { k: ['اسجل الدرس', 'تسجيل', 'اصور', 'تصوير', 'استوديو', 'سجل الشاشه', 'برنامج', 'كاميرا', 'مايك', 'صوت'], q: 'كيف أسجّل درسي؟',
       a: 'من «استوديو المنصة» تسجّل شاشتك وصوتك من المتصفح بلا برامج وبلا كاميرا، أو صوّر بجوالك. الصوت الواضح أهم من الصورة.', l: [['#/studio', 'استوديو المنصة'], ['#/guide', 'دليل المعلم']] },
     { k: ['يوتيوب', 'قناه', 'قناتي', 'ارفع', 'رفع', 'احتاج قناه', 'ما عندي قناه', 'غير مدرج'], q: 'هل أحتاج قناة على يوتيوب؟',
@@ -3127,13 +3134,13 @@
   ];
   FAQ.push(
     { k: ['اسجل حصتي', 'تسجيل الحصه', 'سجل الحصه', 'اسجل الحصه', 'ابدا الحصه', 'ابدأ الحصه'], q: 'كيف أسجّل حصتي المباشرة؟',
-      a: 'في «لوحتي» اضغط «ابدأ الحصة»: يبدأ التسجيل، ثم افتح Meet واشرح. بعد الحصة اضغط «إنهاء الحصة» ثم «أرسل التسجيل».', l: [['#/dashboard', 'لوحتي']] },
+      a: 'في «لوحتي» اضغط «ابدأ الحصة»: يبدأ التسجيل، ثم افتح الحصة وادخل بحساب Google واشرح. بعد الحصة اضغط «إنهاء الحصة» ثم «أرسل التسجيل».', l: [['#/dashboard', 'لوحتي']] },
     { k: ['ادوات المنصه', 'استخدم الادوات', 'كيف استخدم', 'المحاكاه', 'المختبر'], q: 'كيف أستخدم أدوات المنصة؟',
-      a: 'من «الأدوات» في أعلى الصفحة. الطالب يفتح الأداة ويجرّب بنفسه، والمعلم يفتحها أثناء حصته ويشارك شاشته في Google Meet.', l: [['#/tools', 'الأدوات']] },
+      a: 'من «الأدوات» في أعلى الصفحة. الطالب يفتح الأداة ويجرّب بنفسه، والمعلم يفتحها أثناء حصته ويشارك شاشته في الحصة.', l: [['#/tools', 'الأدوات']] },
     { k: ['حصه مباشره', 'مباشره', 'مباشر', 'meet', 'ميت', 'جوجل ميت', 'zoom', 'زوم', 'teams', 'تيمز', 'رابط الحصه', 'اونلاين', 'بث مباشر'], q: 'كيف أقدّم حصة مباشرة؟',
-      a: 'من «لوحتي» اضغط «حصة مباشرة جديدة»، واختر الصف والمادة والعنوان واليوم والساعة، والصق رابط حصة Google Meet. تظهر في جدول الصف، ورابطها يراه الطلاب وقت الحصة فقط. وفي الموعد اضغط «ابدأ الحصة».', l: [['#/dashboard/live', 'حصة مباشرة جديدة'], ['#/guide', 'دليل المعلم']] },
+      a: 'من «لوحتي» اضغط «حصة مباشرة جديدة»، واختر الصف والمادة والعنوان واليوم والساعة، والمنصة تنشئ رابط الحصة. تظهر في جدول الصف، ورابطها يراه الطلاب وقت الحصة فقط. وفي الموعد اضغط «ابدأ الحصة».', l: [['#/dashboard/live', 'حصة مباشرة جديدة'], ['#/guide', 'دليل المعلم']] },
     { k: ['ادخل الحصه', 'دخول الحصه', 'رابط الدخول', 'احضر', 'حضور', 'كيف ادخل', 'وين الرابط'], q: 'كيف أدخل الحصة المباشرة؟',
-      a: 'افتح الحصة من جدول صفك أو «مباشر الآن». قبل موعدها بربع ساعة يظهر زر «ادخل الحصة»، فتُفتح في Google Meet. ادخل باسمك الأول فقط. وإن فاتتك فشاهد تسجيلها في الصفحة نفسها بعد نشره.', l: [['#/', 'الدروس']] },
+      a: 'افتح الحصة من جدول صفك أو «مباشر الآن». قبل موعدها بربع ساعة يظهر زر «ادخل الحصة»، فتُفتح الحصة. ادخل باسمك الأول فقط. وإن فاتتك فشاهد تسجيلها في الصفحة نفسها بعد نشره.', l: [['#/', 'الدروس']] },
     { k: ['موعد', 'احدد', 'وقت الدرس', 'جدوله', 'اجدول', 'عرض اول'], q: 'كيف أحدد موعداً يشاهد فيه الطلاب الدرس؟',
       a: 'عند الإرسال اختر «في موعد أحدده» واكتب اليوم والساعة. يظهر الدرس للطلاب في «الدروس القادمة» مع عدّ تنازلي وتذكير في التقويم، ويُعرض في موعده ليشاهدوه معاً. وفي «لوحتي» زر «شارك الموعد» لإرساله لطلابك عبر واتساب.', l: [['#/dashboard', 'لوحتي']] },
     { k: ['الدروس القادمه', 'متى الدرس', 'موعد الدرس', 'تذكير', 'ذكرني', 'التقويم', 'يعرض الان'], q: 'كيف أعرف موعد الدرس القادم؟',
@@ -3693,8 +3700,8 @@
           <div class="meter" aria-hidden="true"><span id="st-lvl"></span></div>
           <div class="note warn" id="st-silent" hidden><b>لم نسمع صوتاً منذ قليل.</b><span>إن كنت تتكلم، تأكد أن المايكروفون موصول وغير مكتوم.</span></div>
           ${ST.sysLost ? '<div class="note warn"><span>تعذّر تسجيل صوت الحاسوب، وصوتك يُسجَّل بشكل طبيعي.</span></div>' : ''}
-          ${liveRec ? `<a class="btn btn-live btn-lg" href="${esc(liveRec.link)}" target="_blank" rel="noopener">افتح حصة ${esc(meetApp(liveRec.link))}</a>
-          <p>اشرح في الحصة. وبعد انتهائها ارجع إلى هذه الصفحة واضغط «إنهاء الحصة».</p>`
+          ${liveRec ? `<a class="btn btn-live btn-lg" href="${esc(liveRec.link)}" target="_blank" rel="noopener">افتح الحصة</a>
+          <p>${/jit\.si/i.test(liveRec.link) ? 'في صفحة الحصة اضغط «تسجيل الدخول» وادخل بحساب Google، ثم اشرح. ' : 'اشرح في الحصة. '}وبعد انتهائها ارجع إلى هذه الصفحة واضغط «إنهاء الحصة».</p>`
           : `<p>${paused ? 'اضغط «استئناف» لتكمل من حيث توقفت.' : 'انتقل الآن إلى العرض أو الملف واشرح براحتك. عند الانتهاء ارجع إلى هذه الصفحة واضغط «إنهاء التسجيل»، أو اضغط «إيقاف المشاركة» في شريط المتصفح.'}</p>`}
           <div class="row">
             <button type="button" class="btn btn-lg" id="st-pause">${paused ? 'استئناف' : 'إيقاف مؤقت'}</button>
@@ -4010,7 +4017,7 @@
     setNav(''); setTitle('دليل المعلم');
     view.innerHTML = `
       <header class="page-head"><h1>دليل المعلم: حصتك المباشرة ودروسك</h1>
-        <p class="muted">الطريق الأساسي: تحدد موعد حصة مباشرة على Google Meet، فيحضرها الطلاب من المنصة، ثم ترسل تسجيلها فننشره على قناة «مدرار العلم» في يوتيوب باسمك لمن فاته الحضور. ويمكنك أيضاً تسجيل درس في استوديو المنصة. بلا قناة يوتيوب، وبلا أي تكلفة.</p></header>
+        <p class="muted">الطريق الأساسي: تحدد موعد حصة مباشرة، والمنصة تنشئ رابطها، فيحضرها الطلاب من المنصة، ثم ترسل تسجيلها فننشره على قناة «مدرار العلم» في يوتيوب باسمك لمن فاته الحضور. ويمكنك أيضاً تسجيل درس في استوديو المنصة. بلا قناة يوتيوب، وبلا أي تكلفة.</p></header>
       <article class="prose">
         <h2>أولاً: قبل أول درس (مرة واحدة)</h2>
         <ol>
@@ -4020,8 +4027,8 @@
         </ol>
         <h2>ثانياً: الحصة المباشرة</h2>
         <ol>
-          <li>من <a href="#/dashboard">لوحتي</a> اضغط <b>حصة مباشرة جديدة</b>: الصف، والمادة، والعنوان، والموعد، ورابط الحصة من <a href="https://meet.google.com" target="_blank" rel="noopener">Google Meet</a> («اجتماع جديد» ثم «إنشاء اجتماع لاحقاً»).</li>
-          <li>في الموعد اضغط <b>ابدأ الحصة</b> من الكمبيوتر، واختر «الشاشة بالكامل» وفعّل «مشاركة الصوت»، ثم <b>افتح حصة Google Meet</b> واشرح. تُسجَّل شاشتك وصوتك وأصوات الطلاب.</li>
+          <li>من <a href="#/dashboard">لوحتي</a> اضغط <b>حصة مباشرة جديدة</b>: الصف، والمادة، والعنوان، والموعد. والمنصة تنشئ رابط الحصة.</li>
+          <li>في الموعد اضغط <b>ابدأ الحصة</b> من الكمبيوتر، واختر «الشاشة بالكامل» وفعّل «مشاركة الصوت»، ثم <b>افتح الحصة</b>، واضغط فيها «تسجيل الدخول» بحساب Google، واشرح. فيها مشاركة الشاشة والسبورة.</li>
           <li>بعد الحصة اضغط <b>إنهاء الحصة</b> ثم <b>أرسل التسجيل</b>، فننشره على قناة «مدرار العلم» باسمك.</li>
         </ol>
         <div class="note warn"><b>خصوصية الطلاب</b><span>اطلب من الطلاب إغلاق الكاميرا، واعرض شرحك بملء الشاشة حتى لا تظهر صورهم أو أسماؤهم في التسجيل. ولا تطلب أرقام هواتفهم أو حساباتهم.</span></div>

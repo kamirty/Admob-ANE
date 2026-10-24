@@ -1529,7 +1529,7 @@ exception when insufficient_privilege then
 end $do$;
 
 -- =====================================================================
---  13) الحصة المباشرة برابط Google Meet أو Zoom أو Microsoft Teams
+--  13) الحصة المباشرة: رابط Jitsi Meet تنشئه المنصة (أو رابط Google Meet أو Zoom أو Teams)
 --      الرابط في جدول منفصل يراه المعلم والمشرف فقط، ويصل إليه الطالب عبر
 --      join_link قبل الحصة بربع ساعة وحتى نهايتها (فلا ينتشر الرابط مسبقاً).
 --      وبعد الحصة يرسل المعلم تسجيلها (القسم 12) فتنشره الإدارة على قناة المنصة.
@@ -1537,9 +1537,13 @@ end $do$;
 create table if not exists public.session_links (
   session_id uuid primary key references public.sessions (id) on delete cascade,
   url        text not null check (char_length(url) <= 300
-               and url ~* '^https://(meet\.google\.com|([a-z0-9-]+\.)*zoom\.us|teams\.microsoft\.com|teams\.live\.com)/[^[:space:]<>"]+$'),
+               and url ~* '^https://(meet\.jit\.si|meet\.google\.com|([a-z0-9-]+\.)*zoom\.us|teams\.microsoft\.com|teams\.live\.com)/[^[:space:]<>"]+$'),
   updated_at timestamptz not null default now()
 );
+-- روابط Jitsi Meet تنشئها المنصة تلقائياً (للجداول المنشأة قبل إضافتها)
+alter table public.session_links drop constraint if exists session_links_url_check;
+alter table public.session_links add constraint session_links_url_check check (char_length(url) <= 300
+  and url ~* '^https://(meet\.jit\.si|meet\.google\.com|([a-z0-9-]+\.)*zoom\.us|teams\.microsoft\.com|teams\.live\.com)/[^[:space:]<>"]+$');
 alter table public.session_links enable row level security;
 revoke all on public.session_links from anon, authenticated;
 grant select, insert, update, delete on public.session_links to authenticated;

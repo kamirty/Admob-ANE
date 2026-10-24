@@ -43,7 +43,7 @@
     return { upload_state: r.upload_state, upload_parts: r.upload_parts, upload_bytes: r.upload_bytes, upload_ext: r.upload_ext };
   }
   // رابط الحصة المباشرة: Zoom، وتبقى روابط Meet وTeams القديمة مقبولة (يطابق قيد قاعدة البيانات)
-  const meetUrlOk = (u) => /^https:\/\/(meet\.google\.com|([a-z0-9-]+\.)*zoom\.us|teams\.microsoft\.com|teams\.live\.com)\/[^\s<>"]+$/i.test(u || '') && u.length <= 300;
+  const meetUrlOk = (u) => /^https:\/\/(meet\.jit\.si|meet\.google\.com|([a-z0-9-]+\.)*zoom\.us|teams\.microsoft\.com|teams\.live\.com)\/[^\s<>"]+$/i.test(u || '') && u.length <= 300;
   const BAD_MEET = 'الصق رابط حصة Google Meet، مثل https://meet.google.com/...';
   // أول دقيقة يظهر فيها رابط الدخول للطالب (يطابق join_link)
   const JOIN_EARLY = (C.JOIN_EARLY_MIN || 15) * 60000;
@@ -792,18 +792,18 @@
         { term: 1, unit: 1, unit_title: 'الحركة', created_at: iso(Date.now() - 2 * 864e5) });
       add('t-new', 'g10', 'arabic', 'الإملاء: الهمزة المتوسطة', at(2, 18), 24,
         { video_url: null, review: 'pending', created_at: iso(Date.now() - 3 * 3600e3), upload_state: 'waiting', upload_parts: 4, upload_bytes: 38273024, upload_ext: 'webm' });
-      // حصص مباشرة برابط Google Meet: الآن، وبعد قليل، وخلال الأسبوع، وحصة انتهت وتسجيلها منشور
+      // حصص مباشرة برابط Jitsi Meet تنشئه المنصة: الآن، وبعد قليل، وخلال الأسبوع، وحصة انتهت وتسجيلها منشور
       const links = {};
       const live = (t, grade, subject, title, start, mins, url, extra) => {
         add(t, grade, subject, title, start, mins, Object.assign({ kind: 'live', video_url: null,
           description: 'حصة مباشرة: احضر في موعدها واسأل المعلم مباشرة. جهّز دفترك وقلمك.' }, extra || {}));
         if (url) links[sessions[sessions.length - 1].id] = url;
       };
-      live('t-mustafa', 'g10', 'arabic', 'حصة مباشرة: إعراب الجملة الفعلية', new Date(now.getTime() - 10 * 60000), 50, 'https://meet.google.com/abc-defg-hij');
+      live('t-mustafa', 'g10', 'arabic', 'حصة مباشرة: إعراب الجملة الفعلية', new Date(now.getTime() - 10 * 60000), 50, 'https://meet.jit.si/MidrarElm-Demo1Arabic10');
       live('t-noor', 'g12', 'english', 'Live class: Speaking exam practice', new Date(now.getTime() + 10 * 60000), 45, 'https://us05web.zoom.us/j/1234567890');
-      live('t-ali', 'g10', 'math', 'حصة مباشرة: حل أسئلة المعادلات التربيعية', at(1, 19), 60, 'https://meet.google.com/mth-clas-s01');
-      live('t-zainab', 'g12', 'physics', 'حصة مباشرة: مراجعة المجال الكهربائي', at(3, 18), 60, 'https://meet.google.com/xyz-abcd-efg');
-      live('t-haider', 'g12', 'biology', 'حصة مباشرة: مراجعة الوراثة', at(-1, 19), 60, 'https://meet.google.com/bio-revi-ew1', { recording_url: 'https://youtu.be/demo-video' });
+      live('t-ali', 'g10', 'math', 'حصة مباشرة: حل أسئلة المعادلات التربيعية', at(1, 19), 60, 'https://meet.jit.si/MidrarElm-Demo3Math10');
+      live('t-zainab', 'g12', 'physics', 'حصة مباشرة: مراجعة المجال الكهربائي', at(3, 18), 60, 'https://meet.jit.si/MidrarElm-Demo4Physics12');
+      live('t-haider', 'g12', 'biology', 'حصة مباشرة: مراجعة الوراثة', at(-1, 19), 60, 'https://meet.jit.si/MidrarElm-Demo5Bio12', { recording_url: 'https://youtu.be/demo-video' });
       // إزالة الحجوزات المزدوجة لنفس المعلم
       const kept = [];
       sessions.sort((a, b) => a.starts_at.localeCompare(b.starts_at)).forEach((s) => {
