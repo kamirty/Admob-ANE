@@ -172,7 +172,7 @@
     return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
   }
   const isYouTube = (url) => /^https:\/\/(www\.|m\.|music\.)?(youtube\.com|youtu\.be)\/\S+$/i.test(url || '');
-  // رابط الحصة المباشرة: Zoom (الروابط القديمة من Meet وTeams تبقى تعمل)
+  // رابط الحصة المباشرة: Google Meet (وتُقبل روابط Zoom وTeams)
   const isZoom = (url) => /^https:\/\/([a-z0-9-]+\.)*zoom\.us\/[^\s<>"]+$/i.test(url || '') && url.length <= 300;
   const isMeet = (url) => /^https:\/\/(meet\.google\.com|([a-z0-9-]+\.)*zoom\.us|teams\.microsoft\.com|teams\.live\.com)\/[^\s<>"]+$/i.test(url || '') && url.length <= 300;
   const meetApp = (url) => (/zoom\.us/i.test(url) ? 'Zoom' : /teams\./i.test(url) ? 'Microsoft Teams' : 'Google Meet');
@@ -1091,7 +1091,7 @@
           <li>أول ${n} دروس للمتطوع الجديد تراجعها الإدارة قبل ظهورها للطلاب، ثم تُنشر دروسك مباشرة.</li>
         </ol>
         <h2>كيف تشرح؟</h2>
-        <p><b>حصة مباشرة:</b> تحدد اليوم والساعة وتضع رابط حصة Zoom، فيحضرها الطلاب من المنصة في موعدها. وبعدها ترسل تسجيلها فننشره على قناة «مدرار العلم» في يوتيوب باسمك لمن فاته الحضور.</p>
+        <p><b>حصة مباشرة:</b> تحدد اليوم والساعة وتضع رابط حصة Google Meet، فيحضرها الطلاب من المنصة في موعدها. وبعدها ترسل تسجيلها فننشره على قناة «مدرار العلم» في يوتيوب باسمك لمن فاته الحضور.</p>
         <p><b>أو درس مسجّل:</b> في استوديو المنصة تسجّل شاشتك وصوتك فقط بلا برامج، أو تصوّر بجوالك، ثم تضغط «أرسل الدرس». لا تحتاج قناة يوتيوب في الحالتين. <a href="#/guide">دليل المعلم خطوة بخطوة</a>.</p>
         <h2>ماذا تجد في المنصة؟</h2>
         <ul>
@@ -1115,8 +1115,8 @@
         <p>يختار صفّه، فيحضر الحصص المباشرة في مواعيدها، ويشاهد الدروس المسجّلة مرتبة كما في كتابه المدرسي. وفي قسم المهارات دورات مثل الذكاء الاصطناعي والتصميم والبرمجة.</p>
         <h2>الأمان</h2>
         <ul>
-          <li><b>لا تواصل خاص:</b> لا دردشة ولا رسائل داخل المنصة. الحصة المباشرة تُعقد في Zoom، ويدخلها الطالب باسمه الأول فقط، ورابطها لا يظهر إلا قبل الحصة بربع ساعة.</li>
-          <li><b>تسجيل الحصة</b> يُنشر لشرح المعلم فقط، دون أسماء الطلاب أو صورهم أو أصواتهم.</li>
+          <li><b>لا تواصل خاص:</b> لا دردشة ولا رسائل داخل المنصة. الحصة المباشرة تُعقد في Google Meet، ويدخلها الطالب باسمه الأول فقط، ورابطها لا يظهر إلا قبل الحصة بربع ساعة.</li>
+          <li><b>تسجيل الحصة</b> فيه الشرح والأصوات فقط: الكاميرا مغلقة، ولا تظهر صور الطلاب.</li>
           <li><b>المتطوعون تحت المراجعة:</b> كل متطوع جديد تراجع الإدارة حسابه، وأول ${fNum(C.TRUST_AFTER || 3)} دروس له قبل ظهورها، وشارة «موثّق ✓» لمن تحقّقت منه الإدارة.</li>
           <li><b>الإبلاغ:</b> تحت كل درس زر «الإبلاغ عن مشكلة»، والإدارة تُخفي أي درس مخالف وتوقف صاحبه.</li>
           <li><b>بلا إعلانات</b> ولا دورات مدفوعة، وهذا شرط في ميثاق المتطوعين.</li>
@@ -1155,7 +1155,7 @@
         return `<div class="ph"><b>الفيديو في طريقه</b><span>${s.upload_state ? 'أرسله المعلم للمنصة، وتنشره الإدارة على قناة مدرار العلم قريباً.' : 'سيُضاف الفيديو قريباً.'} ستتحدّث هذه الصفحة تلقائياً.</span></div>`;
       }
       if (!url) {
-        // حصة Zoom: زر الدخول يُملأ بعد جلب الرابط (joinHtml)
+        // حصة Meet: زر الدخول يُملأ بعد جلب الرابط (joinHtml)
         return `<div class="ph ph-join" data-join><b>${st.key === 'live' ? 'الحصة بدأت الآن' : 'الحصة تبدأ ' + esc(rel(new Date(s.starts_at) - Date.now()))}</b><span>جارٍ تجهيز رابط الدخول…</span></div>`;
       }
       if (isDemoVideo(url)) {
@@ -1181,16 +1181,16 @@
     return '<div class="ph"><b>انتهت الحصة</b><span>لم يُضف تسجيل لها بعد.</span></div>';
   }
 
-  // زر الدخول لحصة Zoom (j من API.joinLink)
+  // زر الدخول لحصة Meet (j من API.joinLink)
   function joinHtml(s, j, mine) {
     const live = stateOf(s).key === 'live';
     const head = `<b>${live ? 'الحصة بدأت الآن' : 'الحصة تبدأ ' + esc(rel(new Date(s.starts_at) - Date.now()))}</b>`;
     if (j && j.url) {
       const app2 = meetApp(j.url);
-      if (mine) return `${head}<a class="btn btn-live btn-lg" href="${esc(j.url)}" target="_blank" rel="noopener">ادخل الحصة عبر ${esc(app2)}</a>
-        <span class="small">سجّل الحصة من زر التسجيل في ${esc(app2)} لترفعها بعدها.</span>`;
+      if (mine) return `${head}<button type="button" class="btn btn-live btn-lg" data-start-class>ابدأ الحصة</button>
+        <span class="small">تُسجَّل الحصة تلقائياً، ثم تفتح ${esc(app2)} بضغطة.</span>`;
       return `${head}<a class="btn btn-live btn-lg" href="${esc(j.url)}" target="_blank" rel="noopener">ادخل الحصة عبر ${esc(app2)}</a>
-        <span class="small">ادخل باسمك الأول فقط.</span>`;
+        <span class="small">ادخل باسمك الأول، والكاميرا مغلقة.</span>`;
     }
     if (j && j.has) return `${head}<span>يظهر زر الدخول هنا قبل الحصة بربع ساعة.</span>`;
     return `${head}<span>لم يضع المعلم رابط الحصة بعد. ستتحدّث هذه الصفحة تلقائياً عند إضافته.</span>`;
@@ -1480,7 +1480,7 @@
     }
     bindFacade();
     drawWatchRow();
-    // حصة Zoom: زر الدخول (يظهر الرابط قبل الحصة بربع ساعة)
+    // حصة Meet: زر الدخول (يظهر الرابط قبل الحصة بربع ساعة)
     let joinAt = 0; let joinUrl = null;
     async function fillJoin() {
       const box = $('#player [data-join]');
@@ -1490,7 +1490,9 @@
         const j = await API.joinLink(s.id);
         if (tok !== app.token || !box.isConnected) return;
         joinUrl = j && j.url;
-        box.innerHTML = joinHtml(s, j, !!(mine || admin));
+        box.innerHTML = joinHtml(s, j, !!mine);
+        const sb = $('[data-start-class]', box);
+        if (sb) sb.addEventListener('click', () => startClass(s, j.url, sb));
       } catch (e) { const sp = box.isConnected && $('span', box); if (sp) sp.textContent = 'تعذّر جلب رابط الدخول. حدّث الصفحة.'; }
     }
     fillJoin();
@@ -2339,7 +2341,7 @@
     try { list = await API.mySessions(); }
     catch (e) { if (tok === app.token) { view.innerHTML = errorBox(e, true); $('[data-retry]').addEventListener('click', route); } return; }
     if (tok !== app.token) return;
-    // روابط Zoom للحصص المباشرة
+    // روابط Meet للحصص المباشرة
     let links = {};
     const liveIds = list.filter((s) => s.kind === 'live').map((s) => s.id);
     if (liveIds.length) { try { links = await API.myLinks(liveIds); } catch (e) { /* تبقى بلا روابط */ } if (tok !== app.token) return; }
@@ -2369,7 +2371,7 @@
           ${s.review === 'rejected' ? `<span class="small reject-note">${s.review_note ? 'السبب: ' + esc(s.review_note) + ' — ' : ''}${s.kind === 'recorded' && !hasLink && !s.upload_state ? 'أرسل الفيديو من جديد بعد تصحيحه، فيعود إلى المراجعة.' : 'عدّل الدرس فيعود إلى المراجعة.'}</span>` : ''}</div>
         <div class="tools">
           ${s.upload_state === 'uploading' ? `<a class="btn btn-sm btn-primary" href="#/dashboard/resume/${esc(s.id)}">أكمل الإرسال</a>` : ''}
-          ${startsSoon ? `<a class="btn btn-sm btn-live" href="${esc(links[s.id])}" target="_blank" rel="noopener">ادخل الحصة</a>` : ''}
+          ${startsSoon ? `<button type="button" class="btn btn-sm btn-live" data-start="${esc(s.id)}">ابدأ الحصة</button>` : ''}
           ${needRec(s) && isDone(s) ? `<a class="btn btn-sm btn-primary" href="#/dashboard/rec/${esc(s.id)}">ارفع التسجيل</a>` : ''}
           <a class="btn btn-sm" href="#/dashboard/edit/${esc(s.id)}">${!s.upload_state && s.kind === 'recorded' && !hasLink && s.status === 'scheduled' ? 'أضف الفيديو' : !s.upload_state && !hasLink && s.status === 'scheduled' && st.key !== 'ended' ? 'أضف الرابط' : 'تعديل'}</a>
           <details class="row-more"><summary class="btn btn-sm btn-ghost">المزيد</summary><div class="menu">
@@ -2395,7 +2397,7 @@
       ${p.status === 'suspended' ? '<div class="note bad"><b>حسابك موقوف.</b><span>تواصل مع إدارة المنصة.</span></div>' : ''}
       ${fl && fl.kind === 'sent' && fl.rec ? `<div class="note ok-note" style="margin-top:10px" role="status"><b>وصل تسجيل حصتك «${esc(fl.title)}» 🎉</b><span>تنشره الإدارة على قناة «مدرار العلم» باسمك، ثم يظهر في صفحة الحصة لمن فاته الحضور.</span></div>` : ''}
       ${fl && fl.kind === 'sent' && !fl.rec ? `<div class="note ok-note" style="margin-top:10px" role="status"><b>وصل درسك «${esc(fl.title)}» 🎉</b><span>ستراجعه الإدارة وتنشره على قناة «مدرار العلم» باسمك، ثم يظهر للطلاب ${fl.at ? `في موعده: ${esc(dayLabel(new Date(fl.at)))} الساعة ${esc(time(fl.at))}` : 'فور نشره'}.</span></div>` : ''}
-      ${missingLinks ? `<div class="note warn" style="margin-top:10px"><b>${plural(missingLinks, 'حصة واحدة', 'حصتان', 'حصص', 'حصة')} خلال 24 ساعة بلا رابط.</b><span>أضف رابط حصة Zoom حتى يتمكن الطلاب من الدخول.</span></div>` : ''}
+      ${missingLinks ? `<div class="note warn" style="margin-top:10px"><b>${plural(missingLinks, 'حصة واحدة', 'حصتان', 'حصص', 'حصة')} خلال 24 ساعة بلا رابط.</b><span>أضف رابط حصة Google Meet حتى يتمكن الطلاب من الدخول.</span></div>` : ''}
       ${noRec ? `<div class="note" style="margin-top:10px"><b>${plural(noRec, 'حصة انتهت', 'حصتان انتهتا', 'حصص انتهت', 'حصة انتهت')} دون تسجيل.</b><span>اضغط «ارفع التسجيل» بجانبها، فننشره لمن فاته الحضور.</span></div>` : ''}
       ${p.status === 'approved' && p.trusted !== undefined && !p.trusted && !p.is_admin ? (() => {
         const n = C.TRUST_AFTER || 3;
@@ -2415,6 +2417,7 @@
       <div id="impact"></div><div id="mypaths"></div>
       <div class="row" style="padding-bottom:12px"><span class="spacer"></span><button type="button" class="btn btn-ghost" id="out">تسجيل الخروج</button></div>`;
     $('#out').addEventListener('click', signOut);
+    $$('[data-start]').forEach((b) => b.addEventListener('click', () => { const s = list.find((x) => x.id === b.getAttribute('data-start')); if (s) startClass(s, links[s.id], b); }));
     $$('[data-toggle]').forEach((b) => {
       const s = list.find((x) => x.id === b.getAttribute('data-toggle'));
       const act = async () => {
@@ -2605,6 +2608,16 @@
       }
     });
   }
+  // «ابدأ الحصة»: يبدأ تسجيل الشاشة والصوت (صوت المعلم وصوت الحصة)، ثم يفتح المعلم Meet من لوحة التسجيل
+  async function startClass(s, link, btn) {
+    if (!ST || !ST.supported()) { window.open(link, '_blank', 'noopener'); toast('التسجيل يعمل من الكمبيوتر فقط. اشرح حصتك، وارفع تسجيلها لاحقاً إن وُجد.'); return; }
+    if (btn) btn.disabled = true;
+    try {
+      await ST.start({ micId: store.get('mic') || '', systemAudio: true, label: s.title,
+        info: { grade: s.grade, subject: s.subject, title: s.title, live: s.id, link } });
+      location.hash = '#/studio';
+    } catch (e) { if (btn && btn.isConnected) btn.disabled = false; toast(studioErr(e), true); }
+  }
   // تسجيل حصة مباشرة: يُرسل للإدارة لتنشره في صفحة الحصة نفسها
   async function sendRec(s, file, box) {
     const paint = progressBox(box);
@@ -2693,7 +2706,7 @@
   // رسالة توقف الإرسال: «نكمل من حيث توقف» فقط إن بدأ الإرسال فعلاً
   const sendFail = (e, key) => `<div class="note bad" role="alert"><b>${store.get(key) ? 'توقف الإرسال' : 'لم يُرسل الدرس'}</b><span>${esc(errMsg(e))}</span>${store.get(key) ? '<span>اضغط «أرسل الدرس» مرة أخرى، فنكمل من حيث توقف.</span>' : ''}</div>`;
   const sentFlash = (title, at, rec) => ({ kind: 'sent', title, at: at ? new Date(at).toISOString() : null, rec: !!rec });
-  // حفظ رابط Zoom: إن تعذّر تبقى الحصة محفوظة، ونطلب إضافة الرابط من «تعديل»
+  // حفظ رابط Meet: إن تعذّر تبقى الحصة محفوظة، ونطلب إضافة الرابط من «تعديل»
   async function saveLink(id, url) {
     try { await API.setJoinLink(id, url || null); }
     catch (e) { toast('حُفظت الحصة، لكن تعذّر حفظ رابطها: ' + errMsg(e) + ' أضفه من «تعديل».', true); }
@@ -2711,7 +2724,7 @@
       if (tok !== app.token) return;
       if (!s) return pageNotFound('لم نجد هذه الحصة في حصصك.');
     }
-    // رابط Zoom المحفوظ للحصة
+    // رابط Meet المحفوظ للحصة
     let link0 = '';
     if (s && s.kind === 'live') { try { link0 = (await API.myLinks([s.id]))[s.id] || ''; } catch (e) { /* يبقى فارغاً */ } if (tok !== app.token) return; }
     const editing = mode === 'edit';
@@ -2729,7 +2742,7 @@
     const kind = mode === 'new' ? 'recorded' : mode === 'live' ? 'live' : src.kind || 'live';
     const rec0 = kind === 'recorded';
     const noun = rec0 ? 'الدرس' : 'الحصة';
-    const dur = src.starts_at ? minutes(src) : Math.min(240, (pre && pre.minutes) || (rec0 ? 30 : 40));
+    const dur = src.starts_at ? minutes(src) : Math.min(240, (pre && pre.minutes) || (rec0 ? 30 : 60));
     const dVal = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
     const tVal = `${pad(start.getHours())}:${pad(start.getMinutes())}`;
     const durs = [20, 30, 45, 60, 75, 90, 120, 150, 180, 240];
@@ -2782,7 +2795,7 @@
               <span class="hint" id="sf-file-info">حتى 500 ميغابايت</span></div>`}
           ${consentHtml('sf-consent')}</div>` : ''}
         <div class="field" id="sf-link-box"${(srcPick && srcMode !== 'link') || upPending ? ' hidden' : ''}><label for="sf-url" id="lbl-url">رابط البث على يوتيوب</label>
-          <input class="input" id="sf-url" type="url" inputmode="url" maxlength="300" value="${esc(kind === 'live' ? link0 || (mode === 'copy' ? '' : src.video_url || '') : (src.video_url || ''))}" placeholder="${kind === 'live' ? 'https://zoom.us/j/...' : 'https://youtu.be/...'}">
+          <input class="input" id="sf-url" type="url" inputmode="url" maxlength="300" value="${esc(kind === 'live' ? link0 || (mode === 'copy' ? '' : src.video_url || '') : (src.video_url || ''))}" placeholder="${kind === 'live' ? 'https://meet.google.com/...' : 'https://youtu.be/...'}">
           <span class="hint" id="hint-url"></span></div>
         <details class="more extra"${editing ? ' open' : ''}><summary>خيارات إضافية</summary>
         ${rec0 ? placeHtml() : ''}
@@ -2817,8 +2830,8 @@
     function applyKind() {
       const rec = kindNow() === 'recorded';
       if (!rec) { $('#lbl-date').textContent = 'التاريخ'; $('#lbl-time').textContent = 'وقت البدء'; $('#lbl-dur').textContent = 'المدة'; }
-      $('#lbl-url').textContent = rec ? 'رابط الفيديو على يوتيوب' : 'رابط حصة Zoom';
-      $('#hint-url').innerHTML = rec ? '' : 'يراه الطلاب وقت الحصة فقط. سجّل الحصة في Zoom من زر «Record».';
+      $('#lbl-url').textContent = rec ? 'رابط الفيديو على يوتيوب' : 'رابط حصة Google Meet';
+      $('#hint-url').innerHTML = rec ? '' : 'من meet.google.com ← «اجتماع جديد». يراه الطلاب وقت الحصة فقط.';
       const rf = $('#rep-field'); if (rf) rf.hidden = rec;
       peers();
     }
@@ -2906,9 +2919,9 @@
         tm = readTimes();
         if (!tm) return bad('#sf-date', 'حدّد التاريخ والوقت.');
       }
-      // الحصة المباشرة: رابط Zoom (أو بث يوتيوب كما في السابق)
-      const meet = k === 'live' && url && (isZoom(url) || (url === link0 && isMeet(url))) ? url : '';
-      if (k === 'live' && url && !meet && !(isYouTube(url) && url === src.video_url)) return bad('#sf-url', 'الصق رابط حصة Zoom، مثل https://zoom.us/j/...');
+      // الحصة المباشرة: رابط Meet (أو بث يوتيوب كما في السابق)
+      const meet = k === 'live' && url && isMeet(url) ? url : '';
+      if (k === 'live' && url && !meet && !(isYouTube(url) && url === src.video_url)) return bad('#sf-url', 'الصق رابط حصة Google Meet، مثل https://meet.google.com/...');
       if (k !== 'live' && url && !isYouTube(url)) return bad('#sf-url', 'الرابط يجب أن يكون من يوتيوب (youtube.com أو youtu.be).');
       if (recUrl && !isYouTube(recUrl)) return bad('#sf-rec', 'رابط التسجيل يجب أن يكون من يوتيوب.');
       if (k === 'recorded' && viaLink && !url) return bad('#sf-url', 'ضع رابط الفيديو المسجّل.');
@@ -2993,7 +3006,7 @@
         <figcaption>رواه مسلم</figcaption>
       </figure>
       <ol class="steps3 teach-steps">
-        <li><b>حدّد موعد حصتك</b><span class="muted">على Zoom.</span></li>
+        <li><b>حدّد موعد حصتك</b><span class="muted">على Google Meet.</span></li>
         <li><b>اشرح لطلابك مباشرة</b><span class="muted">يدخلون من المنصة.</span></li>
         <li><b>أرسل التسجيل</b><span class="muted">ننشره باسمك على قناة المنصة.</span></li>
       </ol>
@@ -3080,7 +3093,7 @@
     { k: ['مجاني', 'مجانا', 'رسوم', 'فلوس', 'سعر', 'اشتراك', 'كم', 'بفلوس', 'مدفوع'], q: 'هل المنصة مجانية؟',
       a: 'نعم، مجانية بالكامل للطلاب والمعلمين، بلا اشتراك وبلا إعلانات.' },
     { k: ['تطوع', 'اتطوع', 'متطوع', 'انضم', 'انضمام', 'اشارك', 'مشاركه', 'اسجل كمعلم', 'معلم جديد', 'ابي اشرح', 'ابغى اشرح', 'اشرح'], q: 'كيف أتطوع بالشرح؟',
-      a: 'ادخل بحساب Google، ثم من «لوحتي» اضغط «حصة مباشرة جديدة»، واكتب الموعد ورابط حصة Zoom. وبعد الحصة ارفع تسجيلها فننشره باسمك. أو املأ نموذج «تطوّع بالشرح» فنتواصل معك عبر واتساب.', l: [['#/teach', 'تطوّع بالشرح'], ['#/volunteer', 'تفاصيل التطوع']] },
+      a: 'ادخل بحساب Google، ثم من «لوحتي» اضغط «حصة مباشرة جديدة»، واكتب الموعد ورابط حصة Google Meet. وبعد الحصة ارفع تسجيلها فننشره باسمك. أو املأ نموذج «تطوّع بالشرح» فنتواصل معك عبر واتساب.', l: [['#/teach', 'تطوّع بالشرح'], ['#/volunteer', 'تفاصيل التطوع']] },
     { k: ['اسجل الدرس', 'تسجيل', 'اصور', 'تصوير', 'استوديو', 'سجل الشاشه', 'برنامج', 'كاميرا', 'مايك', 'صوت'], q: 'كيف أسجّل درسي؟',
       a: 'من «استوديو المنصة» تسجّل شاشتك وصوتك من المتصفح بلا برامج وبلا كاميرا، أو صوّر بجوالك. الصوت الواضح أهم من الصورة.', l: [['#/studio', 'استوديو المنصة'], ['#/guide', 'دليل المعلم']] },
     { k: ['يوتيوب', 'قناه', 'قناتي', 'ارفع', 'رفع', 'احتاج قناه', 'ما عندي قناه', 'غير مدرج'], q: 'هل أحتاج قناة على يوتيوب؟',
@@ -3114,13 +3127,13 @@
   ];
   FAQ.push(
     { k: ['اسجل حصتي', 'تسجيل الحصه', 'سجل الحصه', 'اسجل الحصه', 'ابدا الحصه', 'ابدأ الحصه'], q: 'كيف أسجّل حصتي المباشرة؟',
-      a: 'سجّلها من زر «Record» في Zoom. وبعد الحصة اضغط «ارفع التسجيل» بجانبها في «لوحتي».', l: [['#/dashboard', 'لوحتي']] },
+      a: 'في «لوحتي» اضغط «ابدأ الحصة»: يبدأ التسجيل، ثم افتح Meet واشرح. بعد الحصة اضغط «إنهاء الحصة» ثم «أرسل التسجيل».', l: [['#/dashboard', 'لوحتي']] },
     { k: ['ادوات المنصه', 'استخدم الادوات', 'كيف استخدم', 'المحاكاه', 'المختبر'], q: 'كيف أستخدم أدوات المنصة؟',
-      a: 'من «الأدوات» في أعلى الصفحة. الطالب يفتح الأداة ويجرّب بنفسه، والمعلم يفتحها أثناء حصته ويشارك شاشته في Zoom.', l: [['#/tools', 'الأدوات']] },
+      a: 'من «الأدوات» في أعلى الصفحة. الطالب يفتح الأداة ويجرّب بنفسه، والمعلم يفتحها أثناء حصته ويشارك شاشته في Google Meet.', l: [['#/tools', 'الأدوات']] },
     { k: ['حصه مباشره', 'مباشره', 'مباشر', 'meet', 'ميت', 'جوجل ميت', 'zoom', 'زوم', 'teams', 'تيمز', 'رابط الحصه', 'اونلاين', 'بث مباشر'], q: 'كيف أقدّم حصة مباشرة؟',
-      a: 'من «لوحتي» اضغط «حصة مباشرة جديدة»، واختر الصف والمادة والعنوان واليوم والساعة، والصق رابط حصة Zoom. تظهر في جدول الصف، ورابطها يراه الطلاب وقت الحصة فقط. وبعدها اضغط «ارفع التسجيل».', l: [['#/dashboard/live', 'حصة مباشرة جديدة'], ['#/guide', 'دليل المعلم']] },
+      a: 'من «لوحتي» اضغط «حصة مباشرة جديدة»، واختر الصف والمادة والعنوان واليوم والساعة، والصق رابط حصة Google Meet. تظهر في جدول الصف، ورابطها يراه الطلاب وقت الحصة فقط. وفي الموعد اضغط «ابدأ الحصة».', l: [['#/dashboard/live', 'حصة مباشرة جديدة'], ['#/guide', 'دليل المعلم']] },
     { k: ['ادخل الحصه', 'دخول الحصه', 'رابط الدخول', 'احضر', 'حضور', 'كيف ادخل', 'وين الرابط'], q: 'كيف أدخل الحصة المباشرة؟',
-      a: 'افتح الحصة من جدول صفك أو «مباشر الآن». قبل موعدها بربع ساعة يظهر زر «ادخل الحصة»، فتُفتح في Zoom. ادخل باسمك الأول فقط. وإن فاتتك فشاهد تسجيلها في الصفحة نفسها بعد نشره.', l: [['#/', 'الدروس']] },
+      a: 'افتح الحصة من جدول صفك أو «مباشر الآن». قبل موعدها بربع ساعة يظهر زر «ادخل الحصة»، فتُفتح في Google Meet. ادخل باسمك الأول فقط. وإن فاتتك فشاهد تسجيلها في الصفحة نفسها بعد نشره.', l: [['#/', 'الدروس']] },
     { k: ['موعد', 'احدد', 'وقت الدرس', 'جدوله', 'اجدول', 'عرض اول'], q: 'كيف أحدد موعداً يشاهد فيه الطلاب الدرس؟',
       a: 'عند الإرسال اختر «في موعد أحدده» واكتب اليوم والساعة. يظهر الدرس للطلاب في «الدروس القادمة» مع عدّ تنازلي وتذكير في التقويم، ويُعرض في موعده ليشاهدوه معاً. وفي «لوحتي» زر «شارك الموعد» لإرساله لطلابك عبر واتساب.', l: [['#/dashboard', 'لوحتي']] },
     { k: ['الدروس القادمه', 'متى الدرس', 'موعد الدرس', 'تذكير', 'ذكرني', 'التقويم', 'يعرض الان'], q: 'كيف أعرف موعد الدرس القادم؟',
@@ -3673,16 +3686,19 @@
 
     if (st === 'recording' || st === 'paused') {
       const paused = st === 'paused';
+      const liveRec = ST.info && ST.info.live && ST.info.link ? ST.info : null;
       view.innerHTML = head(paused ? 'التسجيل متوقف مؤقتاً' : 'جارٍ التسجيل') + `<div class="studio">
         <div class="box rec-panel${paused ? ' paused' : ''}">
-          <div class="rec-top"><span class="rec-dot" aria-hidden="true"></span><b>${paused ? 'متوقف مؤقتاً' : 'يُسجَّل الآن: شاشتك وصوتك'}</b><span class="rec-time" id="st-time">${clock(ST.elapsed())}</span></div>
+          <div class="rec-top"><span class="rec-dot" aria-hidden="true"></span><b>${paused ? 'متوقف مؤقتاً' : liveRec ? 'تُسجَّل الحصة الآن' : 'يُسجَّل الآن: شاشتك وصوتك'}</b><span class="rec-time" id="st-time">${clock(ST.elapsed())}</span></div>
           <div class="meter" aria-hidden="true"><span id="st-lvl"></span></div>
           <div class="note warn" id="st-silent" hidden><b>لم نسمع صوتاً منذ قليل.</b><span>إن كنت تتكلم، تأكد أن المايكروفون موصول وغير مكتوم.</span></div>
           ${ST.sysLost ? '<div class="note warn"><span>تعذّر تسجيل صوت الحاسوب، وصوتك يُسجَّل بشكل طبيعي.</span></div>' : ''}
-          <p>${paused ? 'اضغط «استئناف» لتكمل من حيث توقفت.' : 'انتقل الآن إلى العرض أو الملف واشرح براحتك. عند الانتهاء ارجع إلى هذه الصفحة واضغط «إنهاء التسجيل»، أو اضغط «إيقاف المشاركة» في شريط المتصفح.'}</p>
+          ${liveRec ? `<a class="btn btn-live btn-lg" href="${esc(liveRec.link)}" target="_blank" rel="noopener">افتح حصة ${esc(meetApp(liveRec.link))}</a>
+          <p>اشرح في الحصة. وبعد انتهائها ارجع إلى هذه الصفحة واضغط «إنهاء الحصة».</p>`
+          : `<p>${paused ? 'اضغط «استئناف» لتكمل من حيث توقفت.' : 'انتقل الآن إلى العرض أو الملف واشرح براحتك. عند الانتهاء ارجع إلى هذه الصفحة واضغط «إنهاء التسجيل»، أو اضغط «إيقاف المشاركة» في شريط المتصفح.'}</p>`}
           <div class="row">
             <button type="button" class="btn btn-lg" id="st-pause">${paused ? 'استئناف' : 'إيقاف مؤقت'}</button>
-            <button type="button" class="btn btn-primary btn-lg" id="st-stop">إنهاء التسجيل</button>
+            <button type="button" class="btn btn-primary btn-lg" id="st-stop">${liveRec ? 'إنهاء الحصة' : 'إنهاء التسجيل'}</button>
           </div>
           <span class="muted small">${ST.persistent ? 'يُحفظ التسجيل أولاً بأول في متصفحك، فلا يضيع إن أُغلقت الصفحة.' : 'لا تغلق هذه الصفحة حتى تنهي التسجيل وتحفظه.'} الحجم الآن: <b id="st-size">${mbs(ST.bytes)}</b></span>
         </div></div>`;
@@ -3808,11 +3824,11 @@
         const lb = $('#st-live');
         if (!lb || tok !== app.token) return;
         if (!targets.length) { const g = $('#st-generic'); if (g) g.hidden = false; if (other) other.remove(); return; }
-        lb.innerHTML = `<section class="box send-box live-rec"><h2>${live && targets[0].id === live ? 'أرسل تسجيل الحصة' : 'هذا تسجيل حصة مباشرة؟'}</h2>
+        lb.innerHTML = `<section class="box send-box live-rec"><h2>${live && targets[0].id === live ? 'انتهت الحصة: أرسل تسجيلها' : 'هذا تسجيل حصة مباشرة؟'}</h2>
           <p class="muted">يظهر في صفحة الحصة لمن فاته الحضور.</p>
           <div class="field"><label for="st-lv">الحصة</label><select class="input" id="st-lv">${targets.map((x) => `<option value="${esc(x.id)}">${esc(x.title)} — ${esc(gradeName(x.grade))} · ${esc(dayLabel(new Date(x.starts_at)))} ${esc(time(x.starts_at))}</option>`).join('')}</select></div>
           ${consentHtml('st-lv-consent')}
-          <div class="row"><button type="button" class="btn btn-primary btn-lg" id="st-lv-send">أرسله تسجيلاً للحصة</button></div>
+          <div class="row"><button type="button" class="btn btn-primary btn-lg" id="st-lv-send">${live ? 'أرسل التسجيل' : 'أرسله تسجيلاً للحصة'}</button></div>
           <div id="st-lv-prog" hidden></div></section>`;
         $('#st-lv-send').addEventListener('click', async () => {
           const x = targets.find((y) => y.id === $('#st-lv').value);
@@ -3994,7 +4010,7 @@
     setNav(''); setTitle('دليل المعلم');
     view.innerHTML = `
       <header class="page-head"><h1>دليل المعلم: حصتك المباشرة ودروسك</h1>
-        <p class="muted">الطريق الأساسي: تحدد موعد حصة مباشرة على Zoom، فيحضرها الطلاب من المنصة، ثم ترسل تسجيلها فننشره على قناة «مدرار العلم» في يوتيوب باسمك لمن فاته الحضور. ويمكنك أيضاً تسجيل درس في استوديو المنصة. بلا قناة يوتيوب، وبلا أي تكلفة.</p></header>
+        <p class="muted">الطريق الأساسي: تحدد موعد حصة مباشرة على Google Meet، فيحضرها الطلاب من المنصة، ثم ترسل تسجيلها فننشره على قناة «مدرار العلم» في يوتيوب باسمك لمن فاته الحضور. ويمكنك أيضاً تسجيل درس في استوديو المنصة. بلا قناة يوتيوب، وبلا أي تكلفة.</p></header>
       <article class="prose">
         <h2>أولاً: قبل أول درس (مرة واحدة)</h2>
         <ol>
@@ -4004,11 +4020,11 @@
         </ol>
         <h2>ثانياً: الحصة المباشرة</h2>
         <ol>
-          <li>من <a href="#/dashboard">لوحتي</a> اضغط <b>حصة مباشرة جديدة</b>: الصف، والمادة، والعنوان، والموعد، ورابط حصة Zoom (الحساب المجاني: حتى 40 دقيقة).</li>
-          <li>في الموعد اضغط <b>ادخل الحصة</b> واشرح كعادتك. وسجّلها من زر «Record» في Zoom.</li>
-          <li>بعد الحصة اضغط <b>ارفع التسجيل</b>، فننشره على قناة «مدرار العلم» باسمك.</li>
+          <li>من <a href="#/dashboard">لوحتي</a> اضغط <b>حصة مباشرة جديدة</b>: الصف، والمادة، والعنوان، والموعد، ورابط الحصة من <a href="https://meet.google.com" target="_blank" rel="noopener">Google Meet</a> («اجتماع جديد» ثم «إنشاء اجتماع لاحقاً»).</li>
+          <li>في الموعد اضغط <b>ابدأ الحصة</b> من الكمبيوتر، واختر «الشاشة بالكامل» وفعّل «مشاركة الصوت»، ثم <b>افتح حصة Google Meet</b> واشرح. تُسجَّل شاشتك وصوتك وأصوات الطلاب.</li>
+          <li>بعد الحصة اضغط <b>إنهاء الحصة</b> ثم <b>أرسل التسجيل</b>، فننشره على قناة «مدرار العلم» باسمك.</li>
         </ol>
-        <div class="note warn"><b>خصوصية الطلاب</b><span>التسجيل يُنشر على يوتيوب، فاجعله شاشتك وصوتك فقط: لا تُظهر فيه أسماء الطلاب أو صورهم أو أصواتهم، وإن تحدّث طالب فاحذف ذلك الجزء أو أخبر الإدارة. ولا تطلب من الطلاب أرقام هواتفهم أو حساباتهم.</span></div>
+        <div class="note warn"><b>خصوصية الطلاب</b><span>اطلب من الطلاب إغلاق الكاميرا، واعرض شرحك بملء الشاشة حتى لا تظهر صورهم أو أسماؤهم في التسجيل. ولا تطلب أرقام هواتفهم أو حساباتهم.</span></div>
         <h2>ثالثاً: أو سجّل درساً في الاستوديو</h2>
         <ol>
           <li>من <a href="#/dashboard">لوحتي</a> اضغط <b>سجّل درساً جديداً</b>.</li>
@@ -4104,7 +4120,7 @@
         <ol>
           <li>الشرح مجاني بالكامل. لا إعلانات لدروس خصوصية أو دورات أو مجموعات مدفوعة.</li>
           <li>لا تواصل خاص مع الطلاب، ولا طلب أرقام هواتفهم أو حساباتهم.</li>
-          <li>في الحصة المباشرة: فعّل غرفة الانتظار أو قبول الدخول، ولا تُظهر أسماء الطلاب أو صورهم أو أصواتهم في التسجيل المنشور.</li>
+          <li>في الحصة المباشرة: فعّل غرفة الانتظار أو قبول الدخول، ولا تُظهر صور الطلاب في التسجيل المنشور.</li>
           <li>محتوى تعليمي محترم يناسب أعمار الطلاب، دون مواد محمية بحقوق النشر.</li>
           <li>شرح واضح ومتقن، ونشر الدروس في مواعيدها المعلنة أو إلغاؤها من اللوحة مبكراً.</li>
           <li>الإبقاء على فيديوهات الدروس متاحة على يوتيوب قدر الإمكان، فهي علمٌ يُنتفع به.</li>

@@ -333,5 +333,6 @@
     get persistent() { return rec.useDb; },
     get metered() { return rec.metered; },
     get sysLost() { return rec.sysLost; },
+    get info() { return rec.info; },
   };
 })();
