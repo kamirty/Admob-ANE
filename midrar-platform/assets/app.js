@@ -1230,8 +1230,7 @@
     const head = `<b>${live ? 'الحصة بدأت الآن' : 'الحصة تبدأ ' + esc(rel(new Date(s.starts_at) - Date.now()))}</b>`;
     if (j && j.url) {
       const app2 = meetApp(j.url);
-      if (mine) return `${head}<button type="button" class="btn btn-live btn-lg" data-start-class>ابدأ الحصة وسجّلها</button>
-        <span class="small">يبدأ التسجيل، ثم تفتح الحصة.</span>`;
+      if (mine) return `${head}<span>ادخل من زر «ابدأ الحصة وسجّلها» تحت.</span>`;
       return `${head}<a class="btn btn-live btn-lg" href="${esc(roomUrl(j.url, 's'))}" target="_blank" rel="noopener">ادخل الحصة</a>
         <span class="small">اكتب اسمك الأول، وأبقِ الكاميرا مغلقة.</span>`;
     }
@@ -1529,9 +1528,13 @@
       API.myLinks([s.id]).then((m) => {
         const box = $('#mylink'); const u = m && m[s.id];
         if (tok !== app.token || !box || !u) return;
-        box.innerHTML = `<div class="note mylink"><b>رابط حصتك</b><a href="${esc(u)}" target="_blank" rel="noopener" dir="ltr">${esc(u)}</a>
-          <div class="row"><button type="button" class="btn btn-sm" id="ml-copy">نسخ الرابط</button><span class="small muted">يراه الطلاب قبل الحصة بربع ساعة.</span></div></div>`;
+        // المعلم يدخل من الزر (فيُسجَّل شرحه)، والرابط نصّ يُنسخ للطلاب فقط
+        const open = s.status === 'scheduled' && +new Date(s.ends_at) > Date.now();
+        box.innerHTML = `<div class="note mylink">${open ? '<button type="button" class="btn btn-live btn-lg" data-start-class>ابدأ الحصة وسجّلها</button><span class="small">ضغطة واحدة: يبدأ التسجيل وتُفتح الحصة.</span>' : ''}
+          <b>رابط الطلاب</b><span class="lb-url" dir="ltr">${esc(u)}</span>
+          <div class="row"><button type="button" class="btn btn-sm" id="ml-copy">نسخ الرابط</button><span class="small muted">يراه الطلاب في المنصة قبل الحصة بربع ساعة.</span></div></div>`;
         $('#ml-copy').addEventListener('click', () => copyText(u));
+        const sb = $('[data-start-class]', box); if (sb) sb.addEventListener('click', () => startClass(s, u, sb));
       }).catch(() => { /* اختياري */ });
     }
     // حصة Meet: زر الدخول (يظهر الرابط قبل الحصة بربع ساعة)
@@ -2684,6 +2687,9 @@
     try {
       await ST.start({ micId: store.get('mic') || '', systemAudio: true, label: s.title,
         info: { grade: s.grade, subject: s.subject, title: s.title, live: s.id, link } });
+      // نفتح الحصة مباشرة بعد بدء التسجيل؛ وإن منعها المتصفح يبقى زر «افتح الحصة» في لوحة التسجيل
+      const w = window.open(roomUrl(link, 't', app.profile && app.profile.display_name), '_blank');
+      if (w) w.opener = null;
       location.hash = '#/studio';
     } catch (e) { if (btn && btn.isConnected) btn.disabled = false; toast(studioErr(e), true); }
   }
@@ -2838,7 +2844,7 @@
             <input class="input" id="sf-url" type="url" inputmode="url" maxlength="300" value="${esc(other0)}" placeholder="https://meet.google.com/..." dir="ltr">
             <span class="hint" id="hint-url">من Google Meet أو Google Classroom أو Zoom أو Teams</span></div>
           <button type="button" class="btn btn-ghost btn-sm lb-swap" id="lb-swap">${otherMode ? 'استخدم رابط المنصة' : 'عندي رابط آخر (Meet أو Zoom أو Teams)'}</button>
-          <p class="lb-tip">وقت الحصة اضغط <b>«ابدأ الحصة وسجّلها»</b> من «لوحتي»، فيُسجَّل شرحك تلقائياً.</p>
+          <p class="lb-tip">أنت تدخل من زر <b>«ابدأ الحصة وسجّلها»</b> في المنصة، لا من الرابط، ليُسجَّل شرحك.</p>
         </div>`;
     // رابط الفيديو للدرس المسجّل
     const linkBox = `<div class="field" id="sf-link-box"${(srcPick && srcMode !== 'link') || upPending ? ' hidden' : ''}><label for="sf-url" id="lbl-url">رابط البث على يوتيوب</label>

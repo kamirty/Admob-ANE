@@ -904,3 +904,7 @@ fieldset.pick-g legend { font-weight: 600; padding: 0; margin-bottom: 6px; }
 .now-card > div { display: grid; gap: 4px; min-width: 0; }
 .now-card > div .pill { justify-self: start; }
 @media (max-width: 600px) { .now-card .btn { width: 100%; } }
+.note.mylink .btn-live { justify-self: start; }
+.note.mylink .lb-url { justify-self: stretch; }
+/* الجوال: مربع الحصة القادمة يتسع لأزراره بدل أن تُقصّ */
+@media (max-width: 600px) { .player:has(> .ph) { aspect-ratio: auto; min-height: 200px; } }
