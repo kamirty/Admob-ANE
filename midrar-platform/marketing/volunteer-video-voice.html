@@ -1,0 +1,108 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@600;800;900&display=swap">
+<style>
+*{margin:0;box-sizing:border-box}
+body{width:1080px;height:1920px;overflow:hidden;font-family:Cairo,sans-serif;color:#F4F6F1;background:#0F2A22;position:relative}
+.glow1,.glow2{position:absolute;width:1400px;height:1100px;border-radius:50%;filter:blur(10px)}
+.glow1{background:radial-gradient(closest-side,rgba(91,195,154,.30),transparent);top:-420px;right:-520px}
+.glow2{background:radial-gradient(closest-side,rgba(231,180,86,.18),transparent);bottom:-460px;left:-560px}
+.bgclip{position:absolute;inset:0;overflow:hidden}
+html{overflow:hidden}
+.dots{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.07) 1.6px,transparent 1.6px);background-size:36px 36px;mask-image:linear-gradient(180deg,#000,transparent 75%)}
+.scene{position:absolute;inset:0;display:grid;align-content:center;justify-items:center;text-align:center;padding:0 80px;gap:34px;opacity:0}
+.toplogo{position:absolute;top:110px;left:0;right:0;display:flex;justify-content:center;opacity:0}
+.toplogo img{height:96px}
+.biglogo{height:230px}
+.lead{font-size:60px;font-weight:800;line-height:1.5}
+.lead b{color:#E7B456}
+.h1{font-size:170px;font-weight:900;line-height:1.1}
+.h1.g{color:#5BC39A}
+.bar{height:14px;width:640px;border-radius:99px;background:#E7B456;transform-origin:right center}
+.sub{font-size:52px;font-weight:600;color:#CFE0D8;line-height:1.6}
+.say{font-family:Amiri,serif;font-size:56px;color:#B9CCC4}
+.q{font-family:Amiri,serif;font-size:76px;font-weight:700;line-height:1.75}
+.q > span{display:block}
+.q span span{display:inline-block}
+.q b{color:#5BC39A}
+.src{font-family:Amiri,serif;font-size:48px;color:#B9CCC4}
+.frame{border:2px solid rgba(231,180,86,.55);border-radius:36px;padding:70px 50px;display:grid;gap:26px;width:100%}
+.t2{font-size:84px;font-weight:900}
+.t2 b{color:#5BC39A}
+.steps{display:grid;gap:30px;width:100%}
+.st{display:flex;align-items:center;gap:30px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:30px;padding:34px 40px}
+.st i{font-style:normal;flex:none;width:96px;height:96px;border-radius:50%;background:#5BC39A;color:#0A1A13;font-weight:900;font-size:52px;display:grid;place-items:center}
+.st b{font-size:56px;font-weight:800;text-align:right}
+.note{font-size:44px;color:#CFE0D8;font-weight:600;line-height:1.6}
+.faces{display:flex;justify-content:center}
+.face{width:170px;height:170px;border-radius:50%;overflow:hidden;background:#E6F0EC;border:6px solid #0F2A22;margin-inline-start:-26px;display:grid;place-items:center;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.face:first-child{margin-inline-start:0}
+.face svg{width:100%;height:100%;display:block}
+.face.you{background:#E7B456;color:#0F2A22;font-weight:900;font-size:46px}
+.btn{background:#E7B456;color:#0F2A22;font-weight:900;font-size:76px;border-radius:26px;padding:18px 80px}
+.url{font-size:62px;font-weight:800;direction:ltr}
+.free{font-size:42px;color:#9DB8AE;font-weight:600;line-height:1.6}
+</style></head><body>
+<div class="bgclip"><div class="glow1"></div><div class="glow2"></div><div class="dots"></div></div>
+<div class="toplogo" id="toplogo"><img src="midrar-logo-wide-white.svg" alt=""></div>
+
+<div class="scene" id="s1"><img class="biglogo" id="s1logo" src="midrar-logo-wide-white.svg" alt="">
+  <p class="lead" id="s1t">إلى كل <b>معلم</b> و<b>معلمة</b>…</p></div>
+
+<div class="scene" id="s2"><div class="h1" id="s2a">علمُك</div><div class="h1 g" id="s2b">صدقة جارية</div><div class="bar" id="s2bar"></div>
+  <p class="sub" id="s2c">ساعة من وقتك…<br>تصنع فرقاً في حياة طالب</p></div>
+
+<div class="scene" id="s3"><div class="frame"><p class="say" id="s3a">قال رسول الله ﷺ</p>
+  <p class="q"><span id="q1">«إذا مات ابنُ آدمَ انقطع عملُه</span><span><span id="q2">إلا من ثلاث:</span> <span id="q2b">صدقةٍ جارية،</span></span><span id="q3">أو <b>علمٍ يُنتفَعُ به</b>،</span><span id="q4">أو ولدٍ صالحٍ يدعو له»</span></p>
+  <p class="src" id="s3b">رواه مسلم</p></div></div>
+
+<div class="scene" id="s4"><div class="t2" id="s4t">تطوّع في <b>٣ خطوات</b></div>
+  <div class="steps"><div class="st" id="st1"><i>١</i><b>ادخل بحساب Google</b></div><div class="st" id="st2"><i>٢</i><b>حدّد موعد حصتك</b></div><div class="st" id="st3"><i>٣</i><b>اشرح وسجّل بضغطة واحدة</b></div></div>
+  <p class="note" id="s4n">والمنصة تسجّل شرحك وتنشره باسمك<br>مجاناً بالكامل</p></div>
+
+<div class="scene" id="s5"><p class="lead" id="s5t">انضم إلى معلمي <b>مِدْرار العلم</b></p>
+  <div class="faces" id="faces"><span class="face"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M7 66c0-12.5 10.5-19.5 25-19.5S57 53.5 57 66z" fill="#fff" stroke="#C9D6D0"/><path d="M26.5 42h11v6.5c0 2.6-2.4 4.5-5.5 4.5s-5.5-1.9-5.5-4.5z" fill="#D9A97E"/><path d="M32 52.5v7" stroke="#B08D5B" stroke-width="1.4"/><circle cx="32" cy="60.5" r="1.7" fill="#B08D5B"/><ellipse cx="32" cy="33" rx="10.5" ry="12" fill="#E8BE95"/><path d="M22.5 35.5c.6 7 4.6 10.5 9.5 10.5s8.9-3.5 9.5-10.5c-1.8 2.8-4 4.2-6 4.2-1.2-1-2.3-1.4-3.5-1.4s-2.3.4-3.5 1.4c-2 0-4.2-1.4-6-4.2z" fill="#4A3A30"/><path d="M20.8 27.2V13.6c0-1.5 5-2.6 11.2-2.6s11.2 1.1 11.2 2.6v13.6c-3 .9-6.8 1.3-11.2 1.3s-8.2-.4-11.2-1.3z" fill="#fff" stroke="#C9D6D0"/><ellipse cx="32" cy="13.6" rx="11.2" ry="2.3" fill="#F4F8F6" stroke="#C9D6D0" stroke-width=".8"/><path d="M20.9 24.6c3 .9 6.8 1.3 11.1 1.3s8.1-.4 11.1-1.3" fill="none" stroke="#0E5A46" stroke-width="1.6"/><path d="M22.5 21.2l1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2" fill="none" stroke="#B9770E" stroke-width="1.1"/><path d="M24 17.2h16" stroke="#0E5A46" stroke-width="1" stroke-dasharray="1.6 1.6"/></svg></span><span class="face"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M8 66c0-11.5 10-18 24-18s24 6.5 24 18z" fill="#1F5A4C"/><path d="M32 17.5c-7.8 0-12.6 6-12.6 14.6 0 5.4 1.5 9.6 4.2 12.6-.7 4.4-2 8.6-3.6 12 3.8 2.2 7.7 3.2 12 3.2s8.2-1 12-3.2c-1.6-3.4-2.9-7.6-3.6-12 2.7-3 4.2-7.2 4.2-12.6 0-8.6-4.8-14.6-12.6-14.6z" fill="#1F5A4C"/><path d="M23.6 44.7c-.7 4.4-2 8.6-3.6 12M40.4 44.7c.7 4.4 2 8.6 3.6 12" fill="none" stroke="#174A3E" stroke-width="1.1"/><ellipse cx="32" cy="33.5" rx="8.2" ry="10" fill="#E8BE95"/><path d="M23.8 31.5c.4-6 3.8-9.4 8.2-9.4s7.8 3.4 8.2 9.4" fill="none" stroke="#2C7462" stroke-width="2"/><path d="M25.2 43.4c1.9 2.2 4.2 3.3 6.8 3.3s4.9-1.1 6.8-3.3" fill="none" stroke="#174A3E" stroke-width="1.3"/></svg></span><span class="face"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M7 66c0-12.5 10.5-19.5 25-19.5S57 53.5 57 66z" fill="#fff" stroke="#C9D6D0"/><path d="M26.5 42h11v6.5c0 2.6-2.4 4.5-5.5 4.5s-5.5-1.9-5.5-4.5z" fill="#D9A97E"/><path d="M32 52.5v7" stroke="#B08D5B" stroke-width="1.4"/><circle cx="32" cy="60.5" r="1.7" fill="#B08D5B"/><ellipse cx="32" cy="33" rx="10.5" ry="12" fill="#E8BE95"/><path d="M22.5 35.5c.6 7 4.6 10.5 9.5 10.5s8.9-3.5 9.5-10.5c-1.8 2.8-4 4.2-6 4.2-1.2-1-2.3-1.4-3.5-1.4s-2.3.4-3.5 1.4c-2 0-4.2-1.4-6-4.2z" fill="#4A3A30"/><path d="M20.8 27.2V13.6c0-1.5 5-2.6 11.2-2.6s11.2 1.1 11.2 2.6v13.6c-3 .9-6.8 1.3-11.2 1.3s-8.2-.4-11.2-1.3z" fill="#fff" stroke="#C9D6D0"/><ellipse cx="32" cy="13.6" rx="11.2" ry="2.3" fill="#F4F8F6" stroke="#C9D6D0" stroke-width=".8"/><path d="M20.9 24.6c3 .9 6.8 1.3 11.1 1.3s8.1-.4 11.1-1.3" fill="none" stroke="#0E5A46" stroke-width="1.6"/><path d="M22.5 21.2l1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2" fill="none" stroke="#B9770E" stroke-width="1.1"/><path d="M24 17.2h16" stroke="#0E5A46" stroke-width="1" stroke-dasharray="1.6 1.6"/></svg></span><span class="face"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M8 66c0-11.5 10-18 24-18s24 6.5 24 18z" fill="#1F5A4C"/><path d="M32 17.5c-7.8 0-12.6 6-12.6 14.6 0 5.4 1.5 9.6 4.2 12.6-.7 4.4-2 8.6-3.6 12 3.8 2.2 7.7 3.2 12 3.2s8.2-1 12-3.2c-1.6-3.4-2.9-7.6-3.6-12 2.7-3 4.2-7.2 4.2-12.6 0-8.6-4.8-14.6-12.6-14.6z" fill="#1F5A4C"/><path d="M23.6 44.7c-.7 4.4-2 8.6-3.6 12M40.4 44.7c.7 4.4 2 8.6 3.6 12" fill="none" stroke="#174A3E" stroke-width="1.1"/><ellipse cx="32" cy="33.5" rx="8.2" ry="10" fill="#E8BE95"/><path d="M23.8 31.5c.4-6 3.8-9.4 8.2-9.4s7.8 3.4 8.2 9.4" fill="none" stroke="#2C7462" stroke-width="2"/><path d="M25.2 43.4c1.9 2.2 4.2 3.3 6.8 3.3s4.9-1.1 6.8-3.3" fill="none" stroke="#174A3E" stroke-width="1.3"/></svg></span><span class="face"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M7 66c0-12.5 10.5-19.5 25-19.5S57 53.5 57 66z" fill="#fff" stroke="#C9D6D0"/><path d="M26.5 42h11v6.5c0 2.6-2.4 4.5-5.5 4.5s-5.5-1.9-5.5-4.5z" fill="#D9A97E"/><path d="M32 52.5v7" stroke="#B08D5B" stroke-width="1.4"/><circle cx="32" cy="60.5" r="1.7" fill="#B08D5B"/><ellipse cx="32" cy="33" rx="10.5" ry="12" fill="#E8BE95"/><path d="M22.5 35.5c.6 7 4.6 10.5 9.5 10.5s8.9-3.5 9.5-10.5c-1.8 2.8-4 4.2-6 4.2-1.2-1-2.3-1.4-3.5-1.4s-2.3.4-3.5 1.4c-2 0-4.2-1.4-6-4.2z" fill="#4A3A30"/><path d="M20.8 27.2V13.6c0-1.5 5-2.6 11.2-2.6s11.2 1.1 11.2 2.6v13.6c-3 .9-6.8 1.3-11.2 1.3s-8.2-.4-11.2-1.3z" fill="#fff" stroke="#C9D6D0"/><ellipse cx="32" cy="13.6" rx="11.2" ry="2.3" fill="#F4F8F6" stroke="#C9D6D0" stroke-width=".8"/><path d="M20.9 24.6c3 .9 6.8 1.3 11.1 1.3s8.1-.4 11.1-1.3" fill="none" stroke="#0E5A46" stroke-width="1.6"/><path d="M22.5 21.2l1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2 1.9-2.2 1.9 2.2" fill="none" stroke="#B9770E" stroke-width="1.1"/><path d="M24 17.2h16" stroke="#0E5A46" stroke-width="1" stroke-dasharray="1.6 1.6"/></svg></span><span class="face you">أنت؟</span></div>
+  <span class="btn" id="cta">تطوّع الآن</span><span class="url" id="url">www.midrarelm.com</span>
+  <p class="free" id="free">من الصف الأول إلى الثاني عشر</p></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const S = 1000;
+function at(el, t0, dur, kf, easing, fill) { (typeof el === 'string' ? $(el) : el).animate(kf, { delay: t0 * S, duration: dur * S, fill: fill || 'both', easing: easing || 'cubic-bezier(.2,.8,.2,1)' }); }
+const fadeUp = (el, t, d) => at(el, t, d || .7, [{ opacity: 0, transform: 'translateY(40px)' }, { opacity: 1, transform: 'none' }]);
+function scene(id, a, b) { at(id, a, .45, [{ opacity: 0 }, { opacity: 1 }], 'ease-out'); if (b) at(id, b - .4, .4, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-30px)' }], 'ease-in', 'forwards'); }
+// المواعيد على التعليق الصوتي (بالثواني)
+const T = window.T = { s2: 2.7, s3: 10.45, s4: 28.95, s5: 38.35, end: 45.6 };
+at(document.querySelector('.glow1'), 0, T.end, [{ transform: 'translate(0,0)' }, { transform: 'translate(-180px,260px)' }], 'linear');
+at(document.querySelector('.glow2'), 0, T.end, [{ transform: 'translate(0,0)' }, { transform: 'translate(200px,-240px)' }], 'linear');
+// 1) الشعار + «إلى كل معلم ومعلمة»
+at('s1', 0, .01, [{ opacity: 1 }, { opacity: 1 }]); at('s1', T.s2 - .4, .4, [{ opacity: 1 }, { opacity: 0, transform: 'translateY(-30px)' }], 'ease-in', 'forwards');
+at('s1logo', 0, .9, [{ opacity: 0, transform: 'scale(.82)' }, { opacity: 1, transform: 'none' }]);
+fadeUp('s1t', .42, .7);
+at('toplogo', T.s2, .6, [{ opacity: 0 }, { opacity: .95 }]);
+// 2) علمك صدقة جارية / وساعة من وقتك…
+scene('s2', T.s2, T.s3);
+fadeUp('s2a', 3.0, .6); fadeUp('s2b', 3.95, .6);
+at('s2bar', 4.55, .7, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }]);
+fadeUp('s2c', 6.2, .8);
+// 3) الحديث: كل جملة مع قراءتها
+scene('s3', T.s3, T.s4);
+fadeUp('s3a', 10.7, .6); fadeUp('q1', 13.7, .6); fadeUp('q2', 17.15, .6); fadeUp('q2b', 19.1, .6); fadeUp('q3', 22.4, .6); fadeUp('q4', 24.25, .6); fadeUp('s3b', 26.5, .6);
+at(document.querySelector('#q3 b'), 22.9, .9, [{ color: '#F4F6F1' }, { color: '#5BC39A' }], 'ease-out');
+// 4) الخطوات
+scene('s4', T.s4, T.s5);
+fadeUp('s4t', 29.3, .6);
+[31.7, 33.2, 35.15].forEach((t, i) => { const s = 'st' + (i + 1);
+  at(s, t, .6, [{ opacity: 0, transform: 'translateX(-120px)' }, { opacity: 1, transform: 'none' }]);
+  at(document.querySelector('#' + s + ' i'), t + .2, .5, [{ transform: 'scale(0)' }, { transform: 'scale(1.18)' }, { transform: 'scale(1)' }]); });
+fadeUp('s4n', 36.15, .7);
+// 5) انضم… تطوّع الآن
+scene('s5', T.s5, 0);
+fadeUp('s5t', 38.7, .6);
+Array.from(document.querySelectorAll('.face')).forEach((f, i) => at(f, 39.1 + i * .14, .5, [{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'scale(1.08)' }, { opacity: 1, transform: 'none' }]));
+at(document.querySelector('.face.you'), 40.3, 1.2, [{ transform: 'none' }, { transform: 'scale(1.18)' }, { transform: 'none' }, { transform: 'scale(1.12)' }, { transform: 'none' }], 'ease-in-out', 'forwards');
+at('cta', 41.9, .6, [{ opacity: 0, transform: 'scale(.7)' }, { opacity: 1, transform: 'scale(1.06)' }, { opacity: 1, transform: 'none' }]);
+at('cta', 43.2, 1.4, [{ transform: 'none' }, { transform: 'scale(1.06)' }, { transform: 'none' }], 'ease-in-out', 'forwards');
+fadeUp('url', 42.3, .6); fadeUp('free', 42.7, .6);
+window.DURATION = T.end;
+window.seek = (t) => document.getAnimations().forEach((a) => { a.pause(); a.currentTime = t * S; });
+</script></body></html>
