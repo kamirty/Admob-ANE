@@ -963,6 +963,7 @@
     chipIntoView(body);
     const toolsReq = getTools().catch(() => []);
     const upReq = API.listUpcoming({ grade: gradeId, subject }).catch(() => []);
+    const pxReq = practiceIndex();
     let rows;
     try { rows = remember(await subjectLessons(gradeId, subject)); }
     catch (e) {
@@ -974,6 +975,7 @@
     }
     const tools = toolsFor(await toolsReq, gradeId, subject);
     const ups = remember(upNow(await upReq)).slice(0, 4);
+    const px = (await pxReq)[gradeId + '-' + subject];
     if (tok !== app.token) return;
     const key = gradeId + '|' + subject;
     // رابط «أسئلة الدبلوم» يعرض الامتحانات فقط دون أن يغيّر اختيار الطالب في صفحة المادة
@@ -1027,6 +1029,7 @@
       const scrolls = $$('.filters', body).map((x) => x.scrollLeft);
       body.innerHTML = `${subjChips(gradeId, subject)}${searchHtml(gradeId, subject)}
         <div id="main-list">
+        ${px ? `<a class="px-cta" href="#/practice/${esc(gradeId + '-' + subject)}" style="${scVar(subject)}">${subjIcon(subject)}<span><b>تدرّب على دروس الكتاب</b><small>أسئلة تفاعلية بثلاثة مستويات · ${plural(px.lessons, 'درس واحد', 'درسان', 'دروس', 'درساً')}</small></span><span class="btn btn-sm">ابدأ</span></a>` : ''}
         ${ups.length ? `<section class="up-strip"><h2>قادم في ${esc(subjectName(subject))}</h2>${upCards(ups)}</section>` : ''}
         ${termCount[1] && termCount[2] ? `<div class="filters" role="group" aria-label="الفصل الدراسي">
           ${[1, 2].map((t) => `<button type="button" class="chip" data-term="${t}" aria-pressed="${ui.term === t}">${esc(TERMS[t])} <span class="muted">${fNum(termCount[t])}</span></button>`).join('')}
@@ -4357,6 +4360,157 @@
     armed($('#clear-watch2'), async () => { watch.clear(); toast('مُسح سجل المشاهدة من هذا الجهاز'); });
   }
 
+
+  // ------------------------------------------------------------------
+  //  «تدرّب»: أسئلة تفاعلية لكل درس من الكتاب بثلاثة مستويات.
+  //  الأسئلة ملفات JSON داخل الموقع (assets/practice)، فلا تحتاج قاعدة بيانات.
+  //  درس status: 'review' لا يراه إلا المعلمون حتى يراجعه معلم المادة.
+  // ------------------------------------------------------------------
+  const PX_LV = { 1: 'سهل', 2: 'متوسط', 3: 'متقدم' };
+  const pxCache = {};
+  const pxFetch = (path) => (pxCache[path] || (pxCache[path] = fetch('assets/practice/' + path, { cache: 'no-cache' })
+    .then((r) => { if (!r.ok) throw new Error('practice ' + r.status); return r.json(); })
+    .catch((e) => { delete pxCache[path]; throw e; })));
+  const practiceIndex = () => pxFetch('index.json').then((x) => (x && x.sets) || {}).catch(() => ({}));
+  const pxReviewer = () => !!(app.profile && app.profile.status !== 'suspended');
+  // نص السؤال: ما بين $…$ رياضيات تُعرض من اليسار إلى اليمين
+  const pxText = (t) => esc(t || '').replace(/\$([^$]+)\$/g, '<bdi dir="ltr" class="m">$1</bdi>');
+  // مقارنة الإجابات المكتوبة: بلا تشكيل ولا همزات ولا فروق في الأرقام
+  const normAns = (v) => String(v == null ? '' : v).normalize('NFKC')
+    .replace(/[ً-ٰٟـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي')
+    .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[−–]/g, '-').replace(/٫/g, '.').replace(/[.،,؛!؟?]+$/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const numAns = (v) => { const n = Number(normAns(v).replace(/\s/g, '').replace(/,/g, '.')); return Number.isFinite(n) ? n : NaN; };
+  const shuffled = (a) => { const r = a.slice(); for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
+  const pxBest = { all: () => store.json('px-best', {}), get: (k) => store.json('px-best', {})[k], set(k, v) { const a = store.json('px-best', {}); if (!(a[k] >= v)) { a[k] = v; store.set('px-best', JSON.stringify(a)); } } };
+  const starsOf = (pct) => (pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 50 ? 1 : 0);
+  const starsHtml = (n) => `<span class="px-stars" aria-label="${n} من 3 نجوم">${'★'.repeat(n)}<i>${'★'.repeat(3 - n)}</i></span>`;
+  const pxVisible = (l) => l.status !== 'review' || pxReviewer();
+
+  async function pagePractice(tok, setId, lessonId) {
+    setNav('home'); setTitle('تدرّب');
+    view.innerHTML = '<p class="loading">جارٍ تحميل الأسئلة…</p>';
+    let set;
+    try { set = await pxFetch(setId + '.json'); }
+    catch (e) { if (tok === app.token) pageNotFound('لم نجد أسئلة لهذه المادة بعد.'); return; }
+    if (tok !== app.token) return;
+    const g = set.grade; const sub = set.subject;
+    const crumbs = `<nav class="crumbs" aria-label="مسار التنقل"><a href="#/">الصفوف</a><span>›</span><a href="#/g/${esc(g)}">${esc(gradeName(g))}</a><span>›</span><a class="crumb-sc" style="${scVar(sub)}" href="#/g/${esc(g)}/${esc(sub)}">${subjIcon(sub)}${esc(subjectName(sub))}</a>${lessonId ? `<span>›</span><a href="#/practice/${esc(setId)}">تدرّب</a>` : ''}</nav>`;
+    const lessons = []; (set.units || []).forEach((u) => (u.lessons || []).forEach((l) => lessons.push(Object.assign({ unit: u }, l))));
+    if (!lessonId) {
+      setTitle(`تدرّب: ${subjectName(sub)} — ${gradeName(g)}`);
+      const best = pxBest.all();
+      view.innerHTML = `<header class="page-head">${crumbs}<div class="title-row"><h1>تدرّب: ${esc(subjectName(sub))}</h1><span class="muted">${esc(gradeName(g))}</span></div>
+          <p class="muted">اختر درساً، ثم مستواك. تعرف إجابتك فوراً مع شرح قصير.</p></header>
+        ${(set.units || []).map((u) => { const ls = (u.lessons || []).filter(pxVisible); return ls.length ? `<section class="px-unit" style="${scVar(sub)}"><h2>${u.n ? `الوحدة ${fNum(u.n)}: ` : ''}${esc(u.title || '')}</h2>
+          <div class="px-lessons">${ls.map((l) => { const b = Math.max(-1, ...[1, 2, 3, 0].map((lv) => (best[`${setId}/${l.id}/${lv}`] == null ? -1 : best[`${setId}/${l.id}/${lv}`]))); return `<a class="px-lesson" href="#/practice/${esc(setId)}/${esc(l.id)}">
+            <span><b>${esc(l.title)}</b><small>${plural((l.questions || []).length, 'سؤال واحد', 'سؤالان', 'أسئلة', 'سؤالاً')}${l.status === 'sample' ? ' · نموذج' : ''}${l.status === 'review' ? ' · بانتظار مراجعة معلم' : ''}</small></span>
+            ${b >= 0 ? starsHtml(starsOf(b)) : '<span class="btn btn-sm">ابدأ</span>'}</a>`; }).join('')}</div></section>` : ''; }).join('') || '<div class="empty"><b>لا توجد أسئلة منشورة بعد</b></div>'}`;
+      return;
+    }
+    const L = lessons.find((l) => l.id === lessonId);
+    if (!L || !pxVisible(L)) return pageNotFound('لم نجد هذا الدرس.');
+    setTitle(`تدرّب: ${L.title}`);
+    const all = (L.questions || []).map((q, i) => Object.assign({ n: i + 1, level: 2 }, q));
+    const levels = [1, 2, 3].filter((lv) => all.some((q) => q.level === lv));
+    const head = `<header class="page-head">${crumbs}<div class="title-row"><h1>${esc(L.title)}</h1></div>
+      ${L.status === 'sample' ? '<p class="note">نموذج لتجربة الفكرة. تُضاف أسئلة كل درس بعد مراجعة معلم المادة لها.</p>' : ''}
+      ${L.status === 'review' ? '<p class="note warn">بانتظار مراجعة معلم: لا يراه الطلاب بعد.</p>' : ''}</header>`;
+    function pick() {
+      view.innerHTML = head + `<section class="px-pick" style="${scVar(sub)}"><h2>اختر مستواك</h2>
+        <div class="px-levels">${levels.map((lv) => `<button type="button" class="px-lv lv-${lv}" data-lv="${lv}"><b>${PX_LV[lv]}</b><small>${plural(all.filter((q) => q.level === lv).length, 'سؤال واحد', 'سؤالان', 'أسئلة', 'سؤالاً')}</small></button>`).join('')}
+          ${levels.length > 1 ? `<button type="button" class="px-lv lv-0" data-lv="0"><b>كل الأسئلة</b><small>${plural(all.length, 'سؤال واحد', 'سؤالان', 'أسئلة', 'سؤالاً')}</small></button>` : ''}</div>
+        ${pxReviewer() ? '<button type="button" class="btn btn-ghost btn-sm" id="px-key">للمعلم: عرض الأسئلة بإجاباتها</button>' : ''}</section>`;
+      $$('[data-lv]').forEach((b) => b.addEventListener('click', () => run(Number(b.getAttribute('data-lv')))));
+      const k = $('#px-key'); if (k) k.addEventListener('click', answerKey);
+    }
+    function answerKey() {
+      const ans = (q) => (q.type === 'mcq' ? pxText(q.choices[q.answer]) : q.type === 'tf' ? (q.answer ? 'صح' : 'خطأ') : q.type === 'fill' ? esc(q.answers.join(' / '))
+        : q.type === 'num' ? esc(String(q.answer)) : q.type === 'match' ? q.pairs.map((p) => `${pxText(p[0])} ← ${pxText(p[1])}`).join('<br>') : q.items.map((x, i) => `${i + 1}. ${pxText(x)}`).join('<br>'));
+      view.innerHTML = head + `<section class="px-key"><h2>الأسئلة بإجاباتها</h2><p class="muted small">وجدتَ خطأ؟ اضغط «أبلغ» بجانب السؤال فتصل رسالتك للإدارة.</p>
+        <ol>${all.map((q) => `<li><span class="pill">${PX_LV[q.level]}</span> ${pxText(q.q)}<div class="px-ans"><b>الإجابة:</b> ${ans(q)}</div>${q.explain ? `<div class="muted small">${pxText(q.explain)}</div>` : ''}
+          ${waLink('') ? `<a class="btn btn-ghost btn-sm" target="_blank" rel="noopener" href="${esc(waLink(`خطأ في سؤال «تدرّب»: ${setId}/${lessonId} السؤال ${q.n}`))}">أبلغ عن خطأ</a>` : ''}</li>`).join('')}</ol>
+        <button type="button" class="btn" id="px-back">رجوع</button></section>`;
+      $('#px-back').addEventListener('click', pick);
+    }
+    function run(lv) {
+      const qs = all.filter((q) => !lv || q.level === lv).sort((a, b) => a.level - b.level || a.n - b.n);
+      let i = 0; let score = 0;
+      const show = () => {
+        const q = qs[i];
+        const st = {};
+        let body = '';
+        if (q.type === 'mcq') { st.order = shuffled(q.choices.map((_, k) => k)); body = `<div class="px-opts">${st.order.map((k) => `<button type="button" class="px-o" data-k="${k}">${pxText(q.choices[k])}</button>`).join('')}</div>`; }
+        else if (q.type === 'tf') body = '<div class="px-opts px-tf"><button type="button" class="px-o" data-k="1">صح</button><button type="button" class="px-o" data-k="0">خطأ</button></div>';
+        else if (q.type === 'fill' || q.type === 'num') body = `<input class="input px-in" id="px-in" ${q.type === 'num' ? 'inputmode="decimal" dir="ltr"' : ''} autocomplete="off" aria-label="إجابتك" placeholder="${q.type === 'num' ? 'اكتب العدد' : 'اكتب إجابتك'}">`;
+        else if (q.type === 'match') { st.rights = shuffled(q.pairs.map((p) => p[1])); body = `<div class="px-match">${q.pairs.map((p, k) => `<label class="px-mrow"><span>${pxText(p[0])}</span><select class="input" data-m="${k}"><option value="">اختر…</option>${st.rights.map((r) => `<option value="${esc(r)}">${esc(r.replace(/\$([^$]+)\$/g, '\u2066$1\u2069'))}</option>`).join('')}</select></label>`).join('')}</div>`; }
+        else if (q.type === 'order') { st.cur = shuffled(q.items); if (q.items.length > 1) while (st.cur.join('|') === q.items.join('|')) st.cur = shuffled(q.items); }
+        const orderHtml = () => `<ol class="px-order">${st.cur.map((x, k) => `<li><span>${pxText(x)}</span><span class="px-mv"><button type="button" class="btn btn-sm" data-up="${k}" aria-label="انقله لأعلى"${k === 0 ? ' disabled' : ''}>▲</button><button type="button" class="btn btn-sm" data-dn="${k}" aria-label="انقله لأسفل"${k === st.cur.length - 1 ? ' disabled' : ''}>▼</button></span></li>`).join('')}</ol>`;
+        view.innerHTML = head + `<section class="px-run" style="${scVar(sub)}">
+          <div class="px-top"><span>السؤال ${fNum(i + 1)} من ${fNum(qs.length)}</span><span class="pill">${PX_LV[q.level]}</span><span class="spacer"></span><span>${fNum(score)} صحيحة</span></div>
+          <div class="px-bar" aria-hidden="true"><span style="width:${Math.round((i / qs.length) * 100)}%"></span></div>
+          <h2 class="px-q">${pxText(q.q)}</h2>
+          <div id="px-body">${q.type === 'order' ? orderHtml() : body}</div>
+          ${q.hint ? `<details class="px-hint"><summary>تلميح</summary><p>${pxText(q.hint)}</p></details>` : ''}
+          <div class="px-fb" id="px-fb" role="status" tabindex="-1"></div>
+          <div class="form-actions"><button type="button" class="btn btn-primary" id="px-go">تحقّق</button></div></section>`;
+        let chosen = null;
+        $$('.px-o').forEach((b) => b.addEventListener('click', () => { if (b.disabled) return; chosen = b.getAttribute('data-k'); $$('.px-o').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
+        const bindOrder = () => {
+          $$('[data-up]').forEach((b) => b.addEventListener('click', () => { const k = +b.getAttribute('data-up'); [st.cur[k - 1], st.cur[k]] = [st.cur[k], st.cur[k - 1]]; $('#px-body').innerHTML = orderHtml(); bindOrder(); const f = $(`[data-up="${k - 1}"]`) || $(`[data-dn="${k - 1}"]`); if (f) f.focus(); }));
+          $$('[data-dn]').forEach((b) => b.addEventListener('click', () => { const k = +b.getAttribute('data-dn'); [st.cur[k + 1], st.cur[k]] = [st.cur[k], st.cur[k + 1]]; $('#px-body').innerHTML = orderHtml(); bindOrder(); const f = $(`[data-dn="${k + 1}"]`) || $(`[data-up="${k + 1}"]`); if (f) f.focus(); }));
+        };
+        if (q.type === 'order') bindOrder();
+        const inp = $('#px-in'); if (inp) { inp.focus(); inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#px-go').click(); } }); }
+        let checked = false;
+        $('#px-go').addEventListener('click', () => {
+          if (checked) { i++; if (i < qs.length) show(); else finish(); return; }
+          let ok; let right = '';
+          if (q.type === 'mcq' || q.type === 'tf') {
+            if (chosen == null) return toast('اختر إجابة أولاً.');
+            ok = q.type === 'mcq' ? Number(chosen) === q.answer : (chosen === '1') === !!q.answer;
+            $$('.px-o').forEach((x) => { x.disabled = true; const k = x.getAttribute('data-k'); const isRight = q.type === 'mcq' ? Number(k) === q.answer : (k === '1') === !!q.answer; if (isRight) x.classList.add('right'); else if (k === chosen) x.classList.add('wrong'); });
+            right = q.type === 'mcq' ? pxText(q.choices[q.answer]) : (q.answer ? 'صح' : 'خطأ');
+          } else if (q.type === 'fill' || q.type === 'num') {
+            const v = inp.value.trim(); if (!v) { inp.focus(); return toast('اكتب إجابتك أولاً.'); }
+            ok = q.type === 'num' ? Math.abs(numAns(v) - Number(q.answer)) <= (q.tol || 0) + 1e-9 : q.answers.some((a) => normAns(a) === normAns(v));
+            inp.disabled = true; inp.classList.add(ok ? 'right' : 'wrong');
+            right = esc(q.type === 'num' ? String(q.answer) : q.answers[0]);
+          } else if (q.type === 'match') {
+            const sels = $$('[data-m]'); if (sels.some((x) => !x.value)) return toast('اختر لكل عنصر ما يناسبه.');
+            ok = sels.every((x) => x.value === q.pairs[+x.getAttribute('data-m')][1]);
+            sels.forEach((x) => { x.disabled = true; x.classList.add(x.value === q.pairs[+x.getAttribute('data-m')][1] ? 'right' : 'wrong'); });
+            right = q.pairs.map((p) => `${pxText(p[0])} ← ${pxText(p[1])}`).join('، ');
+          } else {
+            ok = st.cur.join('|') === q.items.join('|');
+            $$('.px-mv button').forEach((x) => { x.disabled = true; });
+            right = q.items.map((x, k) => `${fNum(k + 1)}. ${pxText(x)}`).join(' ');
+          }
+          if (ok) score++;
+          checked = true;
+          const fb = $('#px-fb');
+          fb.className = 'px-fb ' + (ok ? 'ok' : 'no');
+          fb.innerHTML = `<b>${ok ? 'إجابة صحيحة' : 'ليست صحيحة'}</b>${ok ? '' : `<span>الإجابة: ${right}</span>`}${q.explain ? `<span>${pxText(q.explain)}</span>` : ''}`;
+          fb.focus();
+          $('#px-go').textContent = i + 1 < qs.length ? 'التالي' : 'النتيجة';
+        });
+      };
+      const finish = () => {
+        const pct = Math.round((score / qs.length) * 100);
+        pxBest.set(`${setId}/${lessonId}/${lv}`, pct);
+        const n = starsOf(pct);
+        view.innerHTML = head + `<section class="px-end" style="${scVar(sub)}">${starsHtml(n)}
+          <h2>${fNum(score)} من ${fNum(qs.length)}</h2>
+          <p>${n === 3 ? 'ممتاز! أتقنت هذا الدرس.' : n === 2 ? 'أحسنت! راجع ما أخطأت فيه وأعد المحاولة.' : n === 1 ? 'بداية جيدة. شاهد شرح الدرس ثم أعد المحاولة.' : 'لا بأس، شاهد شرح الدرس ثم جرّب المستوى السهل.'}</p>
+          <div class="row"><button type="button" class="btn btn-primary" id="px-again">أعد المحاولة</button><button type="button" class="btn" id="px-lv">مستوى آخر</button>
+            <a class="btn btn-ghost" href="#/practice/${esc(setId)}">دروس أخرى</a><a class="btn btn-ghost" href="#/g/${esc(g)}/${esc(sub)}">شروح المادة</a></div></section>`;
+        $('#px-again').addEventListener('click', () => run(lv));
+        $('#px-lv').addEventListener('click', pick);
+      };
+      show();
+    }
+    if (levels.length) pick(); else view.innerHTML = head + '<div class="empty"><b>لا توجد أسئلة في هذا الدرس بعد</b></div>';
+  }
+
   function pageNotFound(msg) {
     setTitle('غير موجود');
     view.innerHTML = `<div class="empty" style="margin-top:32px"><b>${esc(msg || 'الصفحة غير موجودة')}</b><a class="btn btn-primary" href="#/">العودة إلى الصفوف</a></div>`;
@@ -4374,6 +4528,7 @@
     [/^#\/teachers$/, (t) => pageTeachers(t)],
     [/^#\/k(?:\/(sk_[a-z_]+))?$/, (t, m) => pageSkills(t, m[1])],
     [/^#\/p\/([\w-]+)$/, (t, m) => pagePath(t, m[1])],
+    [/^#\/practice\/(g\d{1,2}-[a-z_]+)(?:\/([\w-]+))?$/, (t, m) => pagePractice(t, m[1], m[2])],
     [/^#\/volunteer$/, () => pageVolunteer()],
     [/^#\/teach$/, () => pageTeach()],
     [/^#\/tools$/, (t) => pageTools(t)],
