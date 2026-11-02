@@ -1067,3 +1067,11 @@ fieldset.pick-g legend { font-weight: 600; padding: 0; margin-bottom: 6px; }
 .px-ans { color: var(--ok); }
 @media (max-width: 600px) { .px-mrow { grid-template-columns: minmax(0, 1fr); gap: 4px; } .px-q { font-size: 1.2rem; } }
 @media (prefers-reduced-motion: reduce) { .px-lv, .px-bar span { transition: none; } }
+.px-qrow { display: flex; align-items: flex-start; gap: 10px; }
+.px-qrow .px-q { flex: 1; min-width: 0; }
+.px-say { flex: none; }
+/* للصغار: خط أكبر وأزرار أوسع */
+.px-young .px-q { font-size: 1.6rem; line-height: 1.9; }
+.px-young .px-o { font-size: 1.35rem; padding: 16px 18px; line-height: 1.9; }
+.px-young .px-order li, .px-young .px-mrow { font-size: 1.2rem; line-height: 1.9; }
+.px-young .px-match select { font-size: 1.1rem; }

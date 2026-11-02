@@ -1,5 +1,11 @@
 {
   "sets": {
-    "g10-math": { "lessons": 1 }
+    "g10-math": {
+      "lessons": 1
+    },
+    "g1-islamic": {
+      "lessons": 0,
+      "review": 1
+    }
   }
 }

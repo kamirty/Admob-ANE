@@ -975,7 +975,10 @@
     }
     const tools = toolsFor(await toolsReq, gradeId, subject);
     const ups = remember(upNow(await upReq)).slice(0, 4);
-    const px = (await pxReq)[gradeId + '-' + subject];
+    const pxi = (await pxReq)[gradeId + '-' + subject];
+    // درس بانتظار المراجعة يظهر للمعلمين فقط
+    const pxN = pxi ? (pxi.lessons || 0) + (pxReviewer() ? pxi.review || 0 : 0) : 0;
+    const px = pxN ? { lessons: pxN } : null;
     if (tok !== app.token) return;
     const key = gradeId + '|' + subject;
     // رابط «أسئلة الدبلوم» يعرض الامتحانات فقط دون أن يغيّر اختيار الطالب في صفحة المادة
@@ -4385,6 +4388,18 @@
   const starsOf = (pct) => (pct >= 90 ? 3 : pct >= 70 ? 2 : pct >= 50 ? 1 : 0);
   const starsHtml = (n) => `<span class="px-stars" aria-label="${n} من 3 نجوم">${'★'.repeat(n)}<i>${'★'.repeat(3 - n)}</i></span>`;
   const pxVisible = (l) => l.status !== 'review' || pxReviewer();
+  // «اسمع»: يقرأ الجهاز السؤال بالعربية، لمن لا يجيد القراءة بعد
+  function pxSay(text) {
+    const sp = window.speechSynthesis;
+    if (!sp || !window.SpeechSynthesisUtterance) return toast('جهازك لا يدعم قراءة النص بصوت.', true);
+    const clean = String(text).replace(/\$([^$]+)\$/g, '$1').replace(/\p{Extended_Pictographic}|\uFE0F/gu, '').replace(/…/g, ' ').trim();
+    const u = new SpeechSynthesisUtterance(clean);
+    const v = sp.getVoices().find((x) => /^ar/i.test(x.lang));
+    if (v) u.voice = v; else if (sp.getVoices().length) toast('لا يوجد صوت عربي في جهازك، فقد تختلف القراءة.');
+    u.lang = v ? v.lang : 'ar-SA'; u.rate = 0.85;
+    sp.cancel(); sp.speak(u);
+  }
+  const pxSayText = (q) => q.q + (q.type === 'mcq' ? '، ' + q.choices.join('، أَوْ ') : q.type === 'tf' ? '، صَحٌّ أَمْ خَطَأٌ؟' : '');
 
   async function pagePractice(tok, setId, lessonId) {
     setNav('home'); setTitle('تدرّب');
@@ -4401,7 +4416,7 @@
       const best = pxBest.all();
       view.innerHTML = `<header class="page-head">${crumbs}<div class="title-row"><h1>تدرّب: ${esc(subjectName(sub))}</h1><span class="muted">${esc(gradeName(g))}</span></div>
           <p class="muted">اختر درساً، ثم مستواك. تعرف إجابتك فوراً مع شرح قصير.</p></header>
-        ${(set.units || []).map((u) => { const ls = (u.lessons || []).filter(pxVisible); return ls.length ? `<section class="px-unit" style="${scVar(sub)}"><h2>${u.n ? `الوحدة ${fNum(u.n)}: ` : ''}${esc(u.title || '')}</h2>
+        ${(set.units || []).map((u) => { const ls = (u.lessons || []).filter(pxVisible); return ls.length ? `<section class="px-unit" style="${scVar(sub)}"><h2>${u.n ? `الوحدة ${fNum(u.n)}${u.title ? ': ' : ''}` : ''}${esc(u.title || '')}</h2>
           <div class="px-lessons">${ls.map((l) => { const b = Math.max(-1, ...[1, 2, 3, 0].map((lv) => (best[`${setId}/${l.id}/${lv}`] == null ? -1 : best[`${setId}/${l.id}/${lv}`]))); return `<a class="px-lesson" href="#/practice/${esc(setId)}/${esc(l.id)}">
             <span><b>${esc(l.title)}</b><small>${plural((l.questions || []).length, 'سؤال واحد', 'سؤالان', 'أسئلة', 'سؤالاً')}${l.status === 'sample' ? ' · نموذج' : ''}${l.status === 'review' ? ' · بانتظار مراجعة معلم' : ''}</small></span>
             ${b >= 0 ? starsHtml(starsOf(b)) : '<span class="btn btn-sm">ابدأ</span>'}</a>`; }).join('')}</div></section>` : ''; }).join('') || '<div class="empty"><b>لا توجد أسئلة منشورة بعد</b></div>'}`;
@@ -4414,7 +4429,8 @@
     const levels = [1, 2, 3].filter((lv) => all.some((q) => q.level === lv));
     const head = `<header class="page-head">${crumbs}<div class="title-row"><h1>${esc(L.title)}</h1></div>
       ${L.status === 'sample' ? '<p class="note">نموذج لتجربة الفكرة. تُضاف أسئلة كل درس بعد مراجعة معلم المادة لها.</p>' : ''}
-      ${L.status === 'review' ? '<p class="note warn">بانتظار مراجعة معلم: لا يراه الطلاب بعد.</p>' : ''}</header>`;
+      ${L.status === 'review' ? '<p class="note warn">بانتظار مراجعة معلم: لا يراه الطلاب بعد.</p>' : ''}
+      ${set.source ? `<p class="muted small">من ${esc(set.source)}${L.pages ? `، الصفحات <bdi dir="ltr">${esc(L.pages)}</bdi>` : ''}.</p>` : ''}</header>`;
     function pick() {
       view.innerHTML = head + `<section class="px-pick" style="${scVar(sub)}"><h2>اختر مستواك</h2>
         <div class="px-levels">${levels.map((lv) => `<button type="button" class="px-lv lv-${lv}" data-lv="${lv}"><b>${PX_LV[lv]}</b><small>${plural(all.filter((q) => q.level === lv).length, 'سؤال واحد', 'سؤالان', 'أسئلة', 'سؤالاً')}</small></button>`).join('')}
@@ -4445,14 +4461,15 @@
         else if (q.type === 'match') { st.rights = shuffled(q.pairs.map((p) => p[1])); body = `<div class="px-match">${q.pairs.map((p, k) => `<label class="px-mrow"><span>${pxText(p[0])}</span><select class="input" data-m="${k}"><option value="">اختر…</option>${st.rights.map((r) => `<option value="${esc(r)}">${esc(r.replace(/\$([^$]+)\$/g, '\u2066$1\u2069'))}</option>`).join('')}</select></label>`).join('')}</div>`; }
         else if (q.type === 'order') { st.cur = shuffled(q.items); if (q.items.length > 1) while (st.cur.join('|') === q.items.join('|')) st.cur = shuffled(q.items); }
         const orderHtml = () => `<ol class="px-order">${st.cur.map((x, k) => `<li><span>${pxText(x)}</span><span class="px-mv"><button type="button" class="btn btn-sm" data-up="${k}" aria-label="انقله لأعلى"${k === 0 ? ' disabled' : ''}>▲</button><button type="button" class="btn btn-sm" data-dn="${k}" aria-label="انقله لأسفل"${k === st.cur.length - 1 ? ' disabled' : ''}>▼</button></span></li>`).join('')}</ol>`;
-        view.innerHTML = head + `<section class="px-run" style="${scVar(sub)}">
+        view.innerHTML = head + `<section class="px-run${set.young ? ' px-young' : ''}" style="${scVar(sub)}">
           <div class="px-top"><span>السؤال ${fNum(i + 1)} من ${fNum(qs.length)}</span><span class="pill">${PX_LV[q.level]}</span><span class="spacer"></span><span>${fNum(score)} صحيحة</span></div>
           <div class="px-bar" aria-hidden="true"><span style="width:${Math.round((i / qs.length) * 100)}%"></span></div>
-          <h2 class="px-q">${pxText(q.q)}</h2>
+          <div class="px-qrow"><h2 class="px-q">${pxText(q.q)}</h2>${'speechSynthesis' in window ? '<button type="button" class="btn btn-sm px-say" id="px-say" aria-label="اسمع السؤال">🔊 اسمع</button>' : ''}</div>
           <div id="px-body">${q.type === 'order' ? orderHtml() : body}</div>
           ${q.hint ? `<details class="px-hint"><summary>تلميح</summary><p>${pxText(q.hint)}</p></details>` : ''}
           <div class="px-fb" id="px-fb" role="status" tabindex="-1"></div>
           <div class="form-actions"><button type="button" class="btn btn-primary" id="px-go">تحقّق</button></div></section>`;
+        const sayB = $('#px-say'); if (sayB) sayB.addEventListener('click', () => pxSay(pxSayText(q)));
         let chosen = null;
         $$('.px-o').forEach((b) => b.addEventListener('click', () => { if (b.disabled) return; chosen = b.getAttribute('data-k'); $$('.px-o').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
         const bindOrder = () => {
