@@ -491,15 +491,18 @@
     const fig = (k, x, y, w) => `<svg x="${x}" y="${y}" width="${w}" height="${w}" viewBox="0 0 64 64">${FACE[k].replace(/^<svg[^>]*>|<\/svg>$/g, '')}</svg>`;
     const drops = [[90, 70], [150, 40], [230, 95], [330, 50], [400, 110], [455, 62], [120, 170], [470, 180], [300, 150]]
       .map(([x, y], i) => `<path class="drop" style="--d:${(i * 0.37) % 2.6}s" d="M${x} ${y}c0 0-5 7-5 10.5a5 5 0 0 0 10 0C${x + 5} ${y + 7} ${x} ${y} ${x} ${y}z"/>`).join('');
-    return `<svg class="hero-art" viewBox="0 0 560 600" role="img" aria-label="معلم يشرح على السبورة وطالبان يتابعان">
+    const ln = (y, t, cls) => `<text x="280" y="${y}" class="${cls || 'hd'}" text-anchor="middle" direction="rtl">${t}</text>`;
+    return `<svg class="hero-art" viewBox="0 0 560 600" role="img" aria-label="سبورة كُتب عليها حديث «أو علمٍ يُنتفَعُ به»، وطالبة وطالب يتابعان">
       <defs><clipPath id="arch-in"><path d="M40 600V250C40 120 150 30 280 30S520 120 520 250V600Z"/></clipPath>
         <linearGradient id="arch-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE3F2"/><stop offset="1" stop-color="#EAF6FA"/></linearGradient></defs>
       <path d="M20 600V250C20 108 138 10 280 10S540 108 540 250V600Z" fill="#E9D8BE"/>
       <g clip-path="url(#arch-in)"><rect width="560" height="600" fill="url(#arch-sky)"/><g class="drops">${drops}</g>
-        <rect x="110" y="215" width="330" height="200" rx="10" fill="#0E5A46"/><rect x="110" y="415" width="330" height="12" fill="#B08D5B"/>
-        <text x="225" y="285" fill="#F4F6F1" font-size="48" font-weight="700" text-anchor="middle" direction="ltr" class="kufi">3 + 4 = 7</text>
-        <path d="M165 380l50-80 50 80z" fill="none" stroke="#F4F6F1" stroke-width="4" stroke-linejoin="round"/><path d="M300 360q30-50 60 0t60 0" fill="none" stroke="#E7B456" stroke-width="4"/>
-        ${fig('m', 330, 300, 210)}<rect y="470" width="560" height="130" fill="#D9C4A4"/>${fig('f', 70, 400, 200)}${fig('m', 215, 415, 185)}</g>
+        <rect x="72" y="138" width="416" height="286" rx="12" fill="#0E5A46"/><rect x="72" y="424" width="416" height="12" fill="#B08D5B"/>
+        ${ln(180, 'قال رسول الله ﷺ', 'hd hd-say')}
+        ${ln(228, '«إذا مات ابنُ آدمَ انقطع عملُه')}${ln(272, 'إلا من ثلاث: صدقةٍ جارية،')}
+        ${ln(316, 'أو علمٍ يُنتفَعُ به،', 'hd hd-key')}${ln(360, 'أو ولدٍ صالحٍ يدعو له»')}
+        ${ln(402, 'رواه مسلم', 'hd hd-src')}
+        <rect y="470" width="560" height="130" fill="#D9C4A4"/>${fig('f', 90, 400, 200)}${fig('m', 255, 415, 185)}</g>
       <path d="M40 600V250C40 120 150 30 280 30S520 120 520 250V600" fill="none" stroke="#0E5A46" stroke-width="6"/></svg>`;
   }
   async function pageHome(tok) {

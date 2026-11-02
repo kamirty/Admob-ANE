@@ -1007,3 +1007,8 @@ fieldset.pick-g legend { font-weight: 600; padding: 0; margin-bottom: 6px; }
 @media (prefers-reduced-motion: reduce) { .subj-tiles .chip { transition: none; } }
 .plan-tools { display: flex; justify-content: flex-end; padding-top: 14px; }
 .share-week { gap: 6px; }
+/* الحديث على سبورة القوس */
+.hero-art .hd { font: 700 27px/1 "Amiri", "Traditional Arabic", serif; fill: #F4F6F1; }
+.hero-art .hd-say { font-size: 22px; fill: #E7B456; }
+.hero-art .hd-key { fill: #8FD7B6; }
+.hero-art .hd-src { font-size: 19px; font-weight: 400; fill: #CFE6DD; }
