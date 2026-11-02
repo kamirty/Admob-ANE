@@ -13,8 +13,14 @@
 - المستخدم لا يريد أن يولّد الصور بنفسه.
 
 ## الأدوات المتاحة في الجلسة الجديدة
-- مفتاح Google في متغير البيئة `GEMINI_API_KEY`.
-- النطاق `generativelanguage.googleapis.com` مسموح.
+- مفتاح Google محفوظ كـ **Network secret**: وكيل الشبكة يضيف الترويسة `x-goog-api-key` تلقائياً لكل طلب إلى `generativelanguage.googleapis.com`.
+- لا تحتاج متغير بيئة ولا تضع المفتاح في الرابط. أرسل الطلب بلا مفتاح، مثلاً:
+  `curl https://generativelanguage.googleapis.com/v1beta/models`
+- إن رجع خطأ صلاحية، فاطلب من المستخدم أن يتأكد من:
+  - اسم الترويسة `x-goog-api-key`.
+  - أن خانة Prefix فارغة.
+  - أن النطاق مسموح في Allowed domains.
+- إن احتاجت خدمة (مثل Veo) تفعيل الدفع، فأخبر المستخدم بالضبط أين يضغط في Google AI Studio (Set up billing).
 - الصور: نموذج صور Gemini أو Imagen عبر Gemini API.
 - الفيديو: Veo عبر Gemini API.
 - استخدم Veo Fast أولاً لتقليل التكلفة.
