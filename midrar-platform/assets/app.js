@@ -41,6 +41,30 @@
   // رابط مكان الدرس: صفحة المادة في الصف، أو صفحة المهارة
   const subjHref = (grade, subject) => (isSkills(grade) ? `#/k/${subject}` : `#/g/${grade}/${subject}`);
   const gradeHref = (grade) => (isSkills(grade) ? '#/k' : `#/g/${grade}`);
+  // لون وأيقونة لكل مادة: يعرف الطالب مادته من النظرة الأولى
+  const SUBJ_COLOR = { arabic: '#B9770E', english: '#6B4FB8', islamic: '#0E7C7B', math: '#2F6FBF', math_core: '#2F6FBF', math_adv: '#234E9C',
+    science: '#1F8A5B', physics: '#C2571A', chemistry: '#A23B72', biology: '#3E8E2F', earth: '#8A6A2B', social: '#9A5B2E', history: '#8C4B2F',
+    geography: '#2C7F8F', homeland: '#B3261E', it: '#475569', life_skills: '#5E7D2E', other: '#5B6668' };
+  const scVar = (subject) => `--sc:${SUBJ_COLOR[subject] || '#0E5A46'}`;
+  const ICON_PATH = {
+    math: '<path d="M12 8v10M7 13h10M28 13h10M8 30l8 8M16 30l-8 8M28 31h10M28 37h10"/>',
+    flask: '<path d="M18 6h10M20 6v12L10 38a3 3 0 0 0 3 4h20a3 3 0 0 0 3-4L26 18V6M13 30h20"/>',
+    atom: '<circle cx="23" cy="23" r="2.5"/><ellipse cx="23" cy="23" rx="18" ry="7"/><ellipse cx="23" cy="23" rx="18" ry="7" transform="rotate(60 23 23)"/><ellipse cx="23" cy="23" rx="18" ry="7" transform="rotate(120 23 23)"/>',
+    leaf: '<path d="M9 37C9 19 21 8 38 8c0 17-11 29-29 29zM9 37l17-17"/>',
+    globe: '<circle cx="23" cy="23" r="16"/><path d="M7 23h32M23 7c6 6 6 26 0 32M23 7c-6 6-6 26 0 32"/>',
+    arabic: '<path d="M8 34c6 0 8-4 8-10M16 24c0 6 4 10 10 10h12M30 14v-4M24 16v-4"/>',
+    abc: '<path d="M8 38L17 10h2l9 28M11 29h14M32 22h8M32 30h8"/>',
+    star: '<path d="M23 5l5 8 9-2-2 9 8 5-8 5 2 9-9-2-5 8-5-8-9 2 2-9-8-5 8-5-2-9 9 2z"/>',
+    column: '<path d="M8 40h30M12 16v20M20 16v20M26 16v20M34 16v20M8 16h30L23 6z"/>',
+    flag: '<path d="M12 40V6M12 8h22l-5 7 5 7H12"/>',
+    screen: '<rect x="6" y="9" width="34" height="22" rx="3"/><path d="M17 39h12M23 31v8"/>',
+    hand: '<path d="M14 24V12a3 3 0 0 1 6 0v10V9a3 3 0 0 1 6 0v13V11a3 3 0 0 1 6 0v17c0 7-5 12-11 12s-10-4-12-9l-3-7a3 3 0 0 1 5-3l3 4"/>',
+    book: '<path d="M23 12c-5-4-11-4-16-2v26c5-2 11-2 16 2 5-4 11-4 16-2V10c-5-2-11-2-16 2zM23 12v26"/>',
+  };
+  const SUBJ_ICON = { math: 'math', math_core: 'math', math_adv: 'math', science: 'flask', physics: 'atom', chemistry: 'flask', biology: 'leaf', earth: 'globe',
+    arabic: 'arabic', english: 'abc', islamic: 'star', social: 'globe', history: 'column', geography: 'globe', homeland: 'flag', it: 'screen', life_skills: 'hand' };
+  const subjIcon = (subject) => `<svg class="sico" viewBox="0 0 46 46" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${ICON_PATH[SUBJ_ICON[subject] || 'book']}</svg>`;
+  const gradeNo = (id) => { const m = /^g(\d+)$/.exec(id || ''); return m ? m[1] : ''; };
 
   const L = C.LOCALE || 'ar';
   const fmt = (o) => { try { return new Intl.DateTimeFormat(L, o); } catch (e) { return new Intl.DateTimeFormat('ar', o); } };
@@ -333,7 +357,7 @@
   function cardHtml(s, opts) {
     opts = opts || {};
     const st = stateOf(s).key;
-    return `<article class="card s-${st}" data-sid="${esc(s.id)}">
+    return `<article class="card s-${st}" data-sid="${esc(s.id)}" style="${scVar(s.subject)}">
       <div class="card-top"><span class="subj">${esc(subjOf(s))}${opts.showGrade ? ' · ' + esc(gradeName(s.grade)) : ''}</span><span data-badge>${badgeHtml(s)}</span></div>
       <h3><a href="#/s/${esc(s.id)}">${esc(s.title)}</a></h3>
       ${teacherLink(s.teacher)}
@@ -351,7 +375,7 @@
       const items = (by[dayKey(d)] || []).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
       return `<div class="cal-day${i === 0 ? ' today' : ''}${items.length ? '' : ' empty'}">
         <div class="cal-head"><span>${i === 0 ? 'اليوم' : i === 1 ? 'غداً' : esc(fWd.format(d))}</span><b>${esc(fNum(d.getDate()))}</b></div>
-        ${items.length ? items.slice(0, 4).map((s) => `<a class="cal-item${s.kind === 'live' ? ' is-live' : ''} s-${stateOf(s).key}" href="#/s/${esc(s.id)}">
+        ${items.length ? items.slice(0, 4).map((s) => `<a class="cal-item${s.kind === 'live' ? ' is-live' : ''} s-${stateOf(s).key}" href="#/s/${esc(s.id)}" style="${scVar(s.subject)}">
             <span class="cal-time">${esc(time(s.starts_at))}</span><b>${esc(subjOf(s))}</b><span class="cal-t">${esc(s.title)}</span>
             ${showGrade ? `<span class="cal-g">${esc(gradeName(s.grade))}</span>` : ''}</a>`).join('')
           + (items.length > 4 ? `<span class="cal-more">+${fNum(items.length - 4)}</span>` : '')
@@ -366,8 +390,8 @@
     const th = thumbUrl(url);
     const w = watch.get(s.id);
     const pr = progressOf(w);
-    return `<a class="vid${w && w.done ? ' seen' : ''}" href="#/s/${esc(s.id)}">
-      <div class="thumb">${th ? `<img src="${esc(th)}" alt="" loading="lazy" data-ph="${esc(subjOf(s))}">` : `<span class="ph">${esc(subjOf(s))}</span>`}<span class="play">${w && w.done ? 'شاهدتُه ✓' : s.lesson_type && s.lesson_type !== 'lesson' ? esc(typeName(s.lesson_type, s.grade)) : s.kind === 'recorded' ? 'درس مسجّل' : 'تسجيل حصة'}</span>${pr ? `<span class="prog" style="--p:${pr}%" aria-hidden="true"></span>` : ''}</div>
+    return `<a class="vid${w && w.done ? ' seen' : ''}" href="#/s/${esc(s.id)}" style="${scVar(s.subject)}">
+      <div class="thumb">${th ? `<img src="${esc(th)}" alt="" loading="lazy" data-ph="${esc(subjOf(s))}">` : `<span class="ph">${subjIcon(s.subject)}${esc(subjOf(s))}</span>`}<span class="play">${w && w.done ? 'شاهدتُه ✓' : s.lesson_type && s.lesson_type !== 'lesson' ? esc(typeName(s.lesson_type, s.grade)) : s.kind === 'recorded' ? 'درس مسجّل' : 'تسجيل حصة'}</span>${pr ? `<span class="prog" style="--p:${pr}%" aria-hidden="true"></span>` : ''}</div>
       <h3>${esc(s.title)}</h3>${s.unit ? `<span class="meta">${esc(unitLabel(s))}</span>` : ''}
       <span class="meta">${showGrade ? esc(gradeName(s.grade)) + ' · ' : ''}${esc(subjOf(s))} · ${esc((s.teacher && s.teacher.display_name) || '')} · ${esc(fDateShort.format(new Date(s.starts_at)))}</span>
     </a>`;
@@ -462,6 +486,22 @@
   // ------------------------------------------------------------------
   //  الصفحة الرئيسية
   // ------------------------------------------------------------------
+  // رسم الواجهة: نافذة على شكل قوس عُماني، يقطر منها المطر (مِدرار)، ومعلم يشرح وطالبان
+  function heroArt() {
+    const fig = (k, x, y, w) => `<svg x="${x}" y="${y}" width="${w}" height="${w}" viewBox="0 0 64 64">${FACE[k].replace(/^<svg[^>]*>|<\/svg>$/g, '')}</svg>`;
+    const drops = [[90, 70], [150, 40], [230, 95], [330, 50], [400, 110], [455, 62], [120, 170], [470, 180], [300, 150]]
+      .map(([x, y], i) => `<path class="drop" style="--d:${(i * 0.37) % 2.6}s" d="M${x} ${y}c0 0-5 7-5 10.5a5 5 0 0 0 10 0C${x + 5} ${y + 7} ${x} ${y} ${x} ${y}z"/>`).join('');
+    return `<svg class="hero-art" viewBox="0 0 560 600" role="img" aria-label="معلم يشرح على السبورة وطالبان يتابعان">
+      <defs><clipPath id="arch-in"><path d="M40 600V250C40 120 150 30 280 30S520 120 520 250V600Z"/></clipPath>
+        <linearGradient id="arch-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE3F2"/><stop offset="1" stop-color="#EAF6FA"/></linearGradient></defs>
+      <path d="M20 600V250C20 108 138 10 280 10S540 108 540 250V600Z" fill="#E9D8BE"/>
+      <g clip-path="url(#arch-in)"><rect width="560" height="600" fill="url(#arch-sky)"/><g class="drops">${drops}</g>
+        <rect x="110" y="215" width="330" height="200" rx="10" fill="#0E5A46"/><rect x="110" y="415" width="330" height="12" fill="#B08D5B"/>
+        <text x="225" y="285" fill="#F4F6F1" font-size="48" font-weight="700" text-anchor="middle" direction="ltr" class="kufi">3 + 4 = 7</text>
+        <path d="M165 380l50-80 50 80z" fill="none" stroke="#F4F6F1" stroke-width="4" stroke-linejoin="round"/><path d="M300 360q30-50 60 0t60 0" fill="none" stroke="#E7B456" stroke-width="4"/>
+        ${fig('m', 330, 300, 210)}<rect y="470" width="560" height="130" fill="#D9C4A4"/>${fig('f', 70, 400, 200)}${fig('m', 215, 415, 185)}</g>
+      <path d="M40 600V250C40 120 150 30 280 30S520 120 520 250V600" fill="none" stroke="#0E5A46" stroke-width="6"/></svg>`;
+  }
   async function pageHome(tok) {
     setNav('home'); setTitle('');
     const mine = store.get('grade');
@@ -470,23 +510,26 @@
         <div id="up-list"></div>
       </section>`;
     view.innerHTML = `
-      <section class="hero">
-        <h1>${esc(C.SITE_TAGLINE)}</h1>
-        <p>من الصف الأول إلى الثاني عشر · مجاناً · بلا حساب</p>
+      <section class="hero hero-arch">
+        <div class="hero-text"><h1 class="hero-h">علمٌ مِدرار<br>لكل طالب في عُمان</h1>
+          <p>دروس مجانية يقدّمها معلمون متطوعون، من الصف الأول إلى الثاني عشر.</p>
+          <div class="hero-doors">${mine && GRADES[mine] ? `<a class="door-btn st" href="#/g/${esc(mine)}"><b>أنا طالب</b><span>افتح ${esc(gradeName(mine))}</span></a>`
+            : '<button type="button" class="door-btn st" data-jump="grades"><b>أنا طالب</b><span>اختر صفك وابدأ</span></button>'}
+            <a class="door-btn te" href="${app.profile ? '#/dashboard' : '#/teach'}"><b>أنا معلم</b><span>${app.profile ? 'افتح لوحتي' : 'تطوّع بحصة من بيتك'}</span></a></div></div>
+        ${heroArt()}
       </section>
       ${app.profile && app.profile.status !== 'suspended' ? `<div class="mine teacher-bar"><b>مرحباً، ${esc(app.profile.display_name || '')}</b><span class="spacer"></span>
         <a class="btn btn-primary btn-sm" href="#/dashboard/live">حصة مباشرة جديدة</a><a class="btn btn-sm" href="#/dashboard">لوحتي</a></div>` : ''}
-      ${mine && GRADES[mine] ? `<div class="mine"><span>صفّك:</span><b>${esc(gradeName(mine))}</b><span class="spacer"></span><a class="btn btn-primary btn-sm" href="#/g/${esc(mine)}">افتح صفّي</a></div>` : ''}
       <section class="section" id="live-sec" hidden>
         <div class="section-head"><span class="dot-live"></span><h2>مباشر الآن</h2><span class="muted" id="live-count"></span></div>
         <div class="live-strip" id="live-list"></div>
       </section>
       ${upSec}
-      <section class="section">
+      <section class="section" id="grades">
         <div class="section-head"><h2>اختر صفّك</h2></div>
-        <div class="stages">${C.STAGES.map((st) => `
-          <div class="stage"><h3>${esc(st.name)}</h3>
-            <div class="grade-grid">${st.grades.map((g) => `<a class="grade-chip${g.id === mine ? ' cur' : ''}" href="#/g/${esc(g.id)}"><span>${esc(g.short)}</span>${g.exam ? `<span class="tag-exam">${esc(C.EXAM_TAG)}</span>` : ''}</a>`).join('')}</div>
+        <div class="stages">${C.STAGES.map((st, i) => `
+          <div class="stage st-${i + 1}"><h3>${esc(st.name)}</h3>
+            <div class="grade-grid">${st.grades.map((g) => `<a class="grade-chip${g.id === mine ? ' cur' : ''}" href="#/g/${esc(g.id)}"><b class="gno">${esc(gradeNo(g.id))}</b><span>${esc(g.short)}</span>${g.exam ? `<span class="tag-exam">${esc(C.EXAM_TAG)}</span>` : ''}</a>`).join('')}</div>
           </div>`).join('')}
         </div>
       </section>
@@ -500,16 +543,20 @@
         <div class="vids" id="new-list"></div>
       </section>
       <section class="band band-teachers">
-        <div class="vol-head"><b>معلمونا المتطوعون</b><span>شكراً لكل معلم يمنح وقته وعلمه. أنت معلم؟ انضم إليهم.</span></div>
+        <div class="vol-head"><b>معلمونا المتطوعون</b><span>ساعة من وقتك تصنع فرقاً في حياة طالب. علمُك صدقة جارية.</span></div>
         <div class="vol-faces" id="vol-faces"></div>
         <div class="row"><a class="btn btn-primary" href="#/teach">تطوّع معنا</a><a class="btn btn-ghost vol-all" href="#/teachers">كل المعلمين</a></div>
-      </section>`;
+      </section>
+      <a class="parents-strip" href="#/parents"><span><b>ولي أمر؟</b>تابع جدول صف ابنك هذا الأسبوع، وشاركه في مجموعة الصف.</span><span class="btn btn-sm">صفحة أولياء الأمور</span></a>`;
+    const jb = $('[data-jump="grades"]');
+    if (jb) jb.addEventListener('click', () => { const g = document.getElementById('grades'); g.scrollIntoView({ behavior: 'smooth', block: 'start' }); const f = $('.grade-chip', g); if (f) f.focus({ preventScroll: true }); });
     API.listTeachers().then((list) => {
       const box = document.getElementById('vol-faces');
       if (tok !== app.token || !box || !list || !list.length) return;
       const shown = list.slice(0, 12);
       box.innerHTML = shown.map((t) => `<a class="vol" href="#/t/${esc(t.id)}" title="${esc(t.display_name)}">${avatar(t.display_name, t.avatar_url, 'av-vol', gOf(t))}<span>${esc(t.display_name)}</span></a>`).join('')
-        + (list.length > shown.length ? `<a class="vol vol-more" href="#/teachers"><span class="av av-vol">+${fNum(list.length - shown.length)}</span><span>والمزيد</span></a>` : '');
+        + (list.length > shown.length ? `<a class="vol vol-more" href="#/teachers"><span class="av av-vol">+${fNum(list.length - shown.length)}</span><span>والمزيد</span></a>` : '')
+        + '<a class="vol vol-you" href="#/teach"><span class="av av-vol">أنت؟</span><span>انضم إليهم</span></a>';
     }).catch(() => { /* اختياري */ });
     const conts = Object.entries(watch.read().items).map(([id, w]) => Object.assign({ id }, w))
       .filter((w) => !w.done && w.p >= 30 && Date.now() - w.at < 60 * DAY).sort((a, b) => b.at - a.at).slice(0, 4);
@@ -529,8 +576,8 @@
         remember([f]);
         const th = thumbUrl(videoOf(f));
         sec.hidden = false;
-        sec.innerHTML = `<a class="feat" href="#/s/${esc(f.id)}">
-          <div class="thumb">${th ? `<img src="${esc(th)}" alt="" loading="lazy" data-ph="${esc(subjOf(f))}">` : `<span class="ph">${esc(subjOf(f))}</span>`}</div>
+        sec.innerHTML = `<a class="feat vid-sc" href="#/s/${esc(f.id)}" style="${scVar(f.subject)}">
+          <div class="thumb">${th ? `<img src="${esc(th)}" alt="" loading="lazy" data-ph="${esc(subjOf(f))}">` : `<span class="ph">${subjIcon(f.subject)}${esc(subjOf(f))}</span>`}</div>
           <div class="feat-text"><span class="pill pill-exam">درس الأسبوع</span><h2>${esc(f.title)}</h2>
             <span class="muted">${esc(gradeName(f.grade))} · ${esc(subjOf(f))}${f.teacher ? ' · ' + esc(f.teacher.display_name || '') : ''}</span></div></a>`;
       }).catch(() => { /* اختياري */ });
@@ -580,6 +627,68 @@
   //  جدول الصف
   // ------------------------------------------------------------------
   const gradeUi = {}; // gradeId → { day, subject }
+  // صورة جدول الأسبوع لصف: يشاركها المعلم أو ولي الأمر في مجموعة الصف على واتساب
+  async function weekImage(gradeId, sessions) {
+    const W = 1080, H = 1350, pad = 64;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const x = cv.getContext('2d');
+    try { await Promise.all(['700 40px "IBM Plex Sans Arabic"', '500 30px "IBM Plex Sans Arabic"', '700 60px "Reem Kufi"'].map((f) => document.fonts.load(f))); } catch (e) { /* خط احتياطي */ }
+    const F = (w, px, kufi) => `${w} ${px}px ${kufi ? '"Reem Kufi", ' : ''}"IBM Plex Sans Arabic", Tahoma, sans-serif`;
+    const fit = (t, max) => { let s = String(t || ''); if (x.measureText(s).width <= max) return s; while (s && x.measureText(s + '…').width > max) s = s.slice(0, -1); return s + '…'; };
+    x.direction = 'rtl'; x.textAlign = 'right'; x.textBaseline = 'alphabetic';
+    x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, W, H);
+    x.fillStyle = '#0E5A46'; x.fillRect(0, 0, W, 250);
+    x.fillStyle = '#E7B456'; x.fillRect(0, 250, W, 10);
+    x.fillStyle = '#FFFFFF'; x.font = F(700, 64, true); x.fillText('جدول حصص ' + gradeName(gradeId), W - pad, 120);
+    const from = startOfDay(new Date()); const to = addDays(from, 6);
+    x.fillStyle = '#CFE6DD'; x.font = F(500, 32); x.fillText(`من ${fDayLong.format(from)} إلى ${fDayLong.format(to)}`, W - pad, 186);
+    const list = sessions.filter((s) => s.status === 'scheduled' && +new Date(s.starts_at) < +addDays(from, 7)).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+    const by = {}; list.forEach((s) => { (by[dayKey(s.starts_at)] = by[dayKey(s.starts_at)] || []).push(s); });
+    const days = Array.from({ length: 7 }, (_, i) => addDays(from, i)).filter((d) => by[dayKey(d)]);
+    let y = 330; const bottom = H - 150;
+    if (!days.length) { x.fillStyle = '#5B6668'; x.font = F(500, 38); x.fillText('لا حصص مجدولة هذا الأسبوع بعد. تابعونا على المنصة.', W - pad, y + 40); }
+    for (const d of days) {
+      const items = by[dayKey(d)];
+      if (y + 70 > bottom) break;
+      x.fillStyle = '#0E5A46'; x.font = F(700, 38); x.fillText(fDayLong.format(d), W - pad, y); y += 20;
+      x.fillStyle = '#E3E7E4'; x.fillRect(pad, y, W - pad * 2, 2); y += 52;
+      let shown = 0;
+      for (const s of items) {
+        if (y + 10 > bottom || shown === 4) break;
+        const c = SUBJ_COLOR[s.subject] || '#0E5A46';
+        x.fillStyle = c; x.beginPath(); x.arc(W - pad - 10, y - 12, 10, 0, Math.PI * 2); x.fill();
+        x.font = F(700, 32); x.fillStyle = '#17252A'; x.fillText(time(s.starts_at), W - pad - 34, y);
+        x.fillStyle = c; x.fillText(subjOf(s), W - pad - 210, y);
+        x.font = F(500, 30); x.fillStyle = '#33444A';
+        const who = s.teacher && s.teacher.display_name ? ' — ' + s.teacher.display_name : '';
+        x.fillText(fit(s.title + who, W - pad * 2 - 210 - 260), W - pad - 470, y);
+        y += 56; shown++;
+      }
+      if (items.length > shown) { x.fillStyle = '#5B6668'; x.font = F(500, 28); x.fillText(`و${plural(items.length - shown, 'حصة أخرى', 'حصتان أخريان', 'حصص أخرى', 'حصة أخرى')}`, W - pad - 34, y); y += 50; }
+      y += 30;
+    }
+    x.fillStyle = '#F3E7D3'; x.fillRect(0, H - 120, W, 120);
+    x.fillStyle = '#6B4C14'; x.font = F(700, 34); x.fillText('منصة مِدرار العلم · مجاناً وبلا حساب', W - pad, H - 50);
+    x.textAlign = 'left'; x.direction = 'ltr'; x.font = F(700, 34); x.fillText('www.midrarelm.com', pad, H - 50);
+    return new Promise((res) => cv.toBlob(res, 'image/png'));
+  }
+  async function shareWeek(gradeId, sessions, btn) {
+    btn.disabled = true;
+    try {
+      const blob = await weekImage(gradeId, sessions);
+      const name = `midrar-${gradeId}.png`;
+      const file = new File([blob], name, { type: 'image/png' });
+      const text = `جدول حصص ${gradeName(gradeId)} هذا الأسبوع على منصة مِدرار العلم: ${pageUrl('#/g/' + gradeId + '/plan')}`;
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], text }); } catch (e) { /* أغلق المستخدم نافذة المشاركة */ }
+      } else {
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        toast('حُفظت صورة الجدول في جهازك. أرسلها في مجموعة الصف.');
+      }
+    } catch (e) { toast('تعذّر تجهيز الصورة. حاول مرة أخرى.', true); }
+    btn.disabled = false;
+  }
   async function pageGrade(tok, gradeId, tab, extra) {
     const g = GRADES[gradeId];
     if (!g) return pageNotFound();
@@ -631,6 +740,7 @@
       const selDate = days.find((d) => dayKey(d) === ui.day) || from;
 
       body.innerHTML = `
+        <div class="plan-tools"><button type="button" class="btn btn-sm share-week" id="share-week"><svg class="sico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>شارك جدول الأسبوع صورةً</button></div>
         <div class="days" role="group" aria-label="اختر اليوم">${days.map((d, i) => {
           const k = dayKey(d);
           const n = (byDay[k] || []).filter((s) => s.status !== 'cancelled' && (!ui.subject || s.subject === ui.subject)).length;
@@ -658,6 +768,7 @@
         const cur = $('.day[aria-pressed="true"]', body); if (cur) cur.scrollIntoView({ block: 'nearest', inline: 'center' });
       }));
       $$('[data-subj]', body).forEach((b) => b.addEventListener('click', () => { ui.subject = b.getAttribute('data-subj'); draw(); }));
+      $('#share-week').addEventListener('click', (ev) => shareWeek(gradeId, sessions, ev.currentTarget));
       const cur = $('.day[aria-pressed="true"]', body);
       if (cur && cur.scrollIntoView && ui.day !== dayKey(from)) cur.scrollIntoView({ block: 'nearest', inline: 'center' });
     }
@@ -667,9 +778,10 @@
   // ------------------------------------------------------------------
   //  مكتبة دروس الصف، وصفحة المادة مرتبة كما في الكتاب، والبحث، و«اطلب درساً»
   // ------------------------------------------------------------------
-  const subjChips = (gradeId, cur) => `<nav class="filters" aria-label="المواد" style="padding-top:14px">
-    <a class="chip" href="#/g/${esc(gradeId)}"${cur ? '' : ' aria-current="page"'}>الأحدث</a>
-    ${subjectsOf(gradeId).map((x) => `<a class="chip" href="#/g/${esc(gradeId)}/${esc(x)}"${cur === x ? ' aria-current="page"' : ''}>${esc(subjectName(x))}</a>`).join('')}</nav>`;
+  // في صفحة الصف: بطاقات كبيرة ملوّنة للمواد، وفي صفحة المادة: شريط مختصر
+  const subjChips = (gradeId, cur, tiles) => `<nav class="filters${tiles ? ' subj-tiles' : ''}" aria-label="المواد" style="padding-top:14px">
+    ${tiles ? '' : `<a class="chip" href="#/g/${esc(gradeId)}"${cur ? '' : ' aria-current="page"'}>الأحدث</a>`}
+    ${subjectsOf(gradeId).map((x) => `<a class="chip chip-sc" style="${scVar(x)}" href="#/g/${esc(gradeId)}/${esc(x)}"${cur === x ? ' aria-current="page"' : ''}>${subjIcon(x)}${esc(subjectName(x))}</a>`).join('')}</nav>`;
   function chipIntoView(root) {
     const c = $('.filters [aria-current="page"]', root);
     if (c && c.scrollIntoView && c.previousElementSibling) c.scrollIntoView({ block: 'nearest', inline: 'center' });
@@ -771,7 +883,7 @@
     let offset = 0;
     let items = [];
     let seq = 0;
-    body.innerHTML = `<div id="g-up"></div>${subjChips(gradeId, '')}${searchHtml(gradeId, '')}<div id="dipl"></div><div id="main-list"><p class="loading">جارٍ التحميل…</p></div><div id="g-paths"></div>${requestHtml(gradeId, '')}`;
+    body.innerHTML = `${subjChips(gradeId, '', true)}${searchHtml(gradeId, '')}<div id="g-up"></div><div id="dipl"></div><div id="main-list"><p class="loading">جارٍ التحميل…</p></div><div id="g-paths"></div>${requestHtml(gradeId, '')}`;
     // الحصص القادمة لهذا الصف أولاً
     API.listUpcoming({ grade: gradeId, limit: 12 }).then((rows) => {
       const box = $('#g-up');
@@ -1354,7 +1466,7 @@
     const showAt = s.kind === 'recorded' && (['upcoming', 'premiere'].includes(stateOf(s).key) || (isPremiere(s) && !videoOf(s)));
     view.innerHTML = `
       <header class="page-head">
-        <nav class="crumbs" aria-label="مسار التنقل"><a href="#/">${sk ? 'الرئيسية' : 'الصفوف'}</a><span>›</span><a href="${esc(gradeHref(s.grade))}">${esc(gradeName(s.grade))}</a><span>›</span><a href="${esc(subjHref(s.grade, s.subject))}">${esc(subjOf(s))}</a>${sk ? (s.unit_title ? `<span>›</span><span>${esc(s.unit_title)}</span>` : '') : s.unit ? `<span>›</span><span>${esc('الوحدة ' + fNum(s.unit))}</span>` : ''}</nav>
+        <nav class="crumbs" aria-label="مسار التنقل"><a href="#/">${sk ? 'الرئيسية' : 'الصفوف'}</a><span>›</span><a href="${esc(gradeHref(s.grade))}">${esc(gradeName(s.grade))}</a><span>›</span><a class="crumb-sc" style="${scVar(s.subject)}" href="${esc(subjHref(s.grade, s.subject))}">${sk ? '' : subjIcon(s.subject)}${esc(subjOf(s))}</a>${sk ? (s.unit_title ? `<span>›</span><span>${esc(s.unit_title)}</span>` : '') : s.unit ? `<span>›</span><span>${esc('الوحدة ' + fNum(s.unit))}</span>` : ''}</nav>
         <div class="title-row"><h1>${esc(s.title)}</h1><span data-sid="${esc(s.id)}"><span data-badge>${badgeHtml(s)}</span></span></div>
         ${stateOf(s).key === 'premiere' ? '<div class="note live-note"><b>يُعرض الآن في موعده</b><span>حدّد المعلم هذا الوقت ليشاهد الطلاب الدرس معاً. شاهده الآن، ويبقى متاحاً بعد ذلك.</span></div>' : ''}
         ${review === 'pending' ? `<div class="note warn"><b>هذا الدرس بانتظار مراجعة الإدارة.</b><span>لا يراه الطلاب حتى تعتمده الإدارة.${mine ? ` بعد اعتماد ${fNum(C.TRUST_AFTER || 3)} دروس لك تصبح متطوعاً موثوقاً وتُنشر دروسك مباشرة.` : ''}</span></div>` : ''}
