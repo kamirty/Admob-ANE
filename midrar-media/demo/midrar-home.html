@@ -1,4 +1,5 @@
 <title>واجهة مِدْرار العلم</title>
+<script>document.documentElement.lang = 'ar'; document.documentElement.dir = 'rtl';</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,8 +30,8 @@
   --r-md: 18px;
 }
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--night); color: var(--ink); font: 400 17px/1.85 var(--f-body); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+html { scroll-behavior: smooth; direction: rtl; }
+body { direction: rtl; margin: 0; background: var(--night); color: var(--ink); font: 400 17px/1.85 var(--f-body); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
 img { max-width: 100%; display: block; }
 a { color: inherit; }
 h1, h2, h3 { margin: 0; text-wrap: balance; }
@@ -117,15 +118,17 @@ section { position: relative; }
 .board { position: absolute; left: 0; top: 0; width: 400px; height: 480px; transform-origin: 0 0; overflow: hidden; direction: rtl;
   background: radial-gradient(120% 90% at 30% 20%, #16303A 0%, #0B171C 55%, #070D10 100%); color: #EAF4F1; display: grid; grid-template-rows: auto 1fr auto; padding: 26px 28px; font-family: var(--f-body); visibility: hidden; }
 .board.ready { visibility: visible; }
+/* the teacher's arm, cut from the same photo, sits above the screen so his hand stays whole */
+.pl > img.hand { position: absolute; left: 64.175%; top: 29.224%; width: 16.268%; height: 18.066%; object-fit: fill; pointer-events: none; }
 .board-top { display: flex; justify-content: space-between; align-items: center; font-size: 19px; color: rgba(234, 244, 241, .78); }
 .board-top .live { display: inline-flex; align-items: center; gap: 8px; color: #FFB4AA; font-weight: 600; }
 .board-top .live::before { content: ""; width: 11px; height: 11px; border-radius: 50%; background: var(--live); box-shadow: 0 0 0 4px rgba(255, 111, 97, .25); animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { box-shadow: 0 0 0 9px rgba(255, 111, 97, 0); } }
-.board-eq { align-self: center; direction: ltr; text-align: center; font: 700 76px/1 var(--f-body); letter-spacing: .02em; min-height: 80px; }
-.board-eq .caret { display: inline-block; width: 4px; height: 64px; background: var(--gold); vertical-align: -6px; margin-left: 4px; animation: blink 1s steps(1) infinite; }
+.board-eq { align-self: start; margin-top: 34px; direction: ltr; text-align: center; white-space: nowrap; font: 700 62px/1 var(--f-body); letter-spacing: .01em; min-height: 66px; }
+.board-eq .caret { display: inline-block; width: 4px; height: 54px; background: var(--gold); vertical-align: -6px; margin-left: 4px; animation: blink 1s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
-.dots { direction: ltr; display: grid; grid-template-columns: repeat(4, 34px); gap: 16px; justify-content: center; margin-bottom: 12px; }
-.dots i { width: 34px; height: 34px; border-radius: 50%; background: var(--gold); opacity: 0; transform: scale(.4); transition: opacity .3s ease, transform .3s ease; }
+.dots { direction: ltr; display: grid; grid-template-columns: repeat(4, 28px); gap: 12px; justify-content: end; margin-bottom: 4px; }
+.dots i { width: 28px; height: 28px; border-radius: 50%; background: var(--gold); opacity: 0; transform: scale(.4); transition: opacity .3s ease, transform .3s ease; }
 .dots i.on { opacity: 1; transform: none; }
 
 /* ---------- 3. students ---------- */
@@ -279,6 +282,7 @@ section { position: relative; }
                 <div class="board-eq" id="eq"></div>
                 <div class="dots" id="dots"></div>
               </div>
+              <img class="hand" src="img/hand.webp" alt="" aria-hidden="true" width="272" height="170">
             </div>
           </div>
           <figcaption class="cap glass"><b>في الصف</b><span>يشرح الدرس بترتيب كتاب الطالب نفسه، وحدةً بعد وحدة.</span></figcaption>
