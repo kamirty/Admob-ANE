@@ -486,73 +486,328 @@
   // ------------------------------------------------------------------
   //  الصفحة الرئيسية
   // ------------------------------------------------------------------
-  // رسم الواجهة: نافذة على شكل قوس عُماني، يقطر منها المطر (مِدرار)، ومعلم يشرح وطالبان
-  function heroArt() {
-    const fig = (k, x, y, w) => `<svg x="${x}" y="${y}" width="${w}" height="${w}" viewBox="0 0 64 64">${FACE[k].replace(/^<svg[^>]*>|<\/svg>$/g, '')}</svg>`;
-    const drops = [[90, 70], [150, 40], [230, 95], [330, 50], [400, 110], [455, 62], [120, 170], [470, 180], [300, 150]]
-      .map(([x, y], i) => `<path class="drop" style="--d:${(i * 0.37) % 2.6}s" d="M${x} ${y}c0 0-5 7-5 10.5a5 5 0 0 0 10 0C${x + 5} ${y + 7} ${x} ${y} ${x} ${y}z"/>`).join('');
-    const ln = (y, t, cls) => `<text x="280" y="${y}" class="${cls || 'hd'}" text-anchor="middle" direction="rtl">${t}</text>`;
-    return `<svg class="hero-art" viewBox="0 0 560 600" role="img" aria-label="سبورة كُتب عليها حديث «أو علمٍ يُنتفَعُ به»، وطالبة وطالب يتابعان">
-      <defs><clipPath id="arch-in"><path d="M40 600V250C40 120 150 30 280 30S520 120 520 250V600Z"/></clipPath>
-        <linearGradient id="arch-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE3F2"/><stop offset="1" stop-color="#EAF6FA"/></linearGradient></defs>
-      <path d="M20 600V250C20 108 138 10 280 10S540 108 540 250V600Z" fill="#E9D8BE"/>
-      <g clip-path="url(#arch-in)"><rect width="560" height="600" fill="url(#arch-sky)"/><g class="drops">${drops}</g>
-        <rect x="72" y="138" width="416" height="286" rx="12" fill="#0E5A46"/><rect x="72" y="424" width="416" height="12" fill="#B08D5B"/>
-        ${ln(180, 'قال رسول الله ﷺ', 'hd hd-say')}
-        ${ln(228, '«إذا مات ابنُ آدمَ انقطع عملُه')}${ln(272, 'إلا من ثلاث: صدقةٍ جارية،')}
-        ${ln(316, 'أو علمٍ يُنتفَعُ به،', 'hd hd-key')}${ln(360, 'أو ولدٍ صالحٍ يدعو له»')}
-        ${ln(402, 'رواه مسلم', 'hd hd-src')}
-        <rect y="470" width="560" height="130" fill="#D9C4A4"/>${fig('f', 90, 400, 200)}${fig('m', 255, 415, 185)}</g>
-      <path d="M40 600V250C40 120 150 30 280 30S520 120 520 250V600" fill="none" stroke="#0E5A46" stroke-width="6"/></svg>`;
+  // حركة الواجهة v7: تقريب الصورة مع التمرير، وطبقات بعمق، ومطر وغبار على canvas، وحصة على السبورة.
+  // تعيد دالة إيقاف تُستدعى عند مغادرة الصفحة. لا شيء يتحرك لمن فعّل «تقليل الحركة».
+  let homeFx = null;
+  function home7Fx(root) {
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const lite = reduce || !!(navigator.connection && navigator.connection.saveData);
+    const ac = new AbortController();
+    const on = (t, ev, fn, o) => t.addEventListener(ev, fn, Object.assign({ signal: ac.signal }, o || {}));
+    const stops = [];
+    const q = (id) => root.querySelector('#' + id);
+    const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+    const body = document.body;
+    const bar = document.querySelector('.topbar');
+    const barH = () => body.style.setProperty('--h7-bar', (bar ? bar.offsetHeight : 68) + 'px');
+    barH();
+
+    const hero = q('h7-hero'), img = q('h7-hero-img'), copy = q('h7-copy'), late = q('h7-late'), dim = q('h7-dim'), cue = q('h7-cue');
+    const pars = $$('[data-par]', root).map((el) => ({ el, pl: $('.h7-pl', el), amt: +el.dataset.par })).filter((p) => p.pl);
+    const floats = $$('[data-float]', root);
+    let queued = false;
+    function frame() {
+      queued = false;
+      body.classList.toggle('h7-solid', scrollY > 40);
+      if (reduce) return;
+      const vh = innerHeight;
+      const r = hero.getBoundingClientRect();
+      if (r.bottom > 0) {
+        const p = clamp(-r.top / Math.max(1, r.height - vh));
+        const pl = clamp((p - 0.42) / 0.22);
+        img.style.transform = `scale(${(1.04 + p * 0.34).toFixed(4)})`;
+        copy.style.opacity = clamp(1 - p * 2.6);
+        copy.style.transform = `translateY(${(-p * 140).toFixed(1)}px)`;
+        copy.style.visibility = p > 0.4 ? 'hidden' : '';
+        late.style.opacity = pl;
+        late.style.transform = `translateY(${((1 - pl) * 30).toFixed(1)}px)`;
+        dim.style.opacity = clamp((p - 0.35) / 0.5) * 0.8;
+        cue.style.opacity = clamp(1 - p * 6);
+      }
+      const at = (b) => clamp((b.top + b.height / 2 - vh / 2) / (vh / 2 + b.height / 2), -1, 1);
+      for (const { el, pl, amt } of pars) {
+        const b = el.getBoundingClientRect();
+        if (b.bottom < -50 || b.top > vh + 50) continue;
+        pl.style.setProperty('--py', (at(b) * amt).toFixed(2) + '%');
+      }
+      for (const el of floats) {
+        const b = el.getBoundingClientRect();
+        if (b.bottom < -100 || b.top > vh + 100) continue;
+        el.style.transform = `translate3d(0, ${(-at(b) * +el.dataset.float).toFixed(1)}px, 0)`;
+      }
+    }
+    const ask = () => { if (!queued) { queued = true; requestAnimationFrame(frame); } };
+    on(window, 'scroll', ask, { passive: true });
+    on(window, 'resize', () => { barH(); ask(); });
+    frame();
+
+    function onScreen(el, start, stop) {
+      if (!('IntersectionObserver' in window)) { start(); stops.push(stop); return; }
+      const io = new IntersectionObserver(([e]) => (e.isIntersecting ? start() : stop()), { rootMargin: '80px' });
+      io.observe(el);
+      stops.push(() => { io.disconnect(); stop(); });
+    }
+    function fit(cv) {
+      const dpr = Math.min(devicePixelRatio || 1, 1.5);
+      const w = cv.clientWidth, h = cv.clientHeight;
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+      const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, w, h };
+    }
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    // يرسم بالدالة draw ما دام العنصر ظاهراً
+    function loop(cv, setup, draw) {
+      let st = null, raf = 0, last = 0;
+      const tick = (t) => { const dt = Math.min(0.05, (t - last) / 1000 || 0.016); last = t; draw(st, dt); raf = requestAnimationFrame(tick); };
+      onScreen(cv, () => { if (!st) st = setup(fit(cv)); if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } },
+        () => { cancelAnimationFrame(raf); raf = 0; });
+      on(window, 'resize', () => { if (st) st = setup(fit(cv)); });
+    }
+    // المطر: ثلاث طبقات بالعمق، ورذاذ صغير على الأرض المبللة
+    function rain(cv, opt) {
+      const L = [{ a: 0.16, lw: 0.7, len: [10, 18], sp: [700, 900] }, { a: 0.26, lw: 1.0, len: [18, 30], sp: [950, 1200] }, { a: 0.36, lw: 1.5, len: [30, 46], sp: [1250, 1550] }];
+      const wind = 0.075;
+      const make = (s, y) => { const l = Math.random() < 0.5 ? 0 : Math.random() < 0.7 ? 1 : 2; const c = L[l]; return { l, x: rnd(-40, s.w + 40), y: y == null ? rnd(-s.h, s.h) : y, len: rnd(c.len[0], c.len[1]), sp: rnd(c.sp[0], c.sp[1]) }; };
+      loop(cv, (s) => { s.drops = []; s.splash = []; const n = Math.round(Math.min(opt.max, (s.w * s.h) / opt.per)); for (let i = 0; i < n; i++) s.drops.push(make(s)); return s; }, (s, dt) => {
+        const { ctx, w, h } = s;
+        ctx.clearRect(0, 0, w, h); ctx.lineCap = 'round';
+        for (let l = 0; l < 3; l++) {
+          ctx.strokeStyle = `rgba(255, 238, 214, ${L[l].a * opt.alpha})`; ctx.lineWidth = L[l].lw; ctx.beginPath();
+          for (const d of s.drops) if (d.l === l) { ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - d.len * wind, d.y + d.len); }
+          ctx.stroke();
+        }
+        for (const d of s.drops) {
+          d.y += d.sp * dt; d.x -= d.sp * dt * wind;
+          if (d.y > h) { if (opt.splash && d.l > 0 && Math.random() < 0.5) s.splash.push({ x: d.x, y: h * rnd(0.8, 0.99), t: 0 }); Object.assign(d, make(s, rnd(-60, -10))); }
+        }
+        ctx.lineWidth = 1;
+        for (let i = s.splash.length - 1; i >= 0; i--) {
+          const p = s.splash[i]; p.t += dt / 0.28;
+          if (p.t >= 1) { s.splash.splice(i, 1); continue; }
+          ctx.strokeStyle = `rgba(255, 238, 214, ${0.35 * (1 - p.t) * opt.alpha})`;
+          ctx.beginPath(); ctx.ellipse(p.x, p.y, 1 + p.t * 7, 0.5 + p.t * 2, 0, 0, Math.PI * 2); ctx.stroke();
+        }
+      });
+    }
+    // غبار يسبح في ضوء نافذة المكتبة
+    function dust(cv) {
+      loop(cv, (s) => { s.ps = []; const n = Math.round(Math.min(90, s.w / 14)); for (let i = 0; i < n; i++) s.ps.push({ x: rnd(0, s.w * 0.55), y: rnd(0, s.h), r: rnd(0.6, 2.2), vx: rnd(-6, 8), vy: rnd(-10, 4), ph: rnd(0, 6.3) }); return s; }, (s, dt) => {
+        const { ctx, w, h } = s;
+        ctx.clearRect(0, 0, w, h);
+        for (const p of s.ps) {
+          p.x += p.vx * dt; p.y += p.vy * dt; p.ph += dt * 1.3;
+          if (p.y < -5) p.y = h + 5; if (p.y > h + 5) p.y = -5;
+          if (p.x < -5) p.x = w * 0.55; if (p.x > w * 0.6) p.x = 0;
+          const a = (0.35 + 0.35 * Math.sin(p.ph)) * (1 - p.x / (w * 0.62));
+          ctx.fillStyle = `rgba(255, 220, 160, ${a.toFixed(3)})`;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+        }
+      });
+    }
+    if (!lite) {
+      rain(q('h7-rain'), { per: 5200, max: 320, alpha: 1, splash: true });
+      rain(q('h7-vrain'), { per: 9000, max: 170, alpha: 0.7, splash: false });
+      dust(q('h7-dust'));
+    }
+
+    // السبورة الذكية: تُسقط الشاشة على زوايا السبورة في الصورة (أعلى يسار، أعلى يمين، أسفل يسار، أسفل يمين)
+    const SCREEN = [[0.6471, 0.0893], [0.8864, 0.0244], [0.6471, 0.5664], [0.8864, 0.5962]];
+    const board = q('h7-board'), host = q('h7-board-host');
+    const adj = (m) => [m[4] * m[8] - m[5] * m[7], m[2] * m[7] - m[1] * m[8], m[1] * m[5] - m[2] * m[4], m[5] * m[6] - m[3] * m[8], m[0] * m[8] - m[2] * m[6], m[2] * m[3] - m[0] * m[5], m[3] * m[7] - m[4] * m[6], m[1] * m[6] - m[0] * m[7], m[0] * m[4] - m[1] * m[3]];
+    const mm = (a, b) => { const c = []; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { let s = 0; for (let k = 0; k < 3; k++) s += a[3 * i + k] * b[3 * k + j]; c[3 * i + j] = s; } return c; };
+    const mv = (m, v) => [m[0] * v[0] + m[1] * v[1] + m[2] * v[2], m[3] * v[0] + m[4] * v[1] + m[5] * v[2], m[6] * v[0] + m[7] * v[1] + m[8] * v[2]];
+    const basis = (p) => { const m = [p[0][0], p[1][0], p[2][0], p[0][1], p[1][1], p[2][1], 1, 1, 1]; const v = mv(adj(m), [p[3][0], p[3][1], 1]); return mm(m, [v[0], 0, 0, 0, v[1], 0, 0, 0, v[2]]); };
+    function placeBoard() {
+      const W = host.offsetWidth, H = host.offsetHeight;
+      if (!W) return;
+      let t = mm(basis(SCREEN.map(([x, y]) => [x * W, y * H])), adj(basis([[0, 0], [400, 0], [0, 480], [400, 480]])));
+      t = t.map((v) => v / t[8]);
+      board.style.transform = `matrix3d(${t[0]},${t[3]},0,${t[6]},${t[1]},${t[4]},0,${t[7]},0,0,1,0,${t[2]},${t[5]},0,${t[8]})`;
+      board.classList.add('ready');
+    }
+    placeBoard();
+    if ('ResizeObserver' in window) { const ro = new ResizeObserver(placeBoard); ro.observe(host); stops.push(() => ro.disconnect()); } else on(window, 'resize', placeBoard);
+
+    const eq = q('h7-eq'), dots = q('h7-dots');
+    dots.innerHTML = '<i></i>'.repeat(12);
+    const dotEls = [...dots.children];
+    const LINE = '3 × 4 = 12';
+    if (reduce) { eq.textContent = LINE; dotEls.forEach((d) => d.classList.add('on')); }
+    else {
+      let gen = 0, timer = 0, shown = false;
+      const wait = (ms) => new Promise((r) => { timer = setTimeout(r, ms); });
+      const lesson = async (my) => {
+        const live = () => my === gen;
+        while (live()) {
+          eq.innerHTML = '<span class="caret"></span>'; dotEls.forEach((d) => d.classList.remove('on'));
+          await wait(700);
+          for (let i = 1; i <= LINE.length && live(); i++) {
+            eq.innerHTML = esc(LINE.slice(0, i)) + '<span class="caret"></span>';
+            await wait(LINE[i - 1] === ' ' ? 60 : 210);
+            if (LINE.slice(0, i) === '3 × 4 =') for (const d of dotEls) { if (!live()) break; d.classList.add('on'); await wait(110); }
+          }
+          await wait(3200);
+        }
+      };
+      onScreen(host, () => { if (!shown) { shown = true; lesson(++gen); } }, () => { shown = false; gen++; clearTimeout(timer); });
+    }
+
+    return () => {
+      ac.abort();
+      stops.forEach((f) => f());
+      body.classList.remove('h7-solid');
+      body.style.removeProperty('--h7-bar');
+    };
   }
+  // الواجهة v7: صور عُمانية كاملة، ومطر حي، وحركة مع التمرير (الحركة في home7Fx)
+  const h7Img = (n, alt, sizes, opts = {}) => {
+    const w = opts.w || 1672, h = opts.h || 941;
+    return `<img${opts.cls ? ` class="${opts.cls}"` : ''}${opts.id ? ` id="${opts.id}"` : ''} src="assets/home/${n}-l.webp" srcset="assets/home/${n}-960.webp 960w, assets/home/${n}-l.webp ${w}w" sizes="${sizes}" alt="${alt}" ${opts.eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" width="${w}" height="${h}">`;
+  };
   async function pageHome(tok) {
     setNav('home'); setTitle('');
     const mine = store.get('grade');
+    const myGrade = mine && GRADES[mine] ? mine : '';
     const upSec = `<section class="section" id="up-sec" hidden>
         <div class="section-head"><h2>تقويم الحصص القادمة</h2><span class="muted" id="up-for"></span><span class="spacer"></span><a class="btn btn-ghost btn-sm" id="up-all" hidden>جدول صفّي</a></div>
         <div id="up-list"></div>
       </section>`;
-    view.innerHTML = `
-      <section class="hero hero-arch">
-        <div class="hero-text"><h1 class="hero-h">علمٌ مِدرار<br>لكل طالب في عُمان</h1>
-          <p>دروس مجانية يقدّمها معلمون متطوعون، من الصف الأول إلى الثاني عشر.</p>
-          <div class="hero-doors">${mine && GRADES[mine] ? `<a class="door-btn st" href="#/g/${esc(mine)}"><b>أنا طالب</b><span>افتح ${esc(gradeName(mine))}</span></a>`
-            : '<button type="button" class="door-btn st" data-jump="grades"><b>أنا طالب</b><span>اختر صفك وابدأ</span></button>'}
-            <a class="door-btn te" href="${app.profile ? '#/dashboard' : '#/teach'}"><b>أنا معلم</b><span>${app.profile ? 'افتح لوحتي' : 'تطوّع بحصة من بيتك'}</span></a></div></div>
-        ${heroArt()}
-      </section>
-      ${app.profile && app.profile.status !== 'suspended' ? `<div class="mine teacher-bar"><b>مرحباً، ${esc(app.profile.display_name || '')}</b><span class="spacer"></span>
-        <a class="btn btn-primary btn-sm" href="#/dashboard/live">حصة مباشرة جديدة</a><a class="btn btn-sm" href="#/dashboard">لوحتي</a></div>` : ''}
-      <section class="section" id="live-sec" hidden>
-        <div class="section-head"><span class="dot-live"></span><h2>مباشر الآن</h2><span class="muted" id="live-count"></span></div>
-        <div class="live-strip" id="live-list"></div>
-      </section>
-      ${upSec}
-      <section class="section" id="grades">
-        <div class="section-head"><h2>اختر صفّك</h2></div>
-        <div class="stages">${C.STAGES.map((st, i) => `
-          <div class="stage st-${i + 1}"><h3>${esc(st.name)}</h3>
-            <div class="grade-grid">${st.grades.map((g) => `<a class="grade-chip${g.id === mine ? ' cur' : ''}" href="#/g/${esc(g.id)}"><b class="gno">${esc(gradeNo(g.id))}</b><span>${esc(g.short)}</span>${g.exam ? `<span class="tag-exam">${esc(C.EXAM_TAG)}</span>` : ''}</a>`).join('')}</div>
-          </div>`).join('')}
+    const stages = C.STAGES.map((st, i) => {
+      const m = /^(.*?)\s*\(([^)]*)\)\s*$/.exec(st.name);
+      return `<div class="h7-stagecard h7-glass s${i + 1}" data-float="${[-20, -50, -80][i] || -30}">
+        <h3>${esc(m ? m[1] : st.name)}${m ? `<span><bdi dir="ltr">${esc(m[2])}</bdi></span>` : ''}</h3>
+        <div class="h7-chips">${st.grades.map((g) => `<a class="h7-chip${g.id === mine ? ' cur' : ''}" href="#/g/${esc(g.id)}" aria-label="${esc(g.name)}"><b>${esc(gradeNo(g.id))}</b><span>${esc(g.short)}</span>${g.exam ? `<em>${esc(C.EXAM_TAG)}</em>` : ''}</a>`).join('')}</div></div>`;
+    }).join('');
+    view.innerHTML = `<div class="h7">
+      <section class="h7-hero" id="h7-hero" aria-label="علمٌ مِدرار لكل طالب">
+        <div class="h7-pin">
+          ${h7Img('hero', 'كتاب مفتوح على رحل خشبي منقوش في فناء قلعة عُمانية، والمطر يتساقط وقت الغروب', '100vw', { w: 1920, h: 1071, eager: true, cls: 'h7-hero-img', id: 'h7-hero-img' })}
+          <canvas class="h7-fx" id="h7-rain" aria-hidden="true"></canvas>
+          <div class="h7-shade"></div><div class="h7-dim" id="h7-dim"></div>
+          <div class="h7-copy h7-gut" id="h7-copy">
+            <span class="h7-eyebrow">منصة تعليمية مجانية · سلطنة عُمان</span>
+            <h1>علمٌ <span>مِدرار</span><br>لكل طالب</h1>
+            <p class="h7-sub">دروس وحصص مباشرة يقدّمها معلمون متطوعون، من الصف 1 إلى الصف 12.</p>
+            <div class="h7-btns">${myGrade ? `<a class="h7-btn h7-btn-gold" href="#/g/${esc(myGrade)}">أنا طالب<small>افتح ${esc(gradeName(myGrade))}</small></a>`
+              : '<button type="button" class="h7-btn h7-btn-gold" data-jump="grades">أنا طالب<small>اختر صفك وابدأ</small></button>'}
+              <a class="h7-btn h7-btn-glass" href="${app.profile ? '#/dashboard' : '#/teach'}">أنا معلم<small>${app.profile ? 'افتح لوحتي' : 'تطوّع بحصة من بيتك'}</small></a></div>
+          </div>
+          <div class="h7-late h7-gut" id="h7-late"><p>كالمطر، يصل العلم إلى كل بيت في عُمان، ولا يطلب شيئاً في المقابل.</p></div>
+          <div class="h7-cue" id="h7-cue" aria-hidden="true"><span>مرّر للأسفل</span><i></i></div>
         </div>
       </section>
-      <section class="section" id="feat-sec" hidden></section>
-      <section class="section" id="cont-sec" hidden>
-        <div class="section-head"><h2>تابع من حيث توقفت</h2><span class="spacer"></span><button type="button" class="btn btn-ghost btn-sm" id="clear-watch">مسح السجل</button></div>
-        <div class="vids" id="cont-list"></div>
+      <div class="h7-now h7-gut">
+        ${app.profile && app.profile.status !== 'suspended' ? `<div class="mine teacher-bar"><b>مرحباً، ${esc(app.profile.display_name || '')}</b><span class="spacer"></span>
+          <a class="btn btn-primary btn-sm" href="#/dashboard/live">حصة مباشرة جديدة</a><a class="btn btn-sm" href="#/dashboard">لوحتي</a></div>` : ''}
+        <section class="section" id="live-sec" hidden>
+          <div class="section-head"><span class="dot-live"></span><h2>مباشر الآن</h2><span class="muted" id="live-count"></span></div>
+          <div class="live-strip" id="live-list"></div>
+        </section>
+        ${upSec}
+        <section class="section" id="feat-sec" hidden></section>
+        <section class="section" id="cont-sec" hidden>
+          <div class="section-head"><h2>تابع من حيث توقفت</h2><span class="spacer"></span><button type="button" class="btn btn-ghost btn-sm" id="clear-watch">مسح السجل</button></div>
+          <div class="vids" id="cont-list"></div>
+        </section>
+        <section class="section" id="new-sec" hidden>
+          <div class="section-head"><h2>أحدث الدروس</h2><span class="muted" id="new-for"></span></div>
+          <div class="vids" id="new-list"></div>
+        </section>
+      </div>
+      <section class="h7-sec h7-gut" aria-labelledby="h7-t-teach">
+        <div class="h7-wrap">
+          <div class="h7-head2">
+            <div><span class="h7-eyebrow">معلمون متطوعون</span><h2 class="h7-h2" id="h7-t-teach">يشرحون من الصف،<br>ومن البيت</h2></div>
+            <p class="h7-lead">معلمون ومعلمات يتطوعون بساعة من وقتهم. يحدّد كل منهم موعد حصته ويشرحها مباشرة، ثم يبقى التسجيل لمن فاته الموعد.</p>
+          </div>
+          <div class="h7-duo">
+            <figure data-par="7">
+              <div class="h7-frame"><div class="h7-pl" id="h7-board-host">
+                ${h7Img('teacher-m', 'معلم عُماني بالدشداشة والكُمّة يشرح لطلابه أمام سبورة ذكية', '(max-width: 860px) 100vw, 60vw')}
+                <div class="h7-board" id="h7-board" aria-hidden="true">
+                  <div class="h7-board-top"><span>الرياضيات · الصف 3</span><span class="live">مباشر</span></div>
+                  <div class="h7-eq" id="h7-eq"></div>
+                  <div class="h7-dots" id="h7-dots"></div>
+                </div>
+                <img class="h7-hand" src="assets/home/hand.webp" alt="" aria-hidden="true" width="272" height="170" loading="lazy" decoding="async">
+              </div></div>
+              <figcaption class="h7-cap h7-glass"><b>في الصف</b><span>يشرح الدرس بترتيب كتاب الطالب نفسه، وحدةً بعد وحدة.</span></figcaption>
+            </figure>
+            <figure data-par="9">
+              <div class="h7-frame"><div class="h7-pl">${h7Img('teacher-f', 'معلمة عُمانية بالعباءة والحجاب تشرح حصة من حاسوبها في البيت مساءً', '(max-width: 860px) 100vw, 40vw')}</div></div>
+              <figcaption class="h7-cap h7-glass"><b>من البيت</b><span>حصة مسائية من حاسوبها، يحضرها الطالب من أي مكان.</span></figcaption>
+            </figure>
+          </div>
+          <div class="h7-faces">
+            <div class="vol-faces" id="vol-faces"></div>
+            <div class="row"><a class="h7-btn h7-btn-glass" href="#/teachers">كل المعلمين</a></div>
+          </div>
+        </div>
       </section>
-      <section class="section" id="new-sec" hidden>
-        <div class="section-head"><h2>أحدث الدروس</h2><span class="muted" id="new-for"></span></div>
-        <div class="vids" id="new-list"></div>
+      <section class="h7-sec h7-gut" aria-labelledby="h7-t-st">
+        <div class="h7-wrap h7-split">
+          <div class="h7-card h7-glass" data-float="-40">
+            <span class="h7-eyebrow">للطلاب</span>
+            <h2 class="h7-h2" id="h7-t-st">بلا حساب،<br>ولا اشتراك</h2>
+            <ul class="h7-drops">
+              <li><b>اختر صفك ثم المادة،</b> فتجد الدروس مرتبة بالفصل والوحدة كما في كتابك.</li>
+              <li><b>للموضوع الواحد أكثر من معلم،</b> فتختار من تناسبك طريقته.</li>
+              <li><b>«تدرّب» بعد الدرس:</b> أسئلة تفاعلية بثلاثة مستويات.</li>
+              <li><b>تابع من حيث توقفت</b> في آخر درس شاهدته.</li>
+            </ul>
+            <div class="h7-btns"><button type="button" class="h7-btn h7-btn-gold" data-jump="grades">اختر صفك</button></div>
+          </div>
+          <div class="h7-frame" data-par="8"><div class="h7-pl">${h7Img('students', 'طالب بالكُمّة وطالبة بالحجاب يتعلمان معاً على جهاز لوحي', '(max-width: 860px) 100vw, 60vw')}</div></div>
+        </div>
       </section>
-      <section class="band band-teachers">
-        <div class="vol-head"><b>معلمونا المتطوعون</b><span>ساعة من وقتك تصنع فرقاً في حياة طالب. علمُك صدقة جارية.</span></div>
-        <div class="vol-faces" id="vol-faces"></div>
-        <div class="row"><a class="btn btn-primary" href="#/teach">تطوّع معنا</a><a class="btn btn-ghost vol-all" href="#/teachers">كل المعلمين</a></div>
+      <section class="h7-scene h7-sec h7-gut h7-grades" id="grades" data-par="10" aria-labelledby="h7-t-gr">
+        <div class="h7-pl" style="--ps: 1.22">${h7Img('mountains', '', '100vw')}</div>
+        <div class="h7-mistfx" aria-hidden="true"></div>
+        <div class="h7-veil"></div>
+        <div class="h7-wrap">
+          <div class="h7-head"><span class="h7-eyebrow">الصفوف <bdi dir="ltr">1–12</bdi></span><h2 class="h7-h2" id="h7-t-gr">اختر صفّك</h2>
+            <p class="h7-lead">لكل صف مواده، ولكل مادة دروس مرتبة بوحدات الكتاب.</p></div>
+          <div class="h7-stages">${stages}</div>
+        </div>
       </section>
-      <a class="parents-strip" href="#/parents"><span><b>ولي أمر؟</b>تابع جدول صف ابنك هذا الأسبوع، وشاركه في مجموعة الصف.</span><span class="btn btn-sm">صفحة أولياء الأمور</span></a>`;
-    const jb = $('[data-jump="grades"]');
-    if (jb) jb.addEventListener('click', () => { const g = document.getElementById('grades'); g.scrollIntoView({ behavior: 'smooth', block: 'start' }); const f = $('.grade-chip', g); if (f) f.focus({ preventScroll: true }); });
+      <section class="h7-scene h7-hadith h7-gut" data-par="8" aria-label="حديث: أو علمٍ يُنتفَعُ به">
+        <div class="h7-pl" style="--ps: 1.18">${h7Img('library', '', '100vw')}</div>
+        <div class="h7-beams" aria-hidden="true"></div>
+        <canvas class="h7-fx" id="h7-dust" aria-hidden="true" style="z-index:-1"></canvas>
+        <div class="h7-veil"></div>
+        <figure class="h7-wrap h7-hadith-in">
+          <blockquote>«إذا مات ابنُ آدمَ انقطع عملُه إلا من ثلاث: صدقةٍ جارية، أو <mark>علمٍ يُنتفَعُ به</mark>، أو ولدٍ صالحٍ يدعو له»</blockquote>
+          <figcaption>رواه مسلم</figcaption>
+          <p>كل درس يشرحه متطوع هنا يبقى لطلاب يأتون بعد سنوات.</p>
+        </figure>
+      </section>
+      <section class="h7-scene h7-vol h7-gut" data-par="8" aria-labelledby="h7-t-vol">
+        <div class="h7-pl">${h7Img('rain', '', '100vw')}</div>
+        <canvas class="h7-fx" id="h7-vrain" aria-hidden="true" style="z-index:-1"></canvas>
+        <div class="h7-veil"></div>
+        <div class="h7-wrap">
+          <div class="h7-card h7-glass" data-float="-30">
+            <span class="h7-eyebrow">تطوّع</span>
+            <h2 class="h7-h2" id="h7-t-vol">تطوّع بحصة<br>من بيتك</h2>
+            <p class="h7-lead">ساعة من وقتك تصنع فرقاً في حياة طالب. علمُك صدقة جارية.</p>
+            <ol class="h7-steps">
+              <li><div><b>حدّد موعد حصتك</b><span>والمنصة تنشئ الرابط.</span></div></li>
+              <li><div><b>اشرح لطلابك مباشرة</b><span>يدخلون من المنصة.</span></div></li>
+              <li><div><b>أرسل التسجيل</b><span>ننشره باسمك على قناة المنصة.</span></div></li>
+            </ol>
+            <div class="h7-btns"><a class="h7-btn h7-btn-gold" href="#/teach">سجّل متطوعاً</a><a class="h7-btn h7-btn-glass" href="#/guide">دليل المعلم</a></div>
+          </div>
+        </div>
+      </section>
+      <div class="h7-gut"><a class="parents-strip h7-parents" href="#/parents"><span><b>ولي أمر؟</b>تابع جدول صف ابنك هذا الأسبوع، وشاركه في مجموعة الصف.</span><span class="btn btn-sm">صفحة أولياء الأمور</span></a></div>
+    </div>`;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $$('[data-jump="grades"]').forEach((b) => b.addEventListener('click', () => {
+      const g = document.getElementById('grades');
+      ($('.h7-head', g) || g).scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      const f = $('.h7-chip.cur', g) || $('.h7-chip', g); if (f) f.focus({ preventScroll: true });
+    }));
+    homeFx = home7Fx(view.firstElementChild);
     API.listTeachers().then((list) => {
       const box = document.getElementById('vol-faces');
       if (tok !== app.token || !box || !list || !list.length) return;
@@ -4571,12 +4826,14 @@
     if (location.hash === '#view') { history.replaceState(null, '', lastHash || '#/'); view.focus(); if (lastHash) return; }
     const tok = ++app.token;
     pageTick = null;
+    if (homeFx) { homeFx(); homeFx = null; }
     if (player.s) stopPlayer();
     if (micTest && !onStudio()) { micTest.stop(); micTest = null; }
     syncStudio();
     // زر المساعد لا يظهر في الاستوديو حتى لا يدخل في تسجيل شاشة المعلم
     document.body.classList.toggle('on-studio', onStudio());
     const h = location.hash || '#/';
+    document.body.classList.toggle('home7', ROUTES[0][0].test(h));
     const changed = h !== lastHash;
     lastHash = h;
     for (const [re, fn] of ROUTES) {
