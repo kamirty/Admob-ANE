@@ -1208,19 +1208,56 @@ body.home7 .foot { border-top-color: rgba(255, 255, 255, .08); }
   background: radial-gradient(40% 50% at 30% 50%, rgba(255, 255, 255, .22), transparent 70%), radial-gradient(35% 45% at 75% 40%, rgba(255, 255, 255, .16), transparent 70%); }
 @keyframes h7-drift { to { transform: translateX(12%); } }
 .h7-grades .h7-head { display: grid; gap: 16px; max-width: 620px; margin-bottom: clamp(36px, 5vw, 60px); scroll-margin-top: calc(var(--h7-bar, 68px) + 20px); }
-.h7-stages { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, .78fr); gap: clamp(14px, 2vw, 24px); align-items: end; }
-.h7-stagecard { padding: 22px; display: grid; gap: 16px; }
-.h7-stagecard h3 { font: 600 1.05rem/1.4 var(--font-body); display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
-.h7-stagecard h3 span { color: var(--h7-faint); font-size: .86rem; font-weight: 400; font-variant-numeric: tabular-nums; }
-.h7-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 10px; }
-.h7-stagecard.s3 .h7-chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.h7-chip { position: relative; display: grid; justify-items: center; gap: 2px; padding: 14px 6px 12px; text-decoration: none; color: var(--ink); border-radius: 14px;
-  background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .12); transition: background-color .2s ease, transform .2s ease, border-color .2s ease; }
-.h7-chip b { font: 700 2.1rem/1 var(--font-kufi); font-variant-numeric: tabular-nums; }
-.h7-chip span { font-size: .82rem; color: var(--h7-mist); }
-.h7-chip em { position: absolute; top: -9px; inset-inline-end: -4px; font: 600 .7rem/1 var(--font-body); font-style: normal; background: var(--h7-gold); color: var(--h7-gold-ink); padding: 4px 8px; border-radius: 999px; }
-.h7-chip:hover { background: rgba(255, 255, 255, .17); border-color: rgba(255, 255, 255, .3); transform: translateY(-3px); }
-.h7-chip.cur { background: rgba(231, 180, 86, .2); border-color: var(--h7-gold); }
+/* شريط الصفوف: بطاقة لكل صف، والتي في الوسط أكبر، والجانبية مائلة بعمق */
+.h7-railwrap { margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px))); }
+.h7-rail { --cw: clamp(214px, 22vw, 270px); display: flex; gap: 18px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+  padding-block: 36px 34px; padding-inline: calc(50% - var(--cw) / 2); scrollbar-width: none; cursor: grab; outline: none; }
+.h7-rail::-webkit-scrollbar { display: none; }
+.h7-rail.drag { scroll-snap-type: none; cursor: grabbing; }
+.h7-rail.drag .h7-gslot { pointer-events: none; }
+.h7-gslot { position: relative; flex: 0 0 var(--cw); scroll-snap-align: center; text-decoration: none; color: var(--ink); border-radius: 22px; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+.h7-gslot:focus-visible { outline: none; }
+.h7-gslot:focus-visible .h7-gcard { outline: 3px solid var(--h7-gold); outline-offset: 4px; }
+.h7-gcard { --tint: #9CCBEA; position: relative; aspect-ratio: 3 / 4; border-radius: 22px; padding: 22px 22px 18px; display: grid; grid-template-rows: auto 1fr auto auto auto; gap: 10px;
+  overflow: hidden; transform-origin: 50% 50%; will-change: transform, opacity; transition: border-color .35s ease, box-shadow .35s ease, background-color .35s ease; }
+.h7-gcard.s2 { --tint: #8FD7B6; }
+.h7-gcard.s3 { --tint: #E7B456; }
+.h7-gcard::before { content: ""; position: absolute; inset: -40% -30% auto; height: 70%; background: radial-gradient(50% 50% at 50% 50%, color-mix(in srgb, var(--tint) 34%, transparent), transparent 70%); opacity: .55; pointer-events: none; transition: opacity .35s ease; }
+.h7-gcard.is-center { background: rgba(255, 255, 255, .13); border-color: color-mix(in srgb, var(--tint) 65%, transparent);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, .45), 0 0 50px -12px color-mix(in srgb, var(--tint) 70%, transparent), inset 0 1px 0 rgba(255, 255, 255, .18); }
+.h7-gcard.is-center::before { opacity: 1; }
+.h7-gstage { position: relative; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .86rem; color: var(--h7-mist); }
+.h7-gstage em { font: 600 .7rem/1 var(--font-body); font-style: normal; background: var(--h7-gold); color: var(--h7-gold-ink); padding: 4px 8px; border-radius: 999px; }
+.h7-gstage em.you { background: rgba(255, 255, 255, .9); color: #0B1311; }
+.h7-gno { position: relative; align-self: center; justify-self: center; font: 700 clamp(5rem, 3.6rem + 4vw, 7rem)/1 var(--font-kufi); color: var(--tint); font-variant-numeric: tabular-nums;
+  text-shadow: 0 10px 40px color-mix(in srgb, var(--tint) 35%, transparent); }
+.h7-gname { position: relative; font: 700 1.3rem/1.35 var(--font-kufi); text-align: center; }
+.h7-gsubs { position: relative; display: flex; justify-content: center; gap: 8px; color: var(--h7-mist); min-height: 26px; align-items: center; }
+.h7-gsubs .sico { width: 24px; height: 24px; }
+.h7-gsubs .more { font-size: .8rem; }
+.h7-gfoot { position: relative; display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, .12); font-size: .9rem; color: var(--h7-mist); }
+.h7-gfoot i { font-style: normal; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, .1); color: var(--ink); transition: background-color .25s ease, color .25s ease; }
+.h7-gcard.is-center .h7-gfoot i { background: var(--tint); color: #0B1311; }
+.h7-railnav { display: flex; justify-content: center; align-items: center; gap: 18px; padding-inline: 16px; }
+.h7-rbtn { width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--h7-line); background: var(--h7-glass-hi); color: var(--ink); font: 600 1.2rem/1 var(--font-body); cursor: pointer;
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); transition: background-color .2s ease, transform .2s ease; }
+.h7-rbtn:hover { background: rgba(255, 255, 255, .26); transform: scale(1.06); }
+.h7-rdots { display: flex; gap: 6px; align-items: center; }
+.h7-rdots i { width: 6px; height: 6px; border-radius: 999px; background: rgba(255, 255, 255, .3); transition: width .3s ease, background-color .3s ease; }
+.h7-rdots i.on { width: 22px; background: var(--h7-gold); }
+
+/* العدّادات */
+.h7-stats { padding-block: clamp(30px, 5vw, 60px) 10px; }
+.h7-statrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: clamp(12px, 2vw, 22px); }
+.h7-stat { position: relative; overflow: hidden; display: grid; justify-items: center; text-align: center; gap: 6px; padding: 26px 18px 22px; }
+.h7-stat::after { content: ""; position: absolute; inset: auto 15% 0; height: 2px; background: linear-gradient(to left, transparent, var(--h7-gold), transparent); transform: scaleX(0); transition: transform 1.2s cubic-bezier(.2, .7, .2, 1); }
+.h7-stat.counting::after, .h7-stat.done::after { transform: scaleX(1); }
+.h7-sico { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 50%; color: var(--h7-gold); background: rgba(231, 180, 86, .14); box-shadow: 0 0 0 1px rgba(231, 180, 86, .3); }
+.h7-sico svg { width: 26px; height: 26px; }
+.h7-stat.done .h7-sico { animation: h7-pop .6s ease; }
+@keyframes h7-pop { 40% { transform: scale(1.15); box-shadow: 0 0 0 8px rgba(231, 180, 86, 0), 0 0 30px rgba(231, 180, 86, .5); } }
+.h7-stat b { font: 700 clamp(2.4rem, 1.8rem + 2.2vw, 3.6rem)/1.1 var(--font-kufi); font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+.h7-stat > span:last-child { color: var(--h7-mist); font-size: .95rem; }
 
 /* 5. الحديث */
 .h7-hadith { min-height: 100vh; min-height: 100svh; display: grid; align-items: center; }
@@ -1256,10 +1293,11 @@ body.home7 .foot { border-top-color: rgba(255, 255, 255, .08); }
   .h7-split { grid-template-columns: minmax(0, 1fr); }
   .h7-split .h7-frame { order: -1; aspect-ratio: 4 / 3; }
   .h7-split .h7-card { margin-top: -64px; margin-inline: 10px; }
-  .h7-stages { grid-template-columns: minmax(0, 1fr); }
-  .h7-stagecard.s3 .h7-chips { grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); }
 }
 @media (max-width: 520px) {
+  .h7-rail { --cw: min(72vw, 260px); gap: 12px; }
+  .h7-statrow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .h7-stat { padding: 20px 12px 18px; }
   .h7-cap { position: relative; inset: auto; margin: -36px 12px 0; max-width: none; }
   .h7-copy .h7-btn { min-width: 0; flex: 1 1 140px; }
   .h7-hadith blockquote { line-height: 1.85; }
@@ -1270,5 +1308,6 @@ body.home7 .foot { border-top-color: rgba(255, 255, 255, .08); }
   .h7-late { opacity: 1; position: relative; bottom: auto; margin-top: -170px; padding-bottom: 60px; }
   .h7-cue, .h7-fx { display: none; }
   .h7-mistfx, .h7-beams, .h7-cue i, .h7-board-top .live::before, .h7-eq .caret { animation: none; }
-  .h7-btn, .h7-chip { transition: none; }
+  .h7-btn, .h7-gcard, .h7-rbtn, .h7-stat::after { transition: none; }
+  .h7-stat.done .h7-sico { animation: none; }
 }

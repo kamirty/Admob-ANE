@@ -652,6 +652,112 @@
       onScreen(host, () => { if (!shown) { shown = true; lesson(++gen); } }, () => { shown = false; gen++; clearTimeout(timer); });
     }
 
+    // العدّادات: تعدّ من الصفر حين تظهر، مرة واحدة لكل رقم
+    const statRow = q('h7-stats');
+    let statsSeen = reduce;
+    const ease = (t) => 1 - Math.pow(1 - t, 3);
+    function runCounts() {
+      if (!statsSeen || !statRow) return;
+      $$('b[data-to]:not([data-done])', statRow).forEach((el, i) => {
+        el.dataset.done = '1';
+        const to = +el.dataset.to, plus = el.hasAttribute('data-plus') ? '+' : '';
+        const show = (n) => { el.textContent = plus + fNum(n); };
+        if (reduce) { show(to); return; }
+        const card = el.closest('.h7-stat');
+        const t0 = performance.now() + i * 140, dur = 1500 + Math.min(900, to * 2);
+        const step = (t) => {
+          const k = clamp((t - t0) / dur);
+          show(Math.round(ease(k) * to));
+          if (k < 1) requestAnimationFrame(step); else card.classList.add('done');
+        };
+        card.classList.add('counting');
+        requestAnimationFrame(step);
+      });
+    }
+    if (statRow) {
+      if (!reduce && 'IntersectionObserver' in window) {
+        const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { statsSeen = true; runCounts(); io.disconnect(); } }, { threshold: 0.35 });
+        io.observe(statRow); stops.push(() => io.disconnect());
+      } else statsSeen = true;
+      on(root, 'h7-stats', runCounts);
+      runCounts();
+    }
+
+    // شريط الصفوف: تمرير أفقي بالسحب أو باللمس أو بالأزرار، والبطاقة في الوسط أكبر والجانبية مائلة
+    const rail = q('h7-rail');
+    if (rail) {
+      const slots = [...rail.children];
+      const dots = $$('.h7-rdots i', root);
+      let cur = -1, queuedR = false;
+      const center = () => { const r = rail.getBoundingClientRect(); return r.left + r.width / 2; };
+      function paintRail() {
+        queuedR = false;
+        const cx = center();
+        const step = slots[0].offsetWidth + 18;
+        let best = 0, bd = Infinity;
+        slots.forEach((sl, i) => {
+          const b = sl.getBoundingClientRect();
+          const d = (b.left + b.width / 2 - cx) / step;
+          if (Math.abs(d) < bd) { bd = Math.abs(d); best = i; }
+          if (reduce) return;
+          const a = Math.min(Math.abs(d), 3);
+          sl.firstElementChild.style.transform = `perspective(1100px) rotateY(${(clamp(d, -2.5, 2.5) * 16).toFixed(2)}deg) scale(${(1 - Math.min(a, 2.5) * 0.11).toFixed(3)})`;
+          sl.firstElementChild.style.opacity = (1 - a * 0.22).toFixed(3);
+          sl.style.zIndex = String(10 - Math.round(a * 3));
+        });
+        if (best !== cur) {
+          cur = best;
+          slots.forEach((sl, i) => sl.firstElementChild.classList.toggle('is-center', i === cur));
+          dots.forEach((dt, i) => dt.classList.toggle('on', i === cur));
+        }
+      }
+      const askR = () => { if (!queuedR) { queuedR = true; requestAnimationFrame(paintRail); } };
+      function goTo(i, smooth) {
+        const sl = slots[(i + slots.length) % slots.length];
+        const b = sl.getBoundingClientRect();
+        rail.scrollBy({ left: b.left + b.width / 2 - center(), behavior: smooth && !reduce ? 'smooth' : 'auto' });
+      }
+      on(rail, 'scroll', askR, { passive: true });
+      on(window, 'resize', askR);
+      const start = slots.findIndex((sl) => sl.dataset.g === store.get('grade'));
+      goTo(start < 0 ? 0 : start, false);
+      paintRail();
+
+      // تشغيل تلقائي هادئ يتوقف نهائياً عند أول لمسة من الزائر
+      let auto = 0, stopped = reduce, hover = false, seen = false;
+      const tickAuto = () => { if (!stopped && !hover && seen && !document.hidden) goTo(cur + 1, true); };
+      const halt = () => { stopped = true; clearInterval(auto); };
+      ['pointerdown', 'wheel', 'touchstart', 'keydown', 'focusin'].forEach((ev) => { on(rail, ev, halt, { passive: true }); });
+      $$('.h7-rbtn', root).forEach((btn) => on(btn, 'click', () => { halt(); goTo(cur + +btn.dataset.dir, true); }));
+      on(rail, 'mouseenter', () => { hover = true; });
+      on(rail, 'mouseleave', () => { hover = false; });
+      on(rail, 'keydown', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); goTo(cur + (e.key === 'ArrowLeft' ? 1 : -1), true); }
+      });
+      if (!stopped) { auto = setInterval(tickAuto, 3600); stops.push(() => clearInterval(auto)); }
+      onScreen(rail, () => { seen = true; }, () => { seen = false; });
+
+      // السحب بالفأرة على الحاسوب (اللمس يعمل بالتمرير الطبيعي)
+      let drag = null, moved = false;
+      on(rail, 'pointerdown', (e) => {
+        if (e.pointerType !== 'mouse' || e.button !== 0) return;
+        drag = { x: e.clientX, left: rail.scrollLeft }; moved = false;
+      });
+      on(window, 'pointermove', (e) => {
+        if (!drag) return;
+        const dx = e.clientX - drag.x;
+        if (!moved && Math.abs(dx) > 6) { moved = true; rail.classList.add('drag'); }
+        if (moved) rail.scrollLeft = drag.left - dx;
+      });
+      on(window, 'pointerup', () => {
+        if (!drag) return;
+        drag = null;
+        if (moved) { rail.classList.remove('drag'); goTo(cur, true); }
+      });
+      on(rail, 'click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, { capture: true });
+      on(rail, 'dragstart', (e) => e.preventDefault());
+    }
+
     return () => {
       ac.abort();
       stops.forEach((f) => f());
@@ -672,12 +778,23 @@
         <div class="section-head"><h2>تقويم الحصص القادمة</h2><span class="muted" id="up-for"></span><span class="spacer"></span><a class="btn btn-ghost btn-sm" id="up-all" hidden>جدول صفّي</a></div>
         <div id="up-list"></div>
       </section>`;
-    const stages = C.STAGES.map((st, i) => {
-      const m = /^(.*?)\s*\(([^)]*)\)\s*$/.exec(st.name);
-      return `<div class="h7-stagecard h7-glass s${i + 1}" data-float="${[-20, -50, -80][i] || -30}">
-        <h3>${esc(m ? m[1] : st.name)}${m ? `<span><bdi dir="ltr">${esc(m[2])}</bdi></span>` : ''}</h3>
-        <div class="h7-chips">${st.grades.map((g) => `<a class="h7-chip${g.id === mine ? ' cur' : ''}" href="#/g/${esc(g.id)}" aria-label="${esc(g.name)}"><b>${esc(gradeNo(g.id))}</b><span>${esc(g.short)}</span>${g.exam ? `<em>${esc(C.EXAM_TAG)}</em>` : ''}</a>`).join('')}</div></div>`;
+    // شريط الصفوف: بطاقة لكل صف، فيها رقمه ومرحلته وأيقونات مواده وعدد دروسه
+    const allGrades = C.STAGES.flatMap((st, i) => st.grades.map((g) => ({ g, st: st.name.replace(/\s*\([^)]*\)\s*$/, ''), si: i + 1 })));
+    const slots = allGrades.map(({ g, st, si }) => {
+      const subs = subjectsOf(g.id);
+      return `<a class="h7-gslot" href="#/g/${esc(g.id)}" data-g="${esc(g.id)}" draggable="false" aria-label="${esc(g.name)}">
+        <div class="h7-gcard h7-glass s${si}${g.id === mine ? ' mine' : ''}">
+          <span class="h7-gstage">${esc(st)}${g.exam ? `<em>${esc(C.EXAM_TAG)}</em>` : ''}${g.id === mine ? '<em class="you">صفّي</em>' : ''}</span>
+          <b class="h7-gno">${esc(gradeNo(g.id))}</b>
+          <strong class="h7-gname">${esc(g.name)}</strong>
+          <span class="h7-gsubs">${subs.slice(0, 5).map((x) => `<span title="${esc(subjectName(x))}">${subjIcon(x)}</span>`).join('')}${subs.length > 5 ? `<span class="more"><bdi dir="ltr">+${subs.length - 5}</bdi></span>` : ''}</span>
+          <span class="h7-gfoot"><span data-gl="${esc(g.id)}">${esc(plural(subs.length, 'مادة واحدة', 'مادتان', 'مواد', 'مادة'))}</span><i aria-hidden="true">←</i></span>
+        </div></a>`;
     }).join('');
+    const subjectsAll = new Set(allGrades.flatMap(({ g }) => subjectsOf(g.id))).size;
+    const icon = (d) => `<svg viewBox="0 0 46 46" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+    const stat = (key, d, to, label, plus) => `<div class="h7-stat h7-glass" data-stat="${key}"${to ? '' : ' hidden'}>
+        <span class="h7-sico">${icon(d)}</span><b${to ? ` data-to="${to}"` : ''}${plus ? ' data-plus' : ''}>0</b><span>${label}</span></div>`;
     view.innerHTML = `<div class="h7">
       <section class="h7-hero" id="h7-hero" aria-label="علمٌ مِدرار لكل طالب">
         <div class="h7-pin">
@@ -694,6 +811,14 @@
           </div>
           <div class="h7-late h7-gut" id="h7-late"><p>كالمطر، يصل العلم إلى كل بيت في عُمان، ولا يطلب شيئاً في المقابل.</p></div>
           <div class="h7-cue" id="h7-cue" aria-hidden="true"><span>مرّر للأسفل</span><i></i></div>
+        </div>
+      </section>
+      <section class="h7-stats h7-gut" aria-label="المنصة بالأرقام">
+        <div class="h7-wrap h7-statrow" id="h7-stats">
+          ${stat('lessons', '<rect x="6" y="10" width="34" height="24" rx="4"/><path d="M20 17v10l8-5z"/><path d="M15 40h16"/>', 0, 'درس مسجّل', true)}
+          ${stat('teachers', '<circle cx="23" cy="15" r="7"/><path d="M9 40c1-8 7-13 14-13s13 5 14 13"/>', 0, 'معلم ومعلمة متطوعون', true)}
+          ${stat('grades', '<path d="M6 38h10v-8h10v-8h10v-8h6"/><path d="M6 38h36"/>', allGrades.length, 'صفاً دراسياً')}
+          ${stat('subjects', ICON_PATH.book, subjectsAll, 'مادة دراسية')}
         </div>
       </section>
       <div class="h7-now h7-gut">
@@ -767,7 +892,14 @@
         <div class="h7-wrap">
           <div class="h7-head"><span class="h7-eyebrow">الصفوف <bdi dir="ltr">1–12</bdi></span><h2 class="h7-h2" id="h7-t-gr">اختر صفّك</h2>
             <p class="h7-lead">لكل صف مواده، ولكل مادة دروس مرتبة بوحدات الكتاب.</p></div>
-          <div class="h7-stages">${stages}</div>
+        </div>
+        <div class="h7-railwrap">
+          <div class="h7-rail" id="h7-rail">${slots}</div>
+          <div class="h7-railnav">
+            <button type="button" class="h7-rbtn" data-dir="-1" aria-label="الصف السابق">→</button>
+            <div class="h7-rdots" aria-hidden="true">${allGrades.map(() => '<i></i>').join('')}</div>
+            <button type="button" class="h7-rbtn" data-dir="1" aria-label="الصف التالي">←</button>
+          </div>
         </div>
       </section>
       <section class="h7-scene h7-hadith h7-gut" data-par="8" aria-label="حديث: أو علمٍ يُنتفَعُ به">
@@ -805,11 +937,24 @@
     $$('[data-jump="grades"]').forEach((b) => b.addEventListener('click', () => {
       const g = document.getElementById('grades');
       ($('.h7-head', g) || g).scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-      const f = $('.h7-chip.cur', g) || $('.h7-chip', g); if (f) f.focus({ preventScroll: true });
+      const f = $('.h7-gslot[data-g="' + (mine || '') + '"]', g) || $('.h7-gslot', g); if (f) f.focus({ preventScroll: true });
     }));
-    homeFx = home7Fx(view.firstElementChild);
+    const h7root = view.firstElementChild;
+    homeFx = home7Fx(h7root);
+    const setStat = (key, v) => {
+      const el = $(`[data-stat="${key}"]`, h7root);
+      if (tok !== app.token || !el || !(v > 0)) return;
+      el.hidden = false; $('b', el).dataset.to = v;
+      h7root.dispatchEvent(new Event('h7-stats'));
+    };
+    API.lessonCounts().then((n) => {
+      if (tok !== app.token || !n) return;
+      setStat('lessons', Object.values(n).reduce((a, b) => a + b, 0));
+      $$('[data-gl]', h7root).forEach((el) => { const c = n[el.dataset.gl] || 0; if (c) el.textContent = lessonsN(c); });
+    }).catch(() => { /* اختياري */ });
     API.listTeachers().then((list) => {
       const box = document.getElementById('vol-faces');
+      if (list) setStat('teachers', list.length);
       if (tok !== app.token || !box || !list || !list.length) return;
       const shown = list.slice(0, 12);
       box.innerHTML = shown.map((t) => `<a class="vol" href="#/t/${esc(t.id)}" title="${esc(t.display_name)}">${avatar(t.display_name, t.avatar_url, 'av-vol', gOf(t))}<span>${esc(t.display_name)}</span></a>`).join('')

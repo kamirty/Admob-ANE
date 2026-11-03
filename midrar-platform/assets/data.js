@@ -389,6 +389,14 @@
         try { return await q('id,display_name,specialty,avatar_url,verified'); }
         catch (e) { if (e.code !== '42703') throw e; return q('id,display_name,specialty,avatar_url'); }
       },
+      // عدد الدروس المنشورة في كل صف (لعدّادات الصفحة الرئيسية وبطاقات الصفوف)
+      async lessonCounts() {
+        try {
+          const rows = await restRaw('sessions', [['select', 'grade'], ['status', 'eq.scheduled'],
+            ['starts_at', 'lte.' + isoMin()], ['video_url', 'not.is.null'], ['limit', '10000']]);
+          const n = {}; rows.forEach((r) => { n[r.grade] = (n[r.grade] || 0) + 1; }); return n;
+        } catch (e) { return null; }
+      },
       // عدد دروس كل مهارة (لصفحة المهارات)
       async skillCounts() {
         try {
@@ -1011,6 +1019,13 @@
         load();
         const st = db.stats[id] || (db.stats[id] = { views: 0, views7: 0, thanks: 0, understood: 0, views30: 0, thanks30: 0 });
         st[kind === 'thanks' ? 'thanks' : 'understood'] += 1; st.thanks30 = (st.thanks30 || 0) + 1; save(); return delay(null);
+      },
+      async lessonCounts() {
+        load();
+        const now = iso(Date.now()); const n = {};
+        db.sessions.filter((s) => s.status === 'scheduled' && visible(s) && s.starts_at <= now && s.video_url)
+          .forEach((s) => { n[s.grade] = (n[s.grade] || 0) + 1; });
+        return delay(n);
       },
       async skillCounts() {
         load();
