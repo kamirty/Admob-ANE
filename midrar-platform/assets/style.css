@@ -1390,3 +1390,50 @@ body.home7 .foot { border-top-color: rgba(255, 255, 255, .08); }
 
 }
 @media (prefers-reduced-motion: reduce) { .h7-scard { transition: none; } }
+
+/* كيف تعمل المنصة: خط عمودي تنزل عليه قطرة مطر مع التمرير، وكل خطوة تصلها تضيء ويظهر مثالها */
+.h7-how { background: radial-gradient(60% 50% at 70% 40%, rgba(231, 180, 86, .07), transparent 70%); }
+.h7-how-in { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 40px 70px; align-items: start; }
+.h7-how-head { position: sticky; top: calc(var(--h7-bar, 68px) + 40px); display: grid; gap: 16px; }
+.h7-tl { --x: 9px; position: relative; list-style: none; margin: 0; padding: 0; display: grid; gap: clamp(46px, 7vw, 90px); }
+.h7-tl::before { content: ""; position: absolute; inset-inline-start: calc(var(--x) - 1px); top: 18px; bottom: 30px; width: 2px; background: rgba(255, 255, 255, .12); border-radius: 2px; }
+.h7-tlfill { position: absolute; inset-inline-start: calc(var(--x) - 1px); top: 0; width: 2px; height: 0; background: linear-gradient(to bottom, rgba(231, 180, 86, .3), var(--h7-gold)); border-radius: 2px; }
+.h7-drop { position: absolute; top: 0; inset-inline-start: calc(var(--x) - 9px); width: 18px; height: 18px; margin-top: -14px; z-index: 2; will-change: transform; pointer-events: none; }
+.h7-drop::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 35% 35%, #FFF3D6, var(--h7-gold) 55%, #B9770E); border-radius: 50% 0 50% 50%; transform: rotate(-45deg);
+  box-shadow: 0 0 18px rgba(231, 180, 86, .8), 0 0 46px rgba(231, 180, 86, .35); }
+.h7-step { position: relative; padding-inline-start: 46px; display: grid; gap: 6px; opacity: .38; transition: opacity .5s ease; }
+.h7-step.on { opacity: 1; }
+.h7-node { position: absolute; inset-inline-start: 0; top: 6px; width: 18px; height: 18px; border-radius: 50%; background: var(--h7-night); border: 2px solid rgba(255, 255, 255, .3); transition: background-color .3s ease, border-color .3s ease; }
+.h7-node::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--h7-gold); opacity: 0; }
+.h7-step.on .h7-node { background: var(--h7-gold); border-color: var(--h7-gold); }
+.h7-step.on .h7-node::after { animation: h7-ripple 1s ease-out 1; }
+@keyframes h7-ripple { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(3.2); } }
+.h7-sn { font: 600 .78rem/1 var(--font-body); letter-spacing: .04em; color: var(--h7-gold); }
+.h7-step h3 { font: 700 clamp(1.5rem, 1.1rem + 1.4vw, 2.1rem)/1.3 var(--font-kufi); }
+.h7-step h3 em { font-style: normal; color: var(--h7-gold); }
+.h7-step p { color: var(--h7-mist); max-width: 40ch; }
+.h7-demo { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.h7-demo i { font-style: normal; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 12px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .12); color: var(--h7-mist); font-size: .9rem;
+  transition: background-color .4s ease .35s, border-color .4s ease .35s, color .4s ease .35s, transform .4s ease .35s; }
+.h7-dg i { font: 700 1.3rem/1 var(--font-kufi); min-width: 52px; justify-content: center; padding: 12px 8px; }
+.h7-ds .sico { width: 20px; height: 20px; }
+.h7-step.on .h7-dg i.pick, .h7-step.on .h7-dp i.pick { background: var(--h7-gold); border-color: var(--h7-gold); color: var(--h7-gold-ink); transform: translateY(-3px); }
+.h7-step.on .h7-ds i.pick { background: color-mix(in srgb, var(--sc) 35%, transparent); border-color: color-mix(in srgb, var(--sc) 70%, #fff); color: var(--ink); transform: translateY(-3px); }
+.h7-dw { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; max-width: 380px; padding: 12px 14px; border-radius: 14px; background: rgba(0, 0, 0, .35); border: 1px solid rgba(255, 255, 255, .12); }
+.h7-dw .play { width: 34px; height: 34px; border-radius: 50%; background: rgba(255, 255, 255, .12); position: relative; }
+.h7-dw .play::after { content: ""; position: absolute; inset: 11px 10px 11px 13px; background: var(--ink); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.h7-dw .bar { height: 6px; border-radius: 6px; background: rgba(255, 255, 255, .14); overflow: hidden; direction: ltr; }
+.h7-dw .bar b { display: block; height: 100%; width: 0; background: var(--h7-gold); border-radius: 6px; transition: width 1.6s cubic-bezier(.3, .6, .3, 1) .3s; }
+.h7-step.on .h7-dw .bar b { width: 100%; }
+.h7-demo .ok { grid-column: 1 / -1; font-size: .85rem; color: #8FD7B6; opacity: 0; transform: translateY(4px); transition: opacity .4s ease 1.9s, transform .4s ease 1.9s; }
+.h7-dp .ok { flex-basis: 100%; transition-delay: .9s; }
+.h7-demo .ok::before { content: "✓ "; }
+.h7-step.on .h7-demo .ok { opacity: 1; transform: none; }
+@media (max-width: 860px) {
+  .h7-how-in { grid-template-columns: minmax(0, 1fr); }
+  .h7-how-head { position: static; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .h7-step, .h7-node, .h7-demo i, .h7-dw .bar b, .h7-demo .ok { transition: none; }
+  .h7-step.on .h7-node::after { animation: none; }
+}

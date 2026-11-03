@@ -505,6 +505,12 @@
     const hero = q('h7-hero'), img = q('h7-hero-img'), copy = q('h7-copy'), late = q('h7-late'), dim = q('h7-dim'), cue = q('h7-cue');
     const pars = $$('[data-par]', root).map((el) => ({ el, pl: $('.h7-pl', el), amt: +el.dataset.par })).filter((p) => p.pl);
     const floats = $$('[data-float]', root);
+    // «كيف تعمل المنصة»: مواضع عُقد الخط تُقاس مرة، وتُعاد عند تغيير المقاس
+    const tl = q('h7-tl'), drop = q('h7-drop'), fill = q('h7-tlfill');
+    const tlSteps = tl ? $$('.h7-step', tl) : [];
+    let tlNodes = null;
+    const measureTl = () => { tlNodes = tlSteps.map((st) => st.offsetTop + $('.h7-node', st).offsetTop + 9); fill.style.top = tlNodes[0] + 'px'; };
+    if (tl && reduce) { measureTl(); tlSteps.forEach((st) => st.classList.add('on')); drop.style.transform = `translateY(${tlNodes[tlNodes.length - 1]}px)`; fill.style.height = (tlNodes[tlNodes.length - 1] - tlNodes[0]) + 'px'; }
     let queued = false;
     function frame() {
       queued = false;
@@ -530,6 +536,17 @@
         if (b.bottom < -50 || b.top > vh + 50) continue;
         pl.style.setProperty('--py', (at(b) * amt).toFixed(2) + '%');
       }
+      if (tl) {
+        const b = tl.getBoundingClientRect();
+        if (b.bottom > -50 && b.top < vh + 50) {
+          if (!tlNodes) measureTl();
+          const end = tlNodes[tlNodes.length - 1];
+          const y = clamp(vh * 0.58 - b.top - tlNodes[0], 0, end - tlNodes[0]) + tlNodes[0];
+          drop.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0)`;
+          fill.style.height = Math.max(0, y - tlNodes[0]).toFixed(1) + 'px';
+          tlSteps.forEach((st, i) => st.classList.toggle('on', y >= tlNodes[i] - 1));
+        }
+      }
       for (const el of floats) {
         const b = el.getBoundingClientRect();
         if (b.bottom < -100 || b.top > vh + 100) continue;
@@ -538,7 +555,7 @@
     }
     const ask = () => { if (!queued) { queued = true; requestAnimationFrame(frame); } };
     on(window, 'scroll', ask, { passive: true });
-    on(window, 'resize', () => { barH(); ask(); });
+    on(window, 'resize', () => { barH(); tlNodes = null; ask(); });
     frame();
 
     function onScreen(el, start, stop) {
@@ -884,6 +901,31 @@
             <div class="h7-btns"><button type="button" class="h7-btn h7-btn-gold" data-jump="grades">اختر صفك</button></div>
           </div>
           <div class="h7-frame" data-par="8"><div class="h7-pl">${h7Img('students', 'طالب بالكُمّة وطالبة بالحجاب يتعلمان معاً على جهاز لوحي', '(max-width: 860px) 100vw, 60vw')}</div></div>
+        </div>
+      </section>
+      <section class="h7-how h7-sec h7-gut" id="h7-how" aria-labelledby="h7-t-how">
+        <div class="h7-wrap h7-how-in">
+          <div class="h7-how-head">
+            <span class="h7-eyebrow">كيف تعمل المنصة</span>
+            <h2 class="h7-h2" id="h7-t-how">من صفّك<br>إلى الدرس</h2>
+            <p class="h7-lead">أربع خطوات، بلا حساب ولا رسوم. مرّر للأسفل وتابع القطرة.</p>
+          </div>
+          <ol class="h7-tl" id="h7-tl">
+            <li class="h7-step"><span class="h7-node" aria-hidden="true"></span>
+              <span class="h7-sn">الخطوة 1</span><h3>اختر <em>صفّك</em></h3><p>من الصف 1 إلى الصف 12.</p>
+              <div class="h7-demo h7-dg" aria-hidden="true"><i>8</i><i>9</i><i class="pick">10</i><i>11</i><i>12</i></div></li>
+            <li class="h7-step"><span class="h7-node" aria-hidden="true"></span>
+              <span class="h7-sn">الخطوة 2</span><h3>اختر <em>المادة</em></h3><p>لكل مادة لونها، ودروسها مرتبة بوحدات الكتاب.</p>
+              <div class="h7-demo h7-ds" aria-hidden="true">${['math', 'science', 'arabic', 'english'].map((x, i) => `<i class="${i === 0 ? 'pick' : ''}" style="${scVar(x)}">${subjIcon(x)}${esc(subjectName(x))}</i>`).join('')}</div></li>
+            <li class="h7-step"><span class="h7-node" aria-hidden="true"></span>
+              <span class="h7-sn">الخطوة 3</span><h3>شاهد <em>الدرس</em></h3><p>حصة مباشرة مع المعلم، أو تسجيلها متى شئت.</p>
+              <div class="h7-demo h7-dw" aria-hidden="true"><span class="play"></span><span class="bar"><b></b></span><span class="ok">تمت المشاهدة</span></div></li>
+            <li class="h7-step"><span class="h7-node" aria-hidden="true"></span>
+              <span class="h7-sn">الخطوة 4</span><h3><em>تدرّب</em></h3><p>أسئلة تفاعلية بعد الدرس، بثلاثة مستويات.</p>
+              <div class="h7-demo h7-dp" aria-hidden="true"><i>سهل</i><i class="pick">متوسط</i><i>متقدم</i><span class="ok">أحسنت! 3 من 3</span></div></li>
+            <span class="h7-tlfill" id="h7-tlfill" aria-hidden="true"></span>
+            <span class="h7-drop" id="h7-drop" aria-hidden="true"></span>
+          </ol>
         </div>
       </section>
       <section class="h7-scene h7-sec h7-gut h7-grades" id="grades" data-par="10" aria-labelledby="h7-t-gr">
