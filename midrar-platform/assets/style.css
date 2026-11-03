@@ -1234,7 +1234,7 @@ body.home7 .foot { border-top-color: rgba(255, 255, 255, .08); }
 .h7-gno { position: relative; align-self: center; justify-self: center; font: 700 clamp(5rem, 3.6rem + 4vw, 7rem)/1 var(--font-kufi); color: var(--tint); font-variant-numeric: tabular-nums;
   text-shadow: 0 10px 40px color-mix(in srgb, var(--tint) 35%, transparent); }
 /* صف الطالب: الرقم بحجمه، لكن بلون أبيض ذهبي مضيء وإطار ذهبي، لا يشبه ألوان الحلقات */
-.h7-gcard.h7-mine { --mine: #E7B456; --mine-hi: #FFE3A3; --mine-ink: #2A1C05;
+.h7-gcard.h7-mine { --mine: #E5323B; --mine-hi: #FFB3B0; --mine-ink: #FFFFFF; /* أحمر العلم العُماني */
   border-color: color-mix(in srgb, var(--mine) 80%, transparent);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--mine) 40%, transparent), 0 24px 60px rgba(0, 0, 0, .4), 0 0 46px -10px color-mix(in srgb, var(--mine) 75%, transparent); }
 .h7-gcard.h7-mine .h7-gno { color: var(--mine-hi); background: linear-gradient(180deg, #FFFFFF 0%, var(--mine-hi) 45%, var(--mine) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
