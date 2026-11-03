@@ -803,7 +803,6 @@
           <canvas class="h7-fx" id="h7-rain" aria-hidden="true"></canvas>
           <div class="h7-shade"></div><div class="h7-dim" id="h7-dim"></div>
           <div class="h7-copy h7-gut" id="h7-copy">
-            <a class="h7-livepill" id="h7-livepill" hidden></a>
             <span class="h7-eyebrow">منصة تعليمية مجانية · سلطنة عُمان</span>
             <h1>علمٌ <span>مِدرار</span><br>لكل طالب</h1>
             <p class="h7-sub">دروس وحصص مباشرة يقدّمها معلمون متطوعون، من الصف 1 إلى الصف 12.</p>
@@ -919,8 +918,14 @@
         <div class="h7-pl">${h7Img('rain', '', '100vw')}</div>
         <canvas class="h7-fx" id="h7-vrain" aria-hidden="true" style="z-index:-1"></canvas>
         <div class="h7-veil"></div>
-        <div class="h7-wrap">
-          <div class="h7-card h7-glass" data-float="-30">
+        <div class="h7-volstage">
+          <div class="h7-sbar">
+            <button type="button" class="h7-rbtn" data-sdir="-1" aria-label="الحصص الأقرب">→</button>
+            <span><b id="h7-t-sched">جدول الحصص</b><span id="h7-sched-n">كل الصفوف والمواد</span></span>
+            <button type="button" class="h7-rbtn" data-sdir="1" aria-label="الحصص الأبعد">←</button>
+          </div>
+          <div class="h7-srail" id="h7-srail" aria-labelledby="h7-t-sched"><p class="h7-sempty">جارٍ تحميل الحصص…</p></div>
+          <div class="h7-card h7-glass h7-volcard">
             <span class="h7-eyebrow">تطوّع</span>
             <h2 class="h7-h2" id="h7-t-vol">تطوّع بحصة<br>من بيتك</h2>
             <p class="h7-lead">ساعة من وقتك تصنع فرقاً في حياة طالب. علمُك صدقة جارية.</p>
@@ -989,8 +994,8 @@
     }
     // الحصص القادمة بمواعيدها لكل الصفوف، حتى لا تفوت أحداً حصةٌ في صف غير الذي اختاره من قبل
     let upRows = [], liveRows = [];
-    // تنبيه الحصص المباشرة: شارة حمراء نابضة في الواجهة وعلى بطاقة الصف ما دامت الحصة جارية،
-    // وموعد أقرب حصة مباشرة خلال يوم قبل أن تبدأ
+    // تنبيه الحصص المباشرة على بطاقة الصف: «مباشر الآن» بالأحمر ما دامت الحصة جارية،
+    // وموعد أقرب حصة مباشرة خلال يوم قبل أن تبدأ. ومعه يُرسم «جدول الحصص» بجانب «تطوّع».
     const paintLive = () => {
       if (tok !== app.token) return;
       const now = Date.now();
@@ -999,20 +1004,8 @@
         .map((x) => ({ x, st: stateOf(x, now) })).filter((o) => ['live', 'soon', 'upcoming'].includes(o.st.key))
         .sort((a, b) => a.x.starts_at.localeCompare(b.x.starts_at));
       const on = all.filter((o) => o.st.key === 'live');
-      const next = all.find((o) => o.st.key !== 'live' && +new Date(o.x.starts_at) - now < DAY);
+      paintSched();
       const when = (x) => { const t = new Date(x.starts_at); return (dayKey(t) === dayKey(now) ? 'اليوم ' : dayKey(t) === dayKey(now + DAY) ? 'غداً ' : '') + fTime.format(t); };
-      const pill = $('#h7-livepill', view);
-      if (pill) {
-        const o = on.find((y) => y.x.grade === mine) || on[0] || next;
-        pill.hidden = !o;
-        if (o) {
-          const isOn = o.st.key === 'live';
-          pill.className = 'h7-livepill' + (isOn ? ' is-live' : o.st.key === 'soon' ? ' is-soon' : '');
-          pill.href = '#/s/' + o.x.id;
-          pill.innerHTML = `<i aria-hidden="true"></i><b>${isOn ? 'مباشر الآن' : o.st.key === 'soon' ? esc(o.st.label) : 'حصة مباشرة ' + esc(when(o.x))}</b>`
-            + `<span>${esc(subjOf(o.x))} · ${esc(gradeName(o.x.grade))}${isOn && on.length > 1 ? ' · و' + esc(plural(on.length - 1, 'حصة أخرى', 'حصتان أخريان', 'حصص أخرى', 'حصة أخرى')) : ''}</span>`;
-        }
-      }
       $$('[data-gnow]', view).forEach((el) => {
         const o = on.find((y) => y.x.grade === el.dataset.gnow) || all.find((y) => y.x.grade === el.dataset.gnow && +new Date(y.x.starts_at) - now < DAY);
         el.hidden = !o;
@@ -1021,6 +1014,80 @@
         el.innerHTML = o.st.key === 'live' ? '<i aria-hidden="true"></i>مباشر الآن' : esc(o.st.key === 'soon' ? o.st.label : when(o.x));
       });
     };
+    let schedKey = null, schedReady = false;
+    function paintSched() {
+      const rail = $('#h7-srail', view);
+      if (!rail || !schedReady) return;
+      const seen = new Set();
+      const list = liveRows.concat(upRows).filter((x) => !seen.has(x.id) && seen.add(x.id))
+        .sort((a, b) => (stateOf(b).key === 'live') - (stateOf(a).key === 'live') || a.starts_at.localeCompare(b.starts_at));
+      const key = list.map((x) => x.id).join();
+      const n = $('#h7-sched-n', view);
+      if (n) n.textContent = list.length ? `${plural(list.length, 'حصة واحدة', 'حصتان', 'حصص', 'حصة')} · كل الصفوف والمواد` : 'كل الصفوف والمواد';
+      if (key === schedKey) return; // الحالات تتحدث وحدها كل 30 ثانية (paintStates)، فلا نعيد الرسم ولا يضيع موضع التمرير
+      schedKey = key;
+      const cards = list.map((x) => {
+        const t = x.teacher;
+        return `<a class="h7-scard" href="#/s/${esc(x.id)}" data-sid="${esc(x.id)}" style="${scVar(x.subject)}" draggable="false">
+          <span data-badge>${badgeHtml(x)}</span>
+          <span class="h7-sico2">${subjIcon(x.subject)}</span>
+          <span class="h7-ssubj">${esc(subjOf(x))}</span>
+          <span class="h7-sgrade">${esc(gradeName(x.grade))}</span>
+          <b class="h7-stitle">${esc(x.title)}</b>
+          <span class="h7-swhen">${esc(dayLabel(new Date(x.starts_at)))}<br><bdi>${x.kind === 'recorded' ? esc(time(x.starts_at)) : `${esc(time(x.starts_at))} – ${esc(time(x.ends_at))}`}</bdi> · ${esc(minsTxt(minutes(x)))}</span>
+          ${t ? `<span class="h7-steacher">${avatar(t.display_name, t.avatar_url, '', gOf(t))}<span>${esc(t.display_name)}</span></span>` : ''}
+        </a>`;
+      });
+      // على الشاشة العريضة تقف بطاقة «تطوّع» في الوسط: بعض الحصص على يمينها، والباقي على يسارها
+      const gap = 16, cw = 210, spacer = 520 + 2 * gap;
+      const side = Math.max(0, (rail.clientWidth - spacer) / 2);
+      const right = Math.min(Math.max(1, Math.floor((side + gap) / (cw + gap))), Math.ceil(cards.length / 2));
+      if (cards.length) cards.splice(right, 0, '<span class="h7-sspacer" aria-hidden="true"></span>');
+      rail.innerHTML = cards.length ? cards.join('') : '<p class="h7-sempty">لا توجد حصص مجدولة الآن. <a href="#/teach">أضف أول حصة</a></p>';
+    }
+    (() => { // التنقل: الأزرار، والسحب بالفأرة، واللمس بالتمرير الطبيعي
+      const rail = $('#h7-srail', view);
+      if (!rail) return;
+      const stepW = () => { const c = $('.h7-scard', rail); return c ? c.offsetWidth + 14 : 260; };
+      // في الاتجاه من اليمين لليسار تكون الحصص الأبعد إلى اليسار، أي بقيمة تمرير أصغر
+      $$('[data-sdir]', view).forEach((b) => b.addEventListener('click', () => rail.scrollBy({ left: -stepW() * +b.dataset.sdir, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })));
+      let drag = null, moved = false;
+      rail.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse' && e.button === 0) { drag = { x: e.clientX, left: rail.scrollLeft }; moved = false; } });
+      rail.addEventListener('pointermove', (e) => {
+        if (!drag) return;
+        const dx = e.clientX - drag.x;
+        if (!moved && Math.abs(dx) > 6) { moved = true; rail.classList.add('drag'); }
+        if (moved) rail.scrollLeft = drag.left - dx;
+      });
+      const end = () => { drag = null; rail.classList.remove('drag'); };
+      rail.addEventListener('pointerup', end); rail.addEventListener('pointerleave', end);
+      rail.addEventListener('click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
+      rail.addEventListener('dragstart', (e) => e.preventDefault());
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      let stopped = false, hover = false, seen = false, dir = -1, acc = 0, last = 0;
+      const halt = () => { stopped = true; };
+      ['pointerdown', 'wheel', 'touchstart', 'keydown', 'focusin'].forEach((ev) => rail.addEventListener(ev, halt, { passive: true }));
+      $$('[data-sdir]', view).forEach((b) => b.addEventListener('click', halt));
+      rail.addEventListener('mouseenter', () => { hover = true; });
+      rail.addEventListener('mouseleave', () => { hover = false; });
+      const io = 'IntersectionObserver' in window ? new IntersectionObserver(([e]) => { seen = e.isIntersecting; }) : null;
+      if (io) io.observe(rail); else seen = true;
+      const drift = (t) => {
+        if (tok !== app.token || stopped) { if (io) io.disconnect(); return; }
+        const dt = Math.min(0.05, (t - last) / 1000 || 0); last = t;
+        if (seen && !hover && !document.hidden && rail.scrollWidth > rail.clientWidth + 4) {
+          acc += 26 * dt;
+          if (acc >= 1) {
+            const step = Math.floor(acc); acc -= step;
+            const before = rail.scrollLeft;
+            rail.scrollLeft = before + dir * step;
+            if (rail.scrollLeft === before) dir = -dir; // وصل إلى الطرف: يرجع ببطء
+          }
+        }
+        requestAnimationFrame(drift);
+      };
+      requestAnimationFrame(drift);
+    })();
     const loadUp = async () => {
       const rows = remember(upNow(await API.listUpcoming({ limit: 80 })));
       if (tok !== app.token) return;
@@ -1034,7 +1101,7 @@
       }
       paintLive();
     };
-    loadUp().catch(() => { /* القسم اختياري */ });
+    const upFirst = loadUp().catch(() => { /* القسم اختياري */ });
     // كل 30 ثانية تتحدث الحالات (تبدأ بعد… ← مباشر الآن)، وكل دقيقتين تُجلب الحصص من جديد
     let ticks = 0;
     pageTick = () => {
@@ -1069,6 +1136,9 @@
       }
     }
     try { await loadLive(); } catch (e) { /* الشريط اختياري */ }
+    await upFirst;
+    if (tok !== app.token) return;
+    schedReady = true; paintSched();
   }
 
   // ------------------------------------------------------------------
