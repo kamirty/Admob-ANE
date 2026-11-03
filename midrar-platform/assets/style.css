@@ -1233,6 +1233,11 @@ body.home7 .foot { border-top-color: rgba(255, 255, 255, .08); }
 .h7-gstage em.you { background: rgba(255, 255, 255, .9); color: #0B1311; }
 .h7-gno { position: relative; align-self: center; justify-self: center; font: 700 clamp(5rem, 3.6rem + 4vw, 7rem)/1 var(--font-kufi); color: var(--tint); font-variant-numeric: tabular-nums;
   text-shadow: 0 10px 40px color-mix(in srgb, var(--tint) 35%, transparent); }
+/* صف الطالب: الرقم بحجمه، لكن بلون أبيض ذهبي مضيء وإطار ذهبي، لا يشبه ألوان الحلقات */
+.h7-gcard.h7-mine { border-color: rgba(231, 180, 86, .75); box-shadow: 0 0 0 1px rgba(231, 180, 86, .35), 0 24px 60px rgba(0, 0, 0, .4), 0 0 46px -10px rgba(231, 180, 86, .7); }
+.h7-gcard.h7-mine .h7-gno { color: #FFF1CF; background: linear-gradient(180deg, #FFFFFF 0%, #FFE3A3 45%, #E7B456 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  text-shadow: none; filter: drop-shadow(0 6px 22px rgba(231, 180, 86, .55)); }
+.h7-gcard.h7-mine .h7-gfoot i, .h7-gcard.h7-mine.is-center .h7-gfoot i { background: var(--h7-gold); color: var(--h7-gold-ink); }
 .h7-gname { position: relative; font: 700 1.3rem/1.35 var(--font-kufi); text-align: center; }
 .h7-gsubs { position: relative; display: flex; justify-content: center; gap: 8px; color: var(--h7-mist); min-height: 26px; align-items: center; }
 .h7-gsubs .sico { width: 24px; height: 24px; }

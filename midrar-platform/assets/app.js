@@ -783,7 +783,7 @@
     const slots = allGrades.map(({ g, st, si }) => {
       const subs = subjectsOf(g.id);
       return `<a class="h7-gslot" href="#/g/${esc(g.id)}" data-g="${esc(g.id)}" draggable="false" aria-label="${esc(g.name)}">
-        <div class="h7-gcard h7-glass s${si}${g.id === mine ? ' mine' : ''}">
+        <div class="h7-gcard h7-glass s${si}${g.id === mine ? ' h7-mine' : ''}">
           <span class="h7-gstage">${esc(st)}${g.exam ? `<em>${esc(C.EXAM_TAG)}</em>` : ''}${g.id === mine ? '<em class="you">صفّي</em>' : ''}</span>
           <b class="h7-gno">${esc(gradeNo(g.id))}</b>
           <strong class="h7-gname">${esc(g.name)}</strong>
