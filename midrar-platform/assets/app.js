@@ -693,7 +693,7 @@
       function paintRail() {
         queuedR = false;
         const cx = center();
-        const step = slots[0].offsetWidth + 18;
+        const step = slots[0].offsetWidth + (parseFloat(getComputedStyle(rail).columnGap) || 18);
         let best = 0, bd = Infinity;
         slots.forEach((sl, i) => {
           const b = sl.getBoundingClientRect();

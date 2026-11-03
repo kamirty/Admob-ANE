@@ -1210,8 +1210,10 @@ body.home7 .foot { border-top-color: rgba(255, 255, 255, .08); }
 .h7-grades .h7-head { display: grid; gap: 16px; max-width: 620px; margin-bottom: clamp(36px, 5vw, 60px); scroll-margin-top: calc(var(--h7-bar, 68px) + 20px); }
 /* شريط الصفوف: بطاقة لكل صف، والتي في الوسط أكبر، والجانبية مائلة بعمق */
 .h7-railwrap { margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px))); }
-.h7-rail { --cw: clamp(214px, 22vw, 270px); display: flex; gap: 18px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
-  padding-block: 36px 34px; padding-inline: calc(50% - var(--cw) / 2); scrollbar-width: none; cursor: grab; outline: none; }
+.h7-rail { --cw: clamp(214px, 22vw, 270px); --gap: 18px; display: flex; gap: var(--gap); overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+  padding-block: 36px 34px; scrollbar-width: none; cursor: grab; outline: none; }
+/* فراغ قبل أول بطاقة وبعد آخرها، كعنصرين في الصف لا كحشوة: بعض متصفحات الجوال تتجاهل الحشوة في نهاية التمرير، فلا تصل آخر الصفوف إلى الوسط وتبقى أصغر */
+.h7-rail::before, .h7-rail::after { content: ""; flex: 0 0 max(0px, calc(50% - var(--cw) / 2 - var(--gap))); }
 .h7-rail::-webkit-scrollbar { display: none; }
 .h7-rail.drag { scroll-snap-type: none; cursor: grabbing; }
 .h7-rail.drag .h7-gslot { pointer-events: none; }
@@ -1295,7 +1297,7 @@ body.home7 .foot { border-top-color: rgba(255, 255, 255, .08); }
   .h7-split .h7-card { margin-top: -64px; margin-inline: 10px; }
 }
 @media (max-width: 520px) {
-  .h7-rail { --cw: min(72vw, 260px); gap: 12px; }
+  .h7-rail { --cw: min(72vw, 260px); --gap: 12px; }
   .h7-statrow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .h7-stat { padding: 20px 12px 18px; }
   .h7-cap { position: relative; inset: auto; margin: -36px 12px 0; max-width: none; }
