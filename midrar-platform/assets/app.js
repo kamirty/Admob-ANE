@@ -925,16 +925,14 @@
             <button type="button" class="h7-rbtn" data-sdir="1" aria-label="الحصص الأبعد">←</button>
           </div>
           <div class="h7-srail" id="h7-srail" aria-labelledby="h7-t-sched"><p class="h7-sempty">جارٍ تحميل الحصص…</p></div>
-          <div class="h7-card h7-glass h7-volcard">
-            <span class="h7-eyebrow">تطوّع</span>
-            <h2 class="h7-h2" id="h7-t-vol">تطوّع بحصة<br>من بيتك</h2>
-            <p class="h7-lead">ساعة من وقتك تصنع فرقاً في حياة طالب. علمُك صدقة جارية.</p>
-            <ol class="h7-steps">
-              <li><div><b>حدّد موعد حصتك</b><span>والمنصة تنشئ الرابط.</span></div></li>
-              <li><div><b>اشرح لطلابك مباشرة</b><span>يدخلون من المنصة.</span></div></li>
-              <li><div><b>أرسل التسجيل</b><span>ننشره باسمك على قناة المنصة.</span></div></li>
-            </ol>
-            <div class="h7-btns"><a class="h7-btn h7-btn-gold" href="#/teach">سجّل متطوعاً</a><a class="h7-btn h7-btn-glass" href="#/guide">دليل المعلم</a></div>
+          <div class="h7-volcard">
+            <span class="h7-vtag">تطوّع</span>
+            <span class="h7-sico2 h7-vico"><svg class="sico" viewBox="0 0 46 46" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${ICON_PATH.hand}</svg></span>
+            <h2 id="h7-t-vol">تطوّع بحصة من بيتك</h2>
+            <p>ساعة من وقتك تصنع فرقاً في حياة طالب. علمُك صدقة جارية.</p>
+            <ol class="h7-vsteps"><li>حدّد موعد حصتك</li><li>اشرح لطلابك مباشرة</li><li>أرسل التسجيل</li></ol>
+            <a class="h7-btn h7-btn-gold" href="#/teach">سجّل متطوعاً</a>
+            <a class="h7-vguide" href="#/guide">دليل المعلم</a>
           </div>
         </div>
       </section>
@@ -1039,10 +1037,16 @@
         </a>`;
       });
       // على الشاشة العريضة تقف بطاقة «تطوّع» في الوسط: بعض الحصص على يمينها، والباقي على يسارها
-      const gap = 16, cw = 210, spacer = 520 + 2 * gap;
+      const gap = 16, cw = 210, spacer = cw + 2 * gap;
       const side = Math.max(0, (rail.clientWidth - spacer) / 2);
       const right = Math.min(Math.max(1, Math.floor((side + gap) / (cw + gap))), Math.ceil(cards.length / 2));
-      if (cards.length) cards.splice(right, 0, '<span class="h7-sspacer" aria-hidden="true"></span>');
+      const left = cards.length - right;
+      // حين تكفي الحصص القليلة للشاشة: نوازن الجانبين بفراغات بحجم بطاقة، فتقف الحصص ملاصقة لبطاقة «تطوّع» لا عند طرف الشاشة
+      const fits = cards.length * (cw + gap) + spacer <= rail.clientWidth;
+      const fill = (k) => '<span class="h7-sfill" aria-hidden="true"></span>'.repeat(Math.max(0, k));
+      const wide = matchMedia('(min-width: 1000px)').matches; // على الجوال تأتي البطاقة فوق الصف، فلا فراغ في وسطه
+      if (cards.length && wide) cards.splice(right, 0, '<span class="h7-sspacer" aria-hidden="true"></span>');
+      if (cards.length && wide && fits) { cards.unshift(fill(left - right)); cards.push(fill(right - left)); }
       rail.innerHTML = cards.length ? cards.join('') : '<p class="h7-sempty">لا توجد حصص مجدولة الآن. <a href="#/teach">أضف أول حصة</a></p>';
     }
     (() => { // التنقل: الأزرار، والسحب بالفأرة، واللمس بالتمرير الطبيعي

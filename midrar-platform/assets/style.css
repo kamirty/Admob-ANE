@@ -1288,12 +1288,6 @@ body.home7 .foot { border-top-color: rgba(255, 255, 255, .08); }
 .h7-vol { min-height: 92vh; min-height: 92svh; display: grid; align-items: center; }
 .h7-vol .h7-veil { background: radial-gradient(60% 70% at 50% 55%, rgba(7, 11, 10, .25), rgba(7, 11, 10, .6)),
   linear-gradient(to bottom, var(--h7-night) 0%, transparent 18%, transparent 82%, var(--h7-night) 100%); }
-.h7-vol .h7-card { max-width: 520px; padding: clamp(26px, 3.4vw, 44px); display: grid; gap: 18px; }
-.h7-steps { list-style: none; padding: 0; display: grid; gap: 4px; counter-reset: h7s; }
-.h7-steps li { counter-increment: h7s; display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: start; padding-block: 10px; border-top: 1px solid rgba(255, 255, 255, .12); }
-.h7-steps li::before { content: counter(h7s); font: 700 1.4rem/1.3 var(--font-kufi); color: var(--h7-gold); font-variant-numeric: tabular-nums; }
-.h7-steps b { display: block; font-weight: 600; }
-.h7-steps span { color: var(--h7-mist); font-size: .93rem; }
 .h7-parents { max-width: 1240px; margin: 0 auto clamp(40px, 6vw, 80px); }
 
 @media (max-width: 860px) {
@@ -1343,10 +1337,28 @@ body.home7 .foot { border-top-color: rgba(255, 255, 255, .08); }
 .h7-srail::-webkit-scrollbar { display: none; }
 .h7-srail.drag { cursor: grabbing; }
 .h7-srail.drag .h7-scard { pointer-events: none; }
-.h7-sspacer { flex: 0 0 552px; }
-.h7-volcard.h7-card { grid-area: main; justify-self: center; align-self: center; position: relative; z-index: 2; width: min(520px, calc(100% - 32px));
-  background: rgba(20, 16, 12, .42); backdrop-filter: blur(22px) saturate(150%); -webkit-backdrop-filter: blur(22px) saturate(150%); }
-.h7-scard { --sct2: color-mix(in srgb, var(--sc) 55%, #fff); flex: 0 0 210px; min-height: 430px; display: grid; grid-template-rows: auto auto auto auto 1fr auto auto; justify-items: center; text-align: center; gap: 8px;
+.h7-sspacer { flex: 0 0 242px; }
+.h7-sfill { flex: 0 0 210px; }
+/* هامش تلقائي في الطرفين: يتوسط الصف حين لا يملأ الشاشة، ولا يؤثر حين يفيض */
+.h7-srail > :first-child { margin-inline-start: auto; }
+.h7-srail > :last-child { margin-inline-end: auto; }
+/* بطاقة «تطوّع» بقياس بطاقات الحصص نفسه، ثابتة في الوسط بإطار ذهبي، والحصص تمرّ خلفها */
+.h7-volcard { grid-area: main; justify-self: center; align-self: center; position: relative; z-index: 2; width: 210px; height: 440px;
+  display: grid; grid-template-rows: auto auto auto auto 1fr auto auto; justify-items: center; text-align: center; gap: 8px; padding: 18px 16px 14px; border-radius: 22px;
+  background: linear-gradient(180deg, rgba(231, 180, 86, .3) 0%, rgba(40, 30, 18, .55) 50%, rgba(20, 16, 12, .7) 100%);
+  border: 1px solid rgba(231, 180, 86, .7); backdrop-filter: blur(22px) saturate(150%); -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .5), 0 0 50px -12px rgba(231, 180, 86, .7), inset 0 1px 0 rgba(255, 255, 255, .15); }
+.h7-vtag { font: 700 .78rem/1 var(--font-body); padding: 5px 12px; border-radius: 999px; background: var(--h7-gold); color: var(--h7-gold-ink); }
+.h7-vico { --sc: #E7B456; --sct2: #FFE3A3; }
+.h7-volcard h2 { font: 700 1.25rem/1.35 var(--font-kufi); }
+.h7-volcard p { font-size: .82rem; line-height: 1.6; color: var(--h7-mist); }
+.h7-vsteps { list-style: none; margin: 0; padding: 8px 0 0; align-self: start; display: grid; gap: 5px; width: 100%; border-top: 1px solid rgba(255, 255, 255, .14); counter-reset: v; font-size: .82rem; text-align: start; }
+.h7-vsteps li { counter-increment: v; display: flex; gap: 8px; align-items: baseline; }
+.h7-vsteps li::before { content: counter(v); font: 700 .95rem/1 var(--font-kufi); color: var(--h7-gold); min-width: 12px; }
+.h7-volcard .h7-btn { justify-self: stretch; justify-items: center; padding: 10px 14px; font-size: .95rem; }
+.h7-vguide { font-size: .82rem; color: var(--h7-mist); }
+.h7-vguide:hover { color: var(--ink); }
+.h7-scard { --sct2: color-mix(in srgb, var(--sc) 55%, #fff); flex: 0 0 210px; height: 440px; display: grid; grid-template-rows: auto auto auto auto 1fr auto auto; justify-items: center; text-align: center; gap: 8px;
   padding: 18px 16px 16px; border-radius: 22px; text-decoration: none; color: var(--ink); user-select: none; -webkit-user-select: none; -webkit-user-drag: none;
   background: linear-gradient(180deg, color-mix(in srgb, var(--sc) 30%, rgba(255, 255, 255, .06)) 0%, rgba(255, 255, 255, .06) 45%, rgba(10, 16, 14, .35) 100%);
   border: 1px solid rgba(255, 255, 255, .16); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 18px 40px rgba(0, 0, 0, .35);
@@ -1372,9 +1384,9 @@ body.home7 .foot { border-top-color: rgba(255, 255, 255, .08); }
 /* الجوال والشاشات المتوسطة: البطاقة أولاً ثم صف الحصص تحتها */
 @media (max-width: 999px) {
   .h7-volstage { grid-template-areas: "card" "bar" "rail"; padding-block: 24px; }
-  .h7-volcard.h7-card { grid-area: card; }
+  .h7-volcard { grid-area: card; }
   .h7-srail { grid-area: rail; }
-  .h7-sspacer { display: none; }
-  .h7-scard { flex-basis: 190px; min-height: 380px; }
+  .h7-sspacer, .h7-sfill { display: none; }
+
 }
 @media (prefers-reduced-motion: reduce) { .h7-scard { transition: none; } }
