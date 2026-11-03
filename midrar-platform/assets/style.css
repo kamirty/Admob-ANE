@@ -1234,10 +1234,13 @@ body.home7 .foot { border-top-color: rgba(255, 255, 255, .08); }
 .h7-gno { position: relative; align-self: center; justify-self: center; font: 700 clamp(5rem, 3.6rem + 4vw, 7rem)/1 var(--font-kufi); color: var(--tint); font-variant-numeric: tabular-nums;
   text-shadow: 0 10px 40px color-mix(in srgb, var(--tint) 35%, transparent); }
 /* صف الطالب: الرقم بحجمه، لكن بلون أبيض ذهبي مضيء وإطار ذهبي، لا يشبه ألوان الحلقات */
-.h7-gcard.h7-mine { border-color: rgba(231, 180, 86, .75); box-shadow: 0 0 0 1px rgba(231, 180, 86, .35), 0 24px 60px rgba(0, 0, 0, .4), 0 0 46px -10px rgba(231, 180, 86, .7); }
-.h7-gcard.h7-mine .h7-gno { color: #FFF1CF; background: linear-gradient(180deg, #FFFFFF 0%, #FFE3A3 45%, #E7B456 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-  text-shadow: none; filter: drop-shadow(0 6px 22px rgba(231, 180, 86, .55)); }
-.h7-gcard.h7-mine .h7-gfoot i, .h7-gcard.h7-mine.is-center .h7-gfoot i { background: var(--h7-gold); color: var(--h7-gold-ink); }
+.h7-gcard.h7-mine { --mine: #E7B456; --mine-hi: #FFE3A3; --mine-ink: #2A1C05;
+  border-color: color-mix(in srgb, var(--mine) 80%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mine) 40%, transparent), 0 24px 60px rgba(0, 0, 0, .4), 0 0 46px -10px color-mix(in srgb, var(--mine) 75%, transparent); }
+.h7-gcard.h7-mine .h7-gno { color: var(--mine-hi); background: linear-gradient(180deg, #FFFFFF 0%, var(--mine-hi) 45%, var(--mine) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  text-shadow: none; filter: drop-shadow(0 6px 22px color-mix(in srgb, var(--mine) 60%, transparent)); }
+.h7-gcard.h7-mine .h7-gfoot i, .h7-gcard.h7-mine.is-center .h7-gfoot i { background: var(--mine); color: var(--mine-ink); }
+.h7-gcard.h7-mine .h7-gstage em.you { background: var(--mine); color: var(--mine-ink); }
 .h7-gname { position: relative; font: 700 1.3rem/1.35 var(--font-kufi); text-align: center; }
 .h7-gsubs { position: relative; display: flex; justify-content: center; gap: 8px; color: var(--h7-mist); min-height: 26px; align-items: center; }
 .h7-gsubs .sico { width: 24px; height: 24px; }
