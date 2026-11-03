@@ -785,6 +785,7 @@
       return `<a class="h7-gslot" href="#/g/${esc(g.id)}" data-g="${esc(g.id)}" draggable="false" aria-label="${esc(g.name)}">
         <div class="h7-gcard h7-glass s${si}${g.id === mine ? ' h7-mine' : ''}">
           <span class="h7-gstage">${esc(st)}${g.exam ? `<em>${esc(C.EXAM_TAG)}</em>` : ''}${g.id === mine ? '<em class="you">صفّي</em>' : ''}</span>
+          <span class="h7-gnow" data-gnow="${esc(g.id)}" hidden></span>
           <b class="h7-gno">${esc(gradeNo(g.id))}</b>
           <strong class="h7-gname">${esc(g.name)}</strong>
           <span class="h7-gsubs">${subs.slice(0, 5).map((x) => `<span title="${esc(subjectName(x))}">${subjIcon(x)}</span>`).join('')}${subs.length > 5 ? `<span class="more"><bdi dir="ltr">+${subs.length - 5}</bdi></span>` : ''}</span>
@@ -802,6 +803,7 @@
           <canvas class="h7-fx" id="h7-rain" aria-hidden="true"></canvas>
           <div class="h7-shade"></div><div class="h7-dim" id="h7-dim"></div>
           <div class="h7-copy h7-gut" id="h7-copy">
+            <a class="h7-livepill" id="h7-livepill" hidden></a>
             <span class="h7-eyebrow">منصة تعليمية مجانية · سلطنة عُمان</span>
             <h1>علمٌ <span>مِدرار</span><br>لكل طالب</h1>
             <p class="h7-sub">دروس وحصص مباشرة يقدّمها معلمون متطوعون، من الصف 1 إلى الصف 12.</p>
@@ -985,20 +987,60 @@
             <span class="muted">${esc(gradeName(f.grade))} · ${esc(subjOf(f))}${f.teacher ? ' · ' + esc(f.teacher.display_name || '') : ''}</span></div></a>`;
       }).catch(() => { /* اختياري */ });
     }
-    // الدروس القادمة بمواعيدها (وما يُعرض الآن): لصف الطالب إن اختاره، وإلا لكل الصفوف
-    (async () => {
-      try {
-        const g = mine && GRADES[mine] ? mine : '';
-        // الحصة التي تبدأ خلال ربع ساعة تظهر في «مباشر الآن»
-        const rows = remember(upNow(await API.listUpcoming({ grade: g, limit: 80 })));
-        const sec = document.getElementById('up-sec');
-        if (tok !== app.token || !rows.length || !sec) return;
-        sec.hidden = false;
-        document.getElementById('up-for').textContent = g ? gradeName(g) : 'كل الصفوف';
-        if (g) { const a = document.getElementById('up-all'); a.hidden = false; a.href = '#/g/' + g + '/plan'; }
-        document.getElementById('up-list').innerHTML = calendarHtml(rows, !g);
-      } catch (e) { /* القسم اختياري */ }
-    })();
+    // الحصص القادمة بمواعيدها لكل الصفوف، حتى لا تفوت أحداً حصةٌ في صف غير الذي اختاره من قبل
+    let upRows = [], liveRows = [];
+    // تنبيه الحصص المباشرة: شارة حمراء نابضة في الواجهة وعلى بطاقة الصف ما دامت الحصة جارية،
+    // وموعد أقرب حصة مباشرة خلال يوم قبل أن تبدأ
+    const paintLive = () => {
+      if (tok !== app.token) return;
+      const now = Date.now();
+      const seen = new Set();
+      const all = liveRows.concat(upRows).filter((x) => x.kind === 'live' && !seen.has(x.id) && seen.add(x.id))
+        .map((x) => ({ x, st: stateOf(x, now) })).filter((o) => ['live', 'soon', 'upcoming'].includes(o.st.key))
+        .sort((a, b) => a.x.starts_at.localeCompare(b.x.starts_at));
+      const on = all.filter((o) => o.st.key === 'live');
+      const next = all.find((o) => o.st.key !== 'live' && +new Date(o.x.starts_at) - now < DAY);
+      const when = (x) => { const t = new Date(x.starts_at); return (dayKey(t) === dayKey(now) ? 'اليوم ' : dayKey(t) === dayKey(now + DAY) ? 'غداً ' : '') + fTime.format(t); };
+      const pill = $('#h7-livepill', view);
+      if (pill) {
+        const o = on.find((y) => y.x.grade === mine) || on[0] || next;
+        pill.hidden = !o;
+        if (o) {
+          const isOn = o.st.key === 'live';
+          pill.className = 'h7-livepill' + (isOn ? ' is-live' : o.st.key === 'soon' ? ' is-soon' : '');
+          pill.href = '#/s/' + o.x.id;
+          pill.innerHTML = `<i aria-hidden="true"></i><b>${isOn ? 'مباشر الآن' : o.st.key === 'soon' ? esc(o.st.label) : 'حصة مباشرة ' + esc(when(o.x))}</b>`
+            + `<span>${esc(subjOf(o.x))} · ${esc(gradeName(o.x.grade))}${isOn && on.length > 1 ? ' · و' + esc(plural(on.length - 1, 'حصة أخرى', 'حصتان أخريان', 'حصص أخرى', 'حصة أخرى')) : ''}</span>`;
+        }
+      }
+      $$('[data-gnow]', view).forEach((el) => {
+        const o = on.find((y) => y.x.grade === el.dataset.gnow) || all.find((y) => y.x.grade === el.dataset.gnow && +new Date(y.x.starts_at) - now < DAY);
+        el.hidden = !o;
+        if (!o) return;
+        el.className = 'h7-gnow' + (o.st.key === 'live' ? ' is-live' : '');
+        el.innerHTML = o.st.key === 'live' ? '<i aria-hidden="true"></i>مباشر الآن' : esc(o.st.key === 'soon' ? o.st.label : when(o.x));
+      });
+    };
+    const loadUp = async () => {
+      const rows = remember(upNow(await API.listUpcoming({ limit: 80 })));
+      if (tok !== app.token) return;
+      upRows = rows;
+      const sec = document.getElementById('up-sec');
+      if (sec) {
+        sec.hidden = !rows.length;
+        document.getElementById('up-for').textContent = 'كل الصفوف';
+        if (myGrade) { const a = document.getElementById('up-all'); a.hidden = false; a.href = '#/g/' + myGrade + '/plan'; }
+        document.getElementById('up-list').innerHTML = rows.length ? calendarHtml(rows, true) : '';
+      }
+      paintLive();
+    };
+    loadUp().catch(() => { /* القسم اختياري */ });
+    // كل 30 ثانية تتحدث الحالات (تبدأ بعد… ← مباشر الآن)، وكل دقيقتين تُجلب الحصص من جديد
+    let ticks = 0;
+    pageTick = () => {
+      if (tok !== app.token) return;
+      if (++ticks % 4 === 0) { loadUp().catch(() => {}); loadLive().catch(() => {}); } else paintLive();
+    };
     // أحدث الدروس: لصف الطالب إن اختاره من قبل، وإلا لكل الصفوف
     (async () => {
       try {
@@ -1009,12 +1051,14 @@
         document.getElementById('new-list').innerHTML = rows.map((s) => vidHtml(s, !(mine && GRADES[mine]))).join('');
       } catch (e) { /* القسم اختياري */ }
     })();
-    try {
+    async function loadLive() {
       const live = remember(await API.listLiveNow());
       if (tok !== app.token) return;
+      liveRows = live.slice();
+      paintLive();
       const sec = document.getElementById('live-sec');
+      sec.hidden = !live.length;
       if (live.length) {
-        sec.hidden = false;
         document.getElementById('live-count').textContent = plural(live.length, 'حصة واحدة', 'حصتان', 'حصص', 'حصة');
         live.sort((a, b) => (b.grade === mine) - (a.grade === mine));
         const list = document.getElementById('live-list');
@@ -1023,7 +1067,8 @@
         const mb = document.getElementById('live-more');
         if (mb) mb.addEventListener('click', () => { list.innerHTML = live.map((s) => cardHtml(s, { showGrade: true })).join(''); });
       }
-    } catch (e) { /* الشريط اختياري */ }
+    }
+    try { await loadLive(); } catch (e) { /* الشريط اختياري */ }
   }
 
   // ------------------------------------------------------------------

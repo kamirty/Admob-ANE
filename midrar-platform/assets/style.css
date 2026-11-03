@@ -1321,3 +1321,23 @@ body.home7 .foot { border-top-color: rgba(255, 255, 255, .08); }
   .h7-btn, .h7-gcard, .h7-rbtn, .h7-stat::after { transition: none; }
   .h7-stat.done .h7-sico { animation: none; }
 }
+
+/* تنبيه الحصص المباشرة في الواجهة وعلى بطاقات الصفوف */
+.h7-livepill { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; padding: 8px 18px 8px 14px; border-radius: 999px; text-decoration: none; color: var(--ink);
+  background: rgba(10, 16, 14, .55); border: 1px solid rgba(255, 255, 255, .22); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); font-size: .95rem; line-height: 1.5;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .3); transition: transform .2s ease, background-color .2s ease; }
+.h7-livepill:hover { transform: translateY(-2px); background: rgba(10, 16, 14, .7); }
+.h7-livepill i { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #FFFFFF; }
+.h7-livepill b { font-weight: 700; }
+.h7-livepill span { color: var(--h7-mist); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h7-livepill.is-soon i { background: var(--h7-gold); }
+.h7-livepill.is-live { background: rgba(229, 50, 59, .9); border-color: rgba(255, 180, 176, .6); box-shadow: 0 10px 34px rgba(229, 50, 59, .45); }
+.h7-livepill.is-live:hover { background: #E5323B; }
+.h7-livepill.is-live span { color: rgba(255, 255, 255, .88); }
+.h7-livepill.is-live i, .h7-gnow.is-live i { background: #FFFFFF; animation: h7-livedot 1.4s ease-in-out infinite; }
+@keyframes h7-livedot { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, .7); } 60% { box-shadow: 0 0 0 7px rgba(255, 255, 255, 0); } }
+.h7-gnow { position: absolute; top: 52px; inset-inline-start: 50%; transform: translateX(50%); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font: 600 .74rem/1.4 var(--font-body);
+  background: rgba(10, 16, 14, .6); color: var(--ink); border: 1px solid rgba(255, 255, 255, .2); z-index: 1; }
+.h7-gnow.is-live { background: #E5323B; border-color: transparent; color: #FFFFFF; box-shadow: 0 6px 20px rgba(229, 50, 59, .5); }
+.h7-gnow i { width: 7px; height: 7px; border-radius: 50%; }
+@media (prefers-reduced-motion: reduce) { .h7-livepill.is-live i, .h7-gnow.is-live i { animation: none; } .h7-livepill { transition: none; } }
