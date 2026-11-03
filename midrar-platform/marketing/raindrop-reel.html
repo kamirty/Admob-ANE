@@ -1,0 +1,277 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<title>مِدْرار — مقطع القطرة</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=Reem+Kufi:wght@600;700&display=swap">
+<!--
+  مقطع ترويجي عمودي 1080×1920، 21 ثانية. كل ما في الإطار يُحسب من الزمن t في render(t)،
+  فيُصوَّر إطاراً إطاراً دون أي اعتماد على سرعة الجهاز. الفكرة: قطرة مطر (مِدْرار) تقود العين:
+  1) تتأرجح فتكشف الكلمات  2) تصير مصباحاً يضيء الحديث  3) تنزل على خط الخطوات  4) تسقط فيولد الشعار.
+-->
+<style>
+:root { --cream: #F3EBDD; --ink: #12201C; --green: #0E5A46; --gold: #E2A53A; --night: #0B1311; --mist: #6B756F; }
+* { margin: 0; box-sizing: border-box; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; }
+body { position: relative; background: var(--cream); color: var(--ink); font-family: "IBM Plex Sans Arabic", Tahoma, sans-serif; }
+.vign { position: absolute; inset: 0; background: radial-gradient(70% 55% at 50% 45%, rgba(255, 255, 255, .55), transparent 70%), radial-gradient(120% 90% at 50% 50%, transparent 60%, rgba(120, 95, 60, .18)); }
+.abs { position: absolute; left: 0; top: 0; }
+/* المشهد 1: العبارات */
+.ph { position: absolute; left: 0; width: 1080px; top: 735px; text-align: center; display: grid; gap: 6px; }
+.ph b { display: block; font: 700 150px/1.15 "Reem Kufi", sans-serif; color: var(--ink); }
+.ph b.g { color: var(--green); }
+.ph b.y { color: var(--gold); }
+.ph b.s { font: 700 128px/1.2 Amiri, serif; color: var(--green); }
+/* القطرة */
+.drop { position: absolute; width: 54px; height: 54px; margin: -27px 0 0 -27px; }
+.drop::before { content: ""; position: absolute; inset: 0; border-radius: 50% 0 50% 50%; transform: rotate(-45deg);
+  background: radial-gradient(circle at 34% 34%, #FFF4DA 0%, #F2C66E 30%, var(--gold) 60%, #A8701A 100%);
+  box-shadow: 0 0 34px rgba(226, 165, 58, .75), 0 0 90px rgba(226, 165, 58, .35); }
+svg.thread { position: absolute; inset: 0; width: 1080px; height: 1920px; }
+/* المشهد 2: الظلام والمصباح */
+.dark { position: absolute; inset: 0; background: var(--night); }
+.cone { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255, 236, 196, .55), rgba(255, 236, 196, .12) 70%, rgba(255, 236, 196, 0)); }
+.hd { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; padding-top: 860px; text-align: center; display: grid; align-content: start; gap: 18px; }
+.hd .say { font: 400 50px/1.5 Amiri, serif; }
+.hd .q { font: 700 168px/1.25 Amiri, serif; }
+.hd .q span { color: var(--gold); }
+.hd .src { font: 400 46px/1.5 Amiri, serif; }
+.hd.dim { color: #1B2724; }
+.hd.lit { color: #FFF6E4; }
+.hd.lit .say, .hd.lit .src { color: #E9DCC4; }
+.hd.dim .q span { color: #1B2724; }
+/* المشهد 3: الخطوات */
+.title { position: absolute; top: 330px; right: 110px; font: 700 120px/1.2 "Reem Kufi", sans-serif; }
+.title i { font: 700 124px/1.2 Amiri, serif; font-style: normal; color: var(--gold); }
+.line { position: absolute; right: 136px; width: 4px; top: 640px; height: 0; background: rgba(18, 32, 28, .18); border-radius: 4px; }
+.lfill { position: absolute; right: 136px; width: 4px; top: 640px; height: 0; background: var(--gold); border-radius: 4px; }
+.node { position: absolute; right: 126px; width: 24px; height: 24px; border-radius: 50%; background: var(--cream); border: 4px solid rgba(18, 32, 28, .25); margin-top: -12px; }
+.node.on { background: var(--gold); border-color: var(--gold); }
+.ring { position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; border: 4px solid var(--gold); }
+.step { position: absolute; right: 200px; left: 80px; display: grid; gap: 14px; justify-items: start; }
+.step .n { font: 600 34px/1 "IBM Plex Sans Arabic", sans-serif; color: var(--gold); letter-spacing: .02em; }
+.step h2 { font: 700 86px/1.2 "Reem Kufi", sans-serif; }
+.step h2 i { font: 700 92px/1.2 Amiri, serif; font-style: normal; color: var(--green); }
+.chips { display: flex; gap: 14px; direction: rtl; }
+.chip { font: 700 48px/1 "Reem Kufi", sans-serif; padding: 20px 26px; border-radius: 20px; background: rgba(18, 32, 28, .07); border: 2px solid rgba(18, 32, 28, .12); color: var(--ink); }
+.chip.t { font: 600 38px/1 "IBM Plex Sans Arabic", sans-serif; padding: 20px 26px; }
+.chip.pick { background: var(--gold); border-color: var(--gold); color: #2A1C05; }
+.chip.blue { background: #2F6FBF; border-color: #2F6FBF; color: #fff; }
+.term { display: grid; gap: 16px; width: 640px; padding: 24px 28px; border-radius: 22px; background: var(--night); color: #E9F0EC; font: 600 34px/1.3 "IBM Plex Sans Arabic", sans-serif; }
+.term .row { display: flex; justify-content: space-between; align-items: center; }
+.term .pct { direction: ltr; color: var(--gold); font-variant-numeric: tabular-nums; }
+.bar { height: 10px; border-radius: 10px; background: rgba(255, 255, 255, .14); overflow: hidden; direction: ltr; }
+.bar b { display: block; height: 100%; width: 0; background: var(--gold); border-radius: 10px; }
+.ok { font: 600 36px/1 "IBM Plex Sans Arabic", sans-serif; color: var(--green); }
+/* المشهد 4: الشعار */
+.logo { position: absolute; left: 50%; top: 600px; width: 520px; margin-left: -260px; transform-origin: 50% 40%; }
+.url { position: absolute; left: 0; width: 1080px; top: 1300px; display: flex; justify-content: center; }
+.url span { direction: ltr; font: 700 56px/1 "IBM Plex Sans Arabic", sans-serif; background: var(--ink); color: var(--cream); padding: 26px 46px; border-radius: 999px; }
+.url span em { font-style: normal; color: var(--gold); }
+.tag { position: absolute; left: 0; width: 1080px; top: 1440px; text-align: center; font: 600 50px/1.5 "IBM Plex Sans Arabic", sans-serif; color: var(--mist); }
+.tag b { color: var(--green); }
+.black { position: absolute; inset: 0; background: #000; opacity: 0; }
+</style></head><body>
+<div class="vign"></div>
+
+<!-- المشهد 1 -->
+<div id="s1">
+  <div class="ph" data-ph="1"><b>علمٌ مِدرار</b><b class="g">لكل طالب</b></div>
+  <div class="ph" data-ph="2"><b>بلا حساب</b><b class="g">ولا رسوم.</b></div>
+  <div class="ph" data-ph="3"><b>معلمون</b><b class="y">متطوعون</b></div>
+  <div class="ph" data-ph="4"><b>يشرحون</b><b class="s">من بيوتهم.</b></div>
+</div>
+
+<!-- المشهد 3 -->
+<div id="s3">
+  <div class="title">كيف <i>تبدأ؟</i></div>
+  <div class="line" id="line"></div><div class="lfill" id="lfill"></div>
+  <div class="node" data-node="0"></div><div class="node" data-node="1"></div><div class="node" data-node="2"></div>
+  <div class="step" data-step="0"><span class="n">الخطوة 1</span><h2>اختر <i>صفّك</i></h2>
+    <div class="chips"><span class="chip">8</span><span class="chip">9</span><span class="chip" data-pick>10</span><span class="chip">11</span><span class="chip">12</span></div></div>
+  <div class="step" data-step="1"><span class="n">الخطوة 2</span><h2>اختر <i>المادة</i></h2>
+    <div class="chips"><span class="chip t" data-pick2>الرياضيات</span><span class="chip t">العلوم</span><span class="chip t">العربية</span></div></div>
+  <div class="step" data-step="2"><span class="n">الخطوة 3</span><h2>شاهد <i>الدرس</i></h2>
+    <div class="term"><div class="row"><span>الدرس 4 · الكسور</span><span class="pct" id="pct">0%</span></div><div class="bar"><b id="bar"></b></div></div>
+    <span class="ok" id="ok">✓ ثم تدرّب بأسئلة تفاعلية</span></div>
+</div>
+
+<!-- المشهد 4 -->
+<div id="s4">
+  <img class="logo" id="logo" src="midrar-logo-official.svg" alt="">
+  <div class="url" id="url"><span>midrarelm<em>.com</em></span></div>
+  <div class="tag" id="tag">مجاني لكل طالب · <b>الصف 1 إلى 12</b></div>
+</div>
+
+<!-- المشهد 2 -->
+<div id="s2">
+  <div class="dark" id="dark"></div>
+  <div class="hd dim" id="hdDim"><span class="say">قال رسول الله ﷺ</span><span class="q">أو علمٍ<br><span>يُنتفَعُ به</span></span><span class="src">رواه مسلم</span></div>
+  <div class="cone" id="cone"></div>
+  <div class="hd lit" id="hdLit"><span class="say">قال رسول الله ﷺ</span><span class="q">أو علمٍ<br><span>يُنتفَعُ به</span></span><span class="src">رواه مسلم</span></div>
+</div>
+
+<svg class="thread" id="thread"><line id="th" x1="540" y1="-260" x2="540" y2="900" stroke="#12201C" stroke-width="3" stroke-linecap="round"/></svg>
+<div id="ghosts"></div>
+<div class="drop" id="drop"></div>
+<div class="ring" id="ring1"></div><div class="ring" id="ring2"></div><div class="ring" id="ring3"></div>
+<div class="black" id="black"></div>
+
+<script>
+const W = 1080, Hh = 1920;
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+const cl = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const k = (t, a, b) => cl((t - a) / (b - a));           // تقدّم خطي بين زمنين
+const eo = (x) => 1 - Math.pow(1 - x, 3);                // تباطؤ في النهاية
+const eio = (x) => (x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const set = (el, css) => Object.assign(el.style, css);
+
+// البندول: نصف الدورة HALF ثانية، والزاوية من -A إلى +A
+const HALF = 1.55, A = 0.6, L = 1180, PX = 540, PY = -260;
+const pend = (t) => { const th = -A * Math.cos(Math.PI * t / HALF); return { x: PX + L * Math.sin(th), y: PY + L * Math.cos(th) }; };
+const CUT = 4 * HALF + HALF / 2;   // يُقطع الخيط والقطرة في أسفل القوس
+// ما بعد المشهد الأول صُمّم على بداية عند 5.85 ثانية، فيُزاح بالفرق
+const SH = CUT - 5.85;
+
+// مواضع القطرة في كل لحظة (تُستعمل أيضاً للأشباح خلفها)
+const nodeY = [700, 1080, 1460];
+const T3 = { title: 11.0, line: 11.2, at: [11.9, 13.6, 15.3] };
+function dropAt(t) {
+  if (t < CUT) return { ...pend(t), o: 1, s: 1 };
+  t -= SH;
+  if (t < 6.9) { // تسقط بالجاذبية
+    const p = pend(CUT), d = t - 5.85;
+    return { x: p.x + 200 * d, y: p.y + 2600 * d * d, o: 1, s: 1 };
+  }
+  if (t < 10.7) { // المصباح في الأعلى
+    const a = eo(k(t, 6.9, 7.5));
+    return { x: 540 + Math.sin((t - 7.5) * 1.3) * 18 * k(t, 7.5, 8), y: -60 + (420 + 60) * a, o: 1, s: 1 };
+  }
+  if (t < 16.6) { // على خط الخطوات
+    const x = W - 136 - 2;
+    if (t < T3.at[0]) return { x, y: 560 + (nodeY[0] - 560) * eio(k(t, 11.3, T3.at[0])), o: k(t, 11.2, 11.4), s: .8 };
+    for (let i = 1; i < 3; i++) if (t < T3.at[i]) return { x, y: nodeY[i - 1] + (nodeY[i] - nodeY[i - 1]) * eio(k(t, T3.at[i] - 0.9, T3.at[i])), o: 1, s: .8 };
+    return { x, y: nodeY[2] + 600 * Math.pow(k(t, 16.0, 16.6), 2), o: 1 - k(t, 16.3, 16.6), s: .8 };
+  }
+  // تسقط في الوسط فيولد الشعار
+  const a = k(t, 16.8, 17.35);
+  return { x: 540, y: -80 + (830 + 80) * a * a, o: t < 17.35 ? 1 : 1 - k(t, 17.35, 17.5), s: 1 };
+}
+
+function render(t) {
+  const u = t - SH; // زمن المشاهد بعد الأول
+  // ---------- المشهد 1: العبارات تنكشف حيث مرّت القطرة ----------
+  const s1 = u < 6.9;
+  $('#s1').style.display = s1 ? '' : 'none';
+  if (s1) {
+    const sweep = Math.floor(t / HALF);                   // رقم المسحة الحالية
+    const x = pend(t).x;
+    const ltr = sweep % 2 === 0;                          // المسحات الزوجية من اليسار إلى اليمين
+    $$('.ph').forEach((el) => {
+      const n = +el.dataset.ph;                           // العبارة n تنكشف في المسحة n-1
+      let clip = 'inset(0 0 0 100%)';
+      if (n === sweep + 1 && t < 4 * HALF) clip = ltr ? `inset(0 ${W - x}px 0 0)` : `inset(0 0 0 ${x}px)`;
+      else if (n === sweep && sweep < 4) clip = ltr ? `inset(0 0 0 ${x}px)` : `inset(0 ${W - x}px 0 0)`;
+      else if (n === 4 && sweep >= 4) clip = 'inset(0 0 0 0)';
+      el.style.clipPath = clip;
+      if (n === 4 && t >= 4 * HALF) el.style.opacity = 1 - k(u, 6.1, 6.5);
+    });
+  }
+  // الخيط
+  const th = $('#th');
+  if (t < CUT) { const p = pend(t); th.setAttribute('x2', p.x); th.setAttribute('y2', p.y); th.style.opacity = 1; }
+  else { th.style.opacity = 0; }
+
+  // ---------- المشهد 2: الظلام والمصباح ----------
+  const in2 = k(u, 6.25, 6.85), out2 = k(u, 10.45, 11.0);
+  const s2 = u >= 6.2 && u < 11.05;
+  $('#s2').style.display = s2 ? '' : 'none';
+  if (s2) {
+    // يدخل الظلام بقطع مائل من اليمين، ويخرج إلى الأعلى
+    const e = eio(in2), o = eio(out2);
+    const xt = (W + 420) * (1 - e);   // الحافة المائلة: أعلاها متقدم على أسفلها
+    $('#s2').style.clipPath = u < 10.4
+      ? `polygon(${xt}px 0, ${W}px 0, ${W}px ${Hh}px, ${xt - 420}px ${Hh}px)`
+      : `inset(0 0 ${Hh * o}px 0)`;
+    // المخروط من المصباح
+    const d = dropAt(t);
+    const open = eo(k(u, 7.6, 8.6)), full = eio(k(u, 9.4, 10.2));
+    const half = 40 + 330 * open + 520 * full, sway = Math.sin((u - 7.5) * 1.3) * 70 * (1 - full);
+    const poly = `polygon(${d.x - 6}px ${d.y}px, ${d.x + 6}px ${d.y}px, ${540 + sway + half}px ${Hh}px, ${540 + sway - half}px ${Hh}px)`;
+    set($('#cone'), { clipPath: poly, opacity: open * (1 - .35 * full) });
+    $('#hdLit').style.clipPath = poly;
+    $('#hdLit').style.opacity = open;
+    $('#hdDim').style.opacity = 1;
+  }
+
+  // ---------- المشهد 3: الخطوات ----------
+  const s3 = u >= 10.4 && u < 16.9;
+  $('#s3').style.display = s3 ? '' : 'none';
+  if (s3) {
+    const fadeOut = 1 - k(u, 16.3, 16.75);
+    const ti = eo(k(u, T3.title, T3.title + .5));
+    set($('.title'), { opacity: ti * fadeOut, transform: `translateY(${(1 - ti) * 40}px)` });
+    const lh = (nodeY[2] - 640 + 60) * eio(k(u, T3.line, T3.line + .7));
+    set($('#line'), { height: lh + 'px', opacity: fadeOut });
+    const d = dropAt(t);
+    set($('#lfill'), { height: Math.max(0, Math.min(d.y, nodeY[2]) - 640) + 'px', opacity: u < 11.3 ? 0 : fadeOut });
+    $$('.node').forEach((n, i) => {
+      set(n, { top: nodeY[i] + 'px', opacity: k(u, T3.line + .1 * i, T3.line + .3 + .1 * i) * fadeOut });
+      n.classList.toggle('on', u >= T3.at[i]);
+    });
+    $$('.step').forEach((st, i) => {
+      const a = eo(k(u, T3.at[i] - .1, T3.at[i] + .35));
+      const dim = i < 2 && u > T3.at[i + 1] ? .4 : 1;
+      set(st, { top: nodeY[i] - 34 + 'px', opacity: a * dim * fadeOut, transform: `translateX(${(1 - a) * -40}px)` });
+    });
+    $('[data-pick]').classList.toggle('pick', u > T3.at[0] + .55);
+    $('[data-pick2]').classList.toggle('blue', u > T3.at[1] + .55);
+    const pr = eio(k(u, T3.at[2] + .3, T3.at[2] + 1.3));
+    $('#bar').style.width = (pr * 100).toFixed(1) + '%';
+    $('#pct').textContent = pr >= 1 ? '✓ 100%' : Math.round(pr * 100) + '%';
+    set($('#ok'), { opacity: k(u, T3.at[2] + 1.35, T3.at[2] + 1.6), transform: `translateY(${(1 - k(u, T3.at[2] + 1.35, T3.at[2] + 1.6)) * 14}px)` });
+  }
+
+  // ---------- المشهد 4: الشعار ----------
+  const s4 = u >= 17.2;
+  $('#s4').style.display = s4 ? '' : 'none';
+  if (s4) {
+    const a = k(u, 17.4, 18.1), pop = a < 1 ? 1.12 * eo(a) - .12 * a * a : 1;
+    set($('#logo'), { opacity: k(u, 17.4, 17.7), transform: `scale(${(.55 + .45 * pop).toFixed(4)})` });
+    const uu = eo(k(u, 18.2, 18.6));
+    set($('#url'), { opacity: uu, transform: `translateY(${(1 - uu) * 30}px)` });
+    const g = eo(k(u, 18.6, 19.0));
+    set($('#tag'), { opacity: g, transform: `translateY(${(1 - g) * 24}px)` });
+  }
+  // تموجات الماء حين تلمس القطرة: العقد، ثم الشعار
+  const hits = [...T3.at.map((h, i) => ({ h, x: W - 136 + 2, y: nodeY[i] })), { h: 17.35, x: 540, y: 830 }];
+  ['#ring1', '#ring2', '#ring3'].forEach((id, j) => {
+    const el = $(id); let shown = false;
+    for (const hit of hits) {
+      const big = hit.h === 17.35;
+      const p = k(u, hit.h + j * .12, hit.h + j * .12 + (big ? 1.1 : .7));
+      if (p > 0 && p < 1) {
+        set(el, { left: hit.x + 'px', top: hit.y + 'px', opacity: (1 - p) * .9, transform: `scale(${1 + p * (big ? 16 : 3.5)})`, borderWidth: (big ? 3 : 4) + 'px' });
+        shown = true;
+      }
+    }
+    if (!shown) el.style.opacity = 0;
+  });
+
+  // ---------- القطرة وأشباحها ----------
+  const d = dropAt(t);
+  const visible = u < 16.6 || (u >= 16.8 && u < 17.5);
+  set($('#drop'), { left: d.x + 'px', top: d.y + 'px', opacity: visible ? d.o : 0, transform: `scale(${d.s})` });
+  const gh = $('#ghosts');
+  if (!gh.children.length) for (let i = 0; i < 4; i++) { const g = document.createElement('div'); g.className = 'drop'; gh.appendChild(g); }
+  [...gh.children].forEach((g, i) => {
+    const p = dropAt(Math.max(0, t - .022 * (i + 1)));
+    set(g, { left: p.x + 'px', top: p.y + 'px', opacity: visible ? d.o * [.32, .18, .1, .05][i] : 0, transform: `scale(${d.s})` });
+  });
+
+  $('#black').style.opacity = k(u, 20.4, 21);
+}
+window.render = render;
+window.DURATION = 21 + SH;
+window.ready = document.fonts.ready.then(() => new Promise((r) => { const i = $('#logo'); i.complete ? r() : i.onload = r; }));
+render(0);
+</script>
+</body></html>
